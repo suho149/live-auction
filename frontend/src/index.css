@@ -1,3 +1,8 @@
+/* frontend/src/index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* react-slick CSS */
+@import "~slick-carousel/slick/slick.css";
+@import "~slick-carousel/slick/slick-theme.css";

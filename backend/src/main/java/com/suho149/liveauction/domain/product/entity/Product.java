@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -31,8 +33,6 @@ public class Product {
     @Column(nullable = false)
     private Long currentPrice;
 
-    private String imageUrl; // 이미지 URL
-
     @Column(nullable = false)
     private LocalDateTime auctionEndTime;
 
@@ -44,15 +44,27 @@ public class Product {
     @JoinColumn(name = "highest_bidder_id")
     private User highestBidder;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Category category;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductImage> images = new ArrayList<>();
+
     @Builder
-    public Product(String name, String description, Long startPrice, String imageUrl, LocalDateTime auctionEndTime, User seller) {
+    public Product(String name, String description, Long startPrice, Category category, LocalDateTime auctionEndTime, User seller) {
         this.name = name;
         this.description = description;
         this.startPrice = startPrice;
-        this.currentPrice = startPrice; // 시작가는 현재가와 동일
-        this.imageUrl = imageUrl;
+        this.currentPrice = startPrice;
+        this.category = category;
         this.auctionEndTime = auctionEndTime;
         this.seller = seller;
+    }
+
+    // ★ 연관관계 편의 메소드 추가
+    public void addImage(ProductImage image) {
+        this.images.add(image);
     }
 
     // 입찰 시 현재가와 최고 입찰자 업데이트

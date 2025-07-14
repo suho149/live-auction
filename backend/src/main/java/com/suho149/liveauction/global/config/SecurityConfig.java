@@ -56,8 +56,8 @@ public class SecurityConfig {
                                 "/ws-stomp/**"
                         ).permitAll()
 
-                        // ★ 상품 등록(POST)은 인증된 사용자(USER)만 가능하도록 명시
-                        .requestMatchers(HttpMethod.POST, "/api/v1/products").hasRole("USER")
+                        // 상품 등록(POST)과 이미지 업로드(POST)는 USER 권한이 필요함
+                        .requestMatchers(HttpMethod.POST, "/api/v1/products", "/api/v1/images/upload").hasRole("USER")
 
                         .anyRequest().authenticated()
                 )
