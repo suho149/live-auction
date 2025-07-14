@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  mariadb:
+    image: mariadb:10.5
+    container_name: live-auction-db
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      # .env 파일의 변수를 참조합니다.
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${DB_DATABASE}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./db-data:/var/lib/mysql
+
+  redis:
+    image: redis:6.2-alpine
+    container_name: live-auction-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis-data:/data
