@@ -43,14 +43,22 @@ public class SecurityConfig {
 
                 // === URL 별 권한 관리 ===
                 .authorizeHttpRequests(authorize -> authorize
-                        // ★★★ OPTIONS 메소드는 인증 없이 허용 ★★★
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // ★ 상품 조회 관련 GET 요청은 모두 허용
+                        .requestMatchers(HttpMethod.GET, "/api/v1/products", "/api/v1/products/**").permitAll()
+
                         .requestMatchers(
                                 "/",
                                 "/oauth2/**",
                                 "/login/oauth2/code/google",
-                                "/api/v1/auth/reissue"
+                                "/api/v1/auth/reissue",
+                                "/ws-stomp/**"
                         ).permitAll()
+
+                        // ★ 상품 등록(POST)은 인증된 사용자(USER)만 가능하도록 명시
+                        .requestMatchers(HttpMethod.POST, "/api/v1/products").hasRole("USER")
+
                         .anyRequest().authenticated()
                 )
 

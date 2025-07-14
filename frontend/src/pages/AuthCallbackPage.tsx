@@ -14,8 +14,8 @@ const AuthCallbackPage = () => {
             localStorage.setItem('accessToken', accessToken);
             localStorage.setItem('refreshToken', refreshToken);
 
-            // 토큰 저장 후 마이페이지로 이동
-            navigate('/mypage');
+            // 토큰 저장 후 홈페이지로 이동
+            navigate('/');
         } else {
             // 토큰이 없는 경우 에러 처리 또는 메인 페이지로 이동
             alert('로그인에 실패했습니다.');
