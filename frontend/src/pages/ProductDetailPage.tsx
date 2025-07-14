@@ -25,21 +25,32 @@ interface BidResponse {
 
 const ProductDetailPage = () => {
     const { productId } = useParams<{ productId: string }>();
-    const navigate = useNavigate(); // 로그인 페이지 이동을 위해 추가
+    const navigate = useNavigate();
     const [product, setProduct] = useState<ProductDetail | null>(null);
     const [bidAmount, setBidAmount] = useState<number>(0);
     const stompClient = useRef<Client | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const isLoggedIn = !!localStorage.getItem('accessToken');
 
+    // 경매 상태를 관리할 새로운 상태 추가
+    const [isAuctionEnded, setIsAuctionEnded] = useState(false);
+    const [timeLeft, setTimeLeft] = useState("");
+
     useEffect(() => {
-        // 1. 상품 상세 정보를 불러오는 함수
+        // 상품 정보 불러오기
         const fetchProduct = async () => {
             try {
                 const response = await axiosInstance.get(`/api/v1/products/${productId}`);
-                setProduct(response.data);
-                // 초기 추천 입찰가는 현재가보다 1000원 높게 설정
-                setBidAmount(response.data.currentPrice + 1000);
+                const productData = response.data;
+                setProduct(productData);
+                setBidAmount(productData.currentPrice + 1000);
+
+                // ★ 경매 종료 시간 체크
+                const endTime = new Date(productData.auctionEndTime).getTime();
+                if (endTime < Date.now()) {
+                    setIsAuctionEnded(true);
+                }
+
             } catch (error) {
                 console.error("상품 정보를 불러오는 데 실패했습니다.", error);
                 alert("존재하지 않는 상품이거나 정보를 불러올 수 없습니다.");
@@ -48,6 +59,27 @@ const ProductDetailPage = () => {
         };
 
         fetchProduct();
+
+        // 남은 시간 계산을 위한 타이머 설정
+        const timer = setInterval(() => {
+            if (product) {
+                const endTime = new Date(product.auctionEndTime).getTime();
+                const now = Date.now();
+                const distance = endTime - now;
+
+                if (distance < 0) {
+                    setTimeLeft("경매 종료");
+                    setIsAuctionEnded(true);
+                    clearInterval(timer);
+                } else {
+                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                    setTimeLeft(`${days}일 ${hours}시간 ${minutes}분 ${seconds}초 남음`);
+                }
+            }
+        }, 1000);
 
         // 2. 로그인 상태일 때만 웹소켓을 연결
         if (isLoggedIn) {
@@ -74,6 +106,10 @@ const ProductDetailPage = () => {
                                 : null
                         );
                     });
+                    // 입찰 실패 에러 메시지 구독
+                    client.subscribe('/user/queue/errors', (message) => {
+                        alert(`입찰 실패: ${message.body}`);
+                    });
                 },
                 onDisconnect: () => {
                     console.log('STOMP Disconnected!');
@@ -97,7 +133,7 @@ const ProductDetailPage = () => {
                 console.log('STOMP Deactivated.');
             }
         };
-    }, [productId, isLoggedIn, navigate]); // 의존성 배열에 isLoggedIn, navigate 추가
+    }, [productId, isLoggedIn, navigate, product?.auctionEndTime]); // 의존성 배열에 product.auctionEndTime
 
     // 입찰 버튼 클릭 시 실행되는 함수
     const handleBidSubmit = () => {
@@ -106,6 +142,11 @@ const ProductDetailPage = () => {
             alert('로그인이 필요한 기능입니다.');
             // 필요하다면 로그인 페이지로 이동시킬 수도 있습니다.
             // window.location.href = 'http://localhost:8080/oauth2/authorization/google';
+            return;
+        }
+
+        if(isAuctionEnded) {
+            alert('이미 종료된 경매입니다.');
             return;
         }
 
@@ -142,7 +183,8 @@ const ProductDetailPage = () => {
             <Header />
             <main className="container mx-auto p-4 sm:p-8">
                 <div className="bg-white p-6 rounded-lg shadow-lg grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-                    {/* 상품 이미지 영역 */}
+
+                    {/* 1. 상품 이미지 영역 */}
                     <div>
                         <img
                             src={product.imageUrl || "https://via.placeholder.com/600x400"}
@@ -150,19 +192,24 @@ const ProductDetailPage = () => {
                             className="w-full h-auto aspect-square object-cover rounded-lg"
                         />
                     </div>
-                    {/* 상품 정보 및 경매 영역 */}
+
+                    {/* 2. 상품 정보 및 경매 영역 */}
                     <div className="flex flex-col justify-between">
                         <div>
                             <span className="text-sm font-semibold text-blue-600">SELLING</span>
                             <h1 className="text-3xl lg:text-4xl font-bold my-3">{product.name}</h1>
                             <p className="text-gray-500 mb-1">판매자: {product.sellerName}</p>
-                            <p className="text-sm text-gray-500 mb-4">
-                                경매 마감: {new Date(product.auctionEndTime).toLocaleString()}
+
+                            {/* 남은 시간 표시 (isAuctionEnded 상태에 따라 색상 변경) */}
+                            <p className={`text-lg font-bold mb-4 ${isAuctionEnded ? 'text-red-500' : 'text-green-600'}`}>
+                                {timeLeft}
                             </p>
+
                             <p className="text-gray-700 leading-relaxed">{product.description}</p>
                         </div>
 
                         <div className="mt-6">
+                            {/* 현재 최고가 표시 영역 */}
                             <div className="bg-gray-100 p-4 rounded-lg">
                                 <div className="flex justify-between items-center">
                                     <span className="text-gray-600 text-lg">현재 최고가</span>
@@ -173,29 +220,41 @@ const ProductDetailPage = () => {
                                 </div>
                             </div>
 
+                            {/* 입찰 UI 동적 렌더링 영역 */}
                             <div className="mt-4">
-                                {isLoggedIn ? (
-                                    <div className="flex space-x-2">
-                                        <input
-                                            type="number"
-                                            value={bidAmount}
-                                            onChange={(e) => setBidAmount(parseInt(e.target.value, 10) || 0)}
-                                            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                            placeholder="현재가보다 높은 금액"
-                                        />
-                                        <button
-                                            onClick={handleBidSubmit}
-                                            className="w-1/3 bg-blue-600 text-white font-bold p-3 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400"
-                                            disabled={!isConnected}
-                                        >
-                                            {isConnected ? '입찰' : '연결 중'}
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="text-center p-3 bg-gray-200 rounded-md">
-                                        <p>입찰에 참여하려면 <a href={'http://localhost:8080/oauth2/authorization/google'} className="text-blue-600 font-bold hover:underline">로그인</a>이 필요합니다.</p>
-                                    </div>
-                                )}
+                                {
+                                    // 1. 경매가 종료되었는지 먼저 확인
+                                    isAuctionEnded ? (
+                                            <div className="text-center p-4 bg-red-100 text-red-700 rounded-md font-bold">
+                                                종료된 경매입니다.
+                                            </div>
+                                        )
+                                        // 2. 경매가 진행 중일 때, 로그인 상태 확인
+                                        : isLoggedIn ? (
+                                                <div className="flex space-x-2">
+                                                    <input
+                                                        type="number"
+                                                        value={bidAmount}
+                                                        onChange={(e) => setBidAmount(parseInt(e.target.value, 10) || 0)}
+                                                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                        placeholder="현재가보다 높은 금액"
+                                                    />
+                                                    <button
+                                                        onClick={handleBidSubmit}
+                                                        className="w-1/3 bg-blue-600 text-white font-bold p-3 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+                                                        disabled={!isConnected} // 웹소켓 연결 전에는 버튼 비활성화
+                                                    >
+                                                        {isConnected ? '입찰' : '연결 중'}
+                                                    </button>
+                                                </div>
+                                            )
+                                            // 3. 경매 진행 중이지만, 비로그인 상태일 때
+                                            : (
+                                                <div className="text-center p-3 bg-gray-200 rounded-md">
+                                                    <p>입찰에 참여하려면 <a href={'http://localhost:8080/oauth2/authorization/google'} className="text-blue-600 font-bold hover:underline">로그인</a>이 필요합니다.</p>
+                                                </div>
+                                            )
+                                }
                             </div>
                         </div>
                     </div>

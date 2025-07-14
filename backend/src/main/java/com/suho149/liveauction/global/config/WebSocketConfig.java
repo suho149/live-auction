@@ -32,7 +32,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         registry.setApplicationDestinationPrefixes("/pub");
-        registry.enableSimpleBroker("/sub");
+        registry.enableSimpleBroker("/sub", "/queue");
+        registry.setUserDestinationPrefix("/user"); // 사용자 목적지 prefix 설정
     }
 
     // ★ 클라이언트의 요청을 가로채는 인터셉터 설정

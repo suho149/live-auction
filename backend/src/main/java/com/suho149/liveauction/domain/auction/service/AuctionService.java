@@ -7,6 +7,7 @@ import com.suho149.liveauction.domain.product.repository.ProductRepository;
 import com.suho149.liveauction.domain.user.entity.User;
 import com.suho149.liveauction.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -20,7 +21,7 @@ public class AuctionService {
 
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final SimpMessageSendingOperations messagingTemplate;
 
     @Transactional
     public void placeBid(Long productId, BidRequest bidRequest, String email) {
