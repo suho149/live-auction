@@ -1,8 +1,10 @@
 import axios from 'axios';
 
+export const API_BASE_URL = 'http://localhost:8080';
+
 const axiosInstance = axios.create({
-    baseURL: 'http://localhost:8080', // 백엔드 서버 주소
-    withCredentials: true, // 쿠키 전송을 위함 (필요 시)
+    baseURL: API_BASE_URL, // API 요청의 기본 URL
+    withCredentials: true,
 });
 
 // 요청 인터셉터 추가

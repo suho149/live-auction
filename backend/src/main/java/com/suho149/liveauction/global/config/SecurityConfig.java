@@ -46,7 +46,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // ★ 상품 조회 관련 GET 요청은 모두 허용
-                        .requestMatchers(HttpMethod.GET, "/api/v1/products", "/api/v1/products/**").permitAll()
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/v1/products",
+                                "/api/v1/products/**",
+                                "/images/**"  // 이미지 파일은 누구나 볼 수 있어야 함
+                        ).permitAll()
 
                         .requestMatchers(
                                 "/",

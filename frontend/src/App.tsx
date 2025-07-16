@@ -5,6 +5,9 @@ import AuthCallbackPage from './pages/AuthCallbackPage';
 import MyPage from './pages/MyPage';
 import ProductRegistrationPage from './pages/ProductRegistrationPage';
 import ProductDetailPage from './pages/ProductDetailPage';
+import './index.css'; // index.css import
+import 'slick-carousel/slick/slick.css'; // slick-carousel CSS 직접 import
+import 'slick-carousel/slick/slick-theme.css'; // slick-carousel theme CSS 직접 import
 
 function App() {
     return (

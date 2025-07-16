@@ -1,7 +1,7 @@
 spring:
   jpa:
     hibernate:
-      ddl-auto: update # 개발 초기에는 update 또는 create, 운영에서는 none
+      ddl-auto: create-drop # 개발 초기에는 update 또는 create, 운영에서는 none
     show-sql: true
 
   datasource:
@@ -33,3 +33,7 @@ jwt:
   secret: "${JWT_SECRET_KEY}"
   access-token-validity-in-seconds: 1800
   refresh-token-validity-in-seconds: 604800
+
+# 파일 업로드 설정
+file:
+  upload-dir: ./uploads/ # 프로젝트 루트 아래에 uploads 폴더를 생성하여 저장

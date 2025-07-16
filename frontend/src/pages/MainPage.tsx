@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axiosInstance from '../api/axiosInstance';
+import axiosInstance, { API_BASE_URL } from '../api/axiosInstance'; // API_BASE_URL import
 import Header from '../components/Header';
 import { Link } from 'react-router-dom';
+
 
 // 타입 정의: imageUrl -> thumbnailUrl로 변경
 interface Product {
@@ -16,7 +17,11 @@ interface Product {
 // 상품 카드 컴포넌트: imageUrl -> thumbnailUrl로 변경
 const ProductCard = ({ product }: { product: Product }) => (
     <Link to={`/products/${product.id}`} className="block border rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 bg-white">
-        <img src={product.thumbnailUrl || "https://via.placeholder.com/400x300"} alt={product.name} className="w-full h-48 object-cover"/>
+        <img
+            src={product.thumbnailUrl ? `${API_BASE_URL}${product.thumbnailUrl}` : "https://placehold.co/400x300?text=No+Image"}
+            alt={product.name}
+            className="w-full h-48 object-cover bg-gray-200" // 이미지가 없을 때 배경색 추가
+        />
         <div className="p-4">
             <h3 className="text-lg font-semibold mb-2 truncate">{product.name}</h3>
             <p className="text-sm text-gray-600 mb-2">판매자: {product.sellerName}</p>

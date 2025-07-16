@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axiosInstance from '../api/axiosInstance';
+import axiosInstance, { API_BASE_URL } from '../api/axiosInstance'; // API_BASE_URL import
 import Header from '../components/Header';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -160,17 +160,29 @@ const ProductDetailPage = () => {
             <main className="container mx-auto p-4 sm:p-8">
                 <div className="bg-white p-6 rounded-lg shadow-lg grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
                     {/* 상품 이미지 영역을 Slider로 교체 */}
-                    <div>
+                    <div className="w-full">
                         <Slider {...sliderSettings}>
                             {product.imageUrls && product.imageUrls.length > 0 ? (
                                 product.imageUrls.map((url, index) => (
                                     <div key={index}>
-                                        <img src={url} alt={`${product.name} ${index + 1}`} className="w-full h-auto aspect-square object-cover rounded-lg"/>
+                                        <div className="aspect-square bg-gray-100 flex items-center justify-center">
+                                            <img
+                                                src={`${API_BASE_URL}${url}`}
+                                                alt={`${product.name} ${index + 1}`}
+                                                className="w-full h-full object-contain rounded-lg" // object-contain으로 변경
+                                            />
+                                        </div>
                                     </div>
                                 ))
                             ) : (
                                 <div>
-                                    <img src="https://via.placeholder.com/600x400" alt="기본 이미지" className="w-full h-auto aspect-square object-cover rounded-lg"/>
+                                    <div className="aspect-square bg-gray-100 flex items-center justify-center">
+                                        <img
+                                            src="https://placehold.co/600x400?text=No+Image"
+                                            alt="기본 이미지"
+                                            className="w-full h-full object-contain rounded-lg"
+                                        />
+                                    </div>
                                 </div>
                             )}
                         </Slider>

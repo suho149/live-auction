@@ -87,3 +87,6 @@ yarn-error.log*
 *.zip
 *.tar.gz
 *.rar
+
+# 로컬 이미지 파일
+/uploads/
