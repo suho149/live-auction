@@ -22,8 +22,11 @@ public class ProductDetailResponse {
     private LocalDateTime auctionEndTime;
     private String sellerName;
     private String highestBidderName;
+    private int likeCount;
+    private boolean likedByCurrentUser;
+    private boolean isSeller;
 
-    public static ProductDetailResponse from(Product product) {
+    public static ProductDetailResponse from(Product product, boolean likedByCurrentUser, boolean isSeller) {
         return ProductDetailResponse.builder()
                 .id(product.getId())
                 .name(product.getName())
@@ -36,6 +39,9 @@ public class ProductDetailResponse {
                 .auctionEndTime(product.getAuctionEndTime())
                 .sellerName(product.getSeller().getName())
                 .highestBidderName(product.getHighestBidder() != null ? product.getHighestBidder().getName() : "입찰자 없음")
+                .likeCount(product.getLikeCount())
+                .likedByCurrentUser(likedByCurrentUser)
+                .isSeller(isSeller)
                 .build();
     }
 }

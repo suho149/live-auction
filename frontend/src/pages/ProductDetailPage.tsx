@@ -5,6 +5,8 @@ import Header from '../components/Header';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import Slider from "react-slick"; // Slider import
+import { HeartIcon as HeartIconOutline } from '@heroicons/react/24/outline'; // 찜 아이콘
+import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 
 // 타입 정의: imageUrl -> imageUrls (문자열 배열)로 변경
 interface ProductDetail {
@@ -17,6 +19,9 @@ interface ProductDetail {
     auctionEndTime: string;
     sellerName: string;
     highestBidderName: string;
+    likeCount: number;
+    likedByCurrentUser: boolean; // 현재 사용자가 찜했는지 여부
+    isSeller: boolean; // 현재 사용자가 판매자인지 여부
 }
 
 interface BidResponse {
@@ -136,6 +141,37 @@ const ProductDetailPage = () => {
         });
     };
 
+    // 찜 버튼 클릭 핸들러
+    const handleLikeClick = async () => {
+        if (!isLoggedIn) {
+            alert('로그인이 필요한 기능입니다.');
+            return;
+        }
+        try {
+            const response = await axiosInstance.post(`/api/v1/products/${productId}/like`);
+            const { liked, likeCount } = response.data;
+            // 화면에 즉시 반영
+            setProduct(prev => prev ? { ...prev, likedByCurrentUser: liked, likeCount } : null);
+        } catch (error) {
+            console.error("찜하기 실패:", error);
+        }
+    };
+
+    // 삭제 버튼 클릭 핸들러 (실제 삭제 로직 추가 필요)
+    const handleDeleteClick = async () => {
+        if (window.confirm("정말로 이 상품을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
+            try {
+                await axiosInstance.delete(`/api/v1/products/${productId}`);
+                alert("상품이 삭제되었습니다.");
+                navigate('/');
+            } catch (error) {
+                console.error("상품 삭제 실패:", error);
+                alert("상품 삭제에 실패했습니다.");
+            }
+        }
+    };
+
+
     // 1. product가 null이면 로딩 화면을 먼저 렌더링
     if (!product) {
         return (
@@ -148,7 +184,6 @@ const ProductDetailPage = () => {
         );
     }
 
-    // ★★★ 핵심 수정 지점: sliderSettings를 product가 null이 아님이 보장된 이후에 정의 ★★★
     // 2. product가 유효한 값이 되면, 이 아래 코드가 실행됨
     const sliderSettings = {
         dots: true,
@@ -164,8 +199,7 @@ const ProductDetailPage = () => {
             <Header />
             <main className="container mx-auto p-4 sm:p-8">
                 <div className="bg-white p-6 rounded-lg shadow-lg grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-                    {/* 상품 이미지 영역을 Slider로 교체 */}
-                    <div className="w-full">
+                    <div className="w-full overflow-hidden">
                         <Slider {...sliderSettings}>
                             {product.imageUrls && product.imageUrls.length > 0 ? (
                                 product.imageUrls.map((url, index) => (
@@ -174,7 +208,7 @@ const ProductDetailPage = () => {
                                             <img
                                                 src={`${API_BASE_URL}${url}`}
                                                 alt={`${product.name} ${index + 1}`}
-                                                className="w-full h-full object-contain rounded-lg" // object-contain으로 변경
+                                                className="w-full h-full object-contain rounded-lg"
                                             />
                                         </div>
                                     </div>
@@ -192,16 +226,38 @@ const ProductDetailPage = () => {
                             )}
                         </Slider>
                     </div>
-                    {/* 상품 정보 및 경매 영역 */}
-                    <div className="flex flex-col justify-between">
+
+                    <div className="flex flex-col">
                         <div>
                             <span className="text-sm font-semibold text-blue-600">{product.category}</span>
-                            <h1 className="text-3xl lg:text-4xl font-bold my-3">{product.name}</h1>
+                            <div className="flex justify-between items-start my-3">
+                                <h1 className="text-3xl lg:text-4xl font-bold mr-4">{product.name}</h1>
+                                <button onClick={handleLikeClick} className="flex-shrink-0 flex items-center space-x-1 text-gray-500 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50">
+                                    {product.likedByCurrentUser ? (
+                                        <HeartIconSolid className="w-7 h-7 text-red-500"/>
+                                    ) : (
+                                        <HeartIconOutline className="w-7 h-7"/>
+                                    )}
+                                    <span className="font-semibold text-lg">{product.likeCount}</span>
+                                </button>
+                            </div>
                             <p className="text-gray-500 mb-1">판매자: {product.sellerName}</p>
                             <p className={`text-lg font-bold mb-4 ${isAuctionEnded ? 'text-red-500' : 'text-green-600'}`}>{timeLeft}</p>
-                            <p className="text-gray-700 leading-relaxed">{product.description}</p>
+                            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{product.description}</p>
                         </div>
-                        <div className="mt-6">
+
+                        {isLoggedIn && product.isSeller && (
+                            <div className="flex space-x-2 my-4">
+                                <button className="flex-1 bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-md hover:bg-gray-300">
+                                    상품 수정
+                                </button>
+                                <button onClick={handleDeleteClick} className="flex-1 bg-red-100 text-red-700 font-semibold py-2 px-4 rounded-md hover:bg-red-200">
+                                    상품 삭제
+                                </button>
+                            </div>
+                        )}
+
+                        <div className="mt-auto pt-4">
                             <div className="bg-gray-100 p-4 rounded-lg">
                                 <div className="flex justify-between items-center">
                                     <span className="text-gray-600 text-lg">현재 최고가</span>

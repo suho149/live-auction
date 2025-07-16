@@ -36,6 +36,9 @@ public class Product {
     @Column(nullable = false)
     private LocalDateTime auctionEndTime;
 
+    @Column(nullable = false)
+    private int likeCount = 0; // 찜 개수 필드 추가, 기본값 0
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
     private User seller;
@@ -62,7 +65,7 @@ public class Product {
         this.seller = seller;
     }
 
-    // ★ 연관관계 편의 메소드 추가
+    // 연관관계 편의 메소드 추가
     public void addImage(ProductImage image) {
         this.images.add(image);
     }
@@ -71,5 +74,23 @@ public class Product {
     public void updateBid(User bidder, Long bidAmount) {
         this.highestBidder = bidder;
         this.currentPrice = bidAmount;
+    }
+
+    // 상품 정보 수정을 위한 메소드
+    public void updateDetails(String name, String description, Category category) {
+        this.name = name;
+        this.description = description;
+        this.category = category;
+    }
+
+    // 찜 개수 업데이트 메소드
+    public void increaseLikeCount() {
+        this.likeCount++;
+    }
+
+    public void decreaseLikeCount() {
+        if (this.likeCount > 0) {
+            this.likeCount--;
+        }
     }
 }

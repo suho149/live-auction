@@ -54,6 +54,24 @@ public class UserPrincipal implements UserDetails, OAuth2User {
         return userPrincipal;
     }
 
+    // User 엔티티가 필요한 곳에서 프록시 객체를 반환하기 위한 편의 메소드
+    @JsonIgnore // 이 메소드는 직렬화 대상이 아님
+    public User toUserEntity() {
+        User user = new User();
+        // 실제로는 User 엔티티에 id를 설정할 수 있는 setter나 reflection을 사용해야 하지만,
+        // JPA는 영속성 컨텍스트 내에서 프록시 객체의 ID만으로도 관계를 설정할 수 있습니다.
+        // 하지만 User에 id를 설정할 수 없다면, 이 방법 대신 서비스 레이어에서
+        // userRepository.getReferenceById(this.id)를 사용하는 것이 더 정석적입니다.
+        // User 엔티티에 protected 또는 public setter for id가 있다면 아래 코드가 동작합니다.
+        // 예시: user.setId(this.id);
+
+        // 더 안전한 방법은 User 엔티티를 직접 생성하지 않고,
+        // 서비스 레이어에서 ID를 사용하여 프록시를 가져오는 것입니다.
+        // 지금은 LikeService에서 바로 처리하도록 수정하겠습니다.
+        // 따라서 이 메소드는 사실상 필요 없어집니다. 아래 LikeService 수정안을 참고하세요.
+        return null; // 이 메소드 대신 LikeService에서 직접 처리
+    }
+
     // UserDetails 구현
     @Override
     @JsonIgnore
