@@ -36,16 +36,6 @@ const ProductDetailPage = () => {
     const [isAuctionEnded, setIsAuctionEnded] = useState(false);
     const [timeLeft, setTimeLeft] = useState("");
 
-    // react-slick 캐러셀 설정
-    const sliderSettings = {
-        dots: true,
-        infinite: true,
-        speed: 500,
-        slidesToShow: 1,
-        slidesToScroll: 1,
-        arrows: true,
-    };
-
     useEffect(() => {
         // 상품 정보 불러오기
         const fetchProduct = async () => {
@@ -146,13 +136,28 @@ const ProductDetailPage = () => {
         });
     };
 
+    // 1. product가 null이면 로딩 화면을 먼저 렌더링
     if (!product) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
-                <p>상품 정보를 불러오는 중...</p>
+            <div className="bg-gray-50 min-h-screen">
+                <Header />
+                <div className="flex justify-center items-center h-[50vh]">
+                    <p>상품 정보를 불러오는 중...</p>
+                </div>
             </div>
         );
     }
+
+    // ★★★ 핵심 수정 지점: sliderSettings를 product가 null이 아님이 보장된 이후에 정의 ★★★
+    // 2. product가 유효한 값이 되면, 이 아래 코드가 실행됨
+    const sliderSettings = {
+        dots: true,
+        infinite: product.imageUrls.length > 1, // 이제 product는 null이 아니므로 안전하게 접근 가능
+        speed: 500,
+        slidesToShow: 1,
+        slidesToScroll: 1,
+        arrows: true,
+    };
 
     return (
         <div className="bg-gray-50 min-h-screen">
