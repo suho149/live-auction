@@ -18,6 +18,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -53,9 +54,8 @@ public class ProductService {
         return productRepository.save(product);
     }
 
-    public Page<ProductResponse> getProducts(Category category, String sortBy, Pageable pageable) {
-        // 정렬 기준 설정
-        Sort sort = Sort.by(Sort.Direction.DESC, "id"); // 기본값: 최신순(id 역순)
+    public Page<ProductResponse> getProducts(Category category, String keyword, String sortBy, Pageable pageable) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "id");
         if ("priceAsc".equals(sortBy)) {
             sort = Sort.by(Sort.Direction.ASC, "currentPrice");
         } else if ("priceDesc".equals(sortBy)) {
@@ -65,10 +65,22 @@ public class ProductService {
         Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
 
         Page<Product> products;
+        boolean hasKeyword = StringUtils.hasText(keyword); // 검색어가 있는지 확인
+
         if (category != null && category != Category.ALL) {
-            products = productRepository.findByCategoryWithSeller(category, sortedPageable);
+            // 카테고리 필터가 있을 때
+            if (hasKeyword) {
+                products = productRepository.findByCategoryAndKeywordWithSeller(category, keyword, sortedPageable);
+            } else {
+                products = productRepository.findByCategoryWithSeller(category, sortedPageable);
+            }
         } else {
-            products = productRepository.findAllWithSeller(sortedPageable);
+            // 카테고리 필터가 없을 때 ('ALL' 또는 null)
+            if (hasKeyword) {
+                products = productRepository.findByKeywordWithSeller(keyword, sortedPageable);
+            } else {
+                products = productRepository.findAllWithSeller(sortedPageable);
+            }
         }
 
         return products.map(ProductResponse::from);

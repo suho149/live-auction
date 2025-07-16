@@ -30,4 +30,15 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // 상세 조회 시, 연관된 모든 엔티티를 한번에 가져오도록 Fetch Join 적용
     @Query("SELECT p FROM Product p JOIN FETCH p.seller LEFT JOIN FETCH p.highestBidder LEFT JOIN FETCH p.images WHERE p.id = :productId")
     Optional<Product> findByIdWithDetails(@Param("productId") Long productId);
+
+    // 검색어를 포함하는 상품을 찾는 쿼리 추가
+    // 카테고리가 'ALL'일 때 사용
+    @Query(value = "SELECT p FROM Product p JOIN FETCH p.seller WHERE p.name LIKE %:keyword% OR p.description LIKE %:keyword%",
+            countQuery = "SELECT count(p) FROM Product p WHERE p.name LIKE %:keyword% OR p.description LIKE %:keyword%")
+    Page<Product> findByKeywordWithSeller(@Param("keyword") String keyword, Pageable pageable);
+
+    // 카테고리 필터와 검색어를 모두 사용할 때
+    @Query(value = "SELECT p FROM Product p JOIN FETCH p.seller WHERE p.category = :category AND (p.name LIKE %:keyword% OR p.description LIKE %:keyword%)",
+            countQuery = "SELECT count(p) FROM Product p WHERE p.category = :category AND (p.name LIKE %:keyword% OR p.description LIKE %:keyword%)")
+    Page<Product> findByCategoryAndKeywordWithSeller(@Param("category") Category category, @Param("keyword") String keyword, Pageable pageable);
 }

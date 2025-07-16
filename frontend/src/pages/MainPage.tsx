@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance, { API_BASE_URL } from '../api/axiosInstance'; // API_BASE_URL import
 import Header from '../components/Header';
-import { Link } from 'react-router-dom';
+import {Link, useSearchParams} from 'react-router-dom';
 
 
 // 타입 정의: imageUrl -> thumbnailUrl로 변경
@@ -41,43 +41,65 @@ const categoryKoreanNames: { [key: string]: string } = {
 
 const MainPage = () => {
     const [products, setProducts] = useState<Product[]>([]);
-    const [activeCategory, setActiveCategory] = useState('ALL');
-    const [sortBy, setSortBy] = useState('latest'); // 'latest', 'priceAsc', 'priceDesc'
+    const [searchParams, setSearchParams] = useSearchParams(); // ★ URL 쿼리 파라미터 관리 훅
+
+    // URL에서 검색 조건들을 읽어옴
+    const [keyword, setKeyword] = useState(searchParams.get('keyword') || '');
+    const activeCategory = searchParams.get('category') || 'ALL';
+    const sortBy = searchParams.get('sort') || 'latest';
 
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                // API 요청 시 쿼리 파라미터 추가
-                const params = new URLSearchParams();
-                if (activeCategory !== 'ALL') {
-                    params.append('category', activeCategory);
-                }
-                params.append('sort', sortBy);
-
-                // 백엔드 응답이 Page 객체이므로, data.content로 실제 데이터에 접근
-                const response = await axiosInstance.get(`/api/v1/products?${params.toString()}`);
+                // 현재 URL의 쿼리 파라미터를 그대로 API 요청에 사용
+                const response = await axiosInstance.get(`/api/v1/products?${searchParams.toString()}`);
                 setProducts(response.data.content);
             } catch (error) {
                 console.error("상품 목록을 불러오는 데 실패했습니다.", error);
             }
         };
         fetchProducts();
-    }, [activeCategory, sortBy]); // 카테고리나 정렬 기준이 바뀌면 다시 호출
+    }, [searchParams]); // ★ searchParams가 변경될 때마다 상품 목록을 다시 불러옴
+
+    // 검색 폼 제출 핸들러
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        // keyword를 포함하여 새로운 쿼리 파라미터로 URL 업데이트
+        setSearchParams({ keyword, category: activeCategory, sort: sortBy });
+    };
+
+    // 카테고리 변경 핸들러
+    const handleCategoryChange = (category: string) => {
+        setSearchParams({ keyword, category, sort: sortBy });
+    };
+
+    // 정렬 기준 변경 핸들러
+    const handleSortChange = (sort: string) => {
+        setSearchParams({ keyword, category: activeCategory, sort });
+    };
 
     return (
         <div className="bg-gray-50 min-h-screen">
             <Header />
             <main className="container mx-auto p-4 md:p-8">
-                {/* 배너 섹션 */}
+                {/* 배너 및 검색창 */}
                 <div className="bg-blue-600 text-white p-8 md:p-12 rounded-lg mb-12 text-center shadow-lg">
                     <h1 className="text-4xl md:text-5xl font-bold mb-4">세상의 모든 것을 경매하다</h1>
                     <p className="text-lg md:text-xl mb-8">지금 바로 참여하여 특별한 상품을 획득하세요!</p>
-                    <div className="max-w-xl mx-auto relative">
+
+                    {/* ★ 검색 폼으로 변경 */}
+                    <form onSubmit={handleSearch} className="max-w-xl mx-auto relative">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                         </span>
-                        <input type="text" placeholder="어떤 상품을 찾고 계신가요?" className="w-full p-4 pl-12 rounded-full text-gray-900 focus:ring-2 focus:ring-blue-400 focus:outline-none"/>
-                    </div>
+                        <input
+                            type="text"
+                            placeholder="어떤 상품을 찾고 계신가요?"
+                            value={keyword}
+                            onChange={(e) => setKeyword(e.target.value)}
+                            className="w-full p-4 pl-12 rounded-full text-gray-900 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                        />
+                    </form>
                 </div>
 
                 {/* 카테고리 및 정렬 필터 */}
@@ -85,12 +107,12 @@ const MainPage = () => {
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                         <div className="flex flex-wrap gap-2">
                             {categories.map(cat => (
-                                <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${activeCategory === cat ? 'bg-blue-600 text-white shadow' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
+                                <button key={cat} onClick={() => handleCategoryChange(cat)} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${activeCategory === cat ? 'bg-blue-600 text-white shadow' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
                                     {categoryKoreanNames[cat]}
                                 </button>
                             ))}
                         </div>
-                        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="mt-4 md:mt-0 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                        <select value={sortBy} onChange={(e) => handleSortChange(e.target.value)} className="mt-4 md:mt-0 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
                             <option value="latest">최신순</option>
                             <option value="priceAsc">낮은 가격순</option>
                             <option value="priceDesc">높은 가격순</option>
