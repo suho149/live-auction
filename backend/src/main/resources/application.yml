@@ -33,6 +33,12 @@ spring:
               - profile
               - email
 
+  cache:
+    type: redis # 기본 캐시 타입을 redis로 지정
+    redis:
+      time-to-live: 600000 # 캐시 만료 시간 (10분, 단위: 밀리초)
+      cache-null-values: false # null 값은 캐싱하지 않음
+
 # JWT 설정
 jwt:
   secret: "${JWT_SECRET_KEY}"
