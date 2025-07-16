@@ -13,32 +13,36 @@ import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
-    // N+1 문제 해결을 위한 Fetch Join 적용 (전체 목록 조회)
-    @Query("SELECT p FROM Product p JOIN FETCH p.seller")
-    List<Product> findAllWithSeller();
 
-    // 카테고리로 필터링하고 페이징/정렬 적용
-    @Query(value = "SELECT p FROM Product p JOIN FETCH p.seller WHERE p.category = :category",
-            countQuery = "SELECT count(p) FROM Product p WHERE p.category = :category")
-    Page<Product> findByCategoryWithSeller(@Param("category") Category category, Pageable pageable);
+    // 이 아래의 모든 목록 조회 쿼리들은 ToMany 관계인 'images'에 대한 Fetch Join이 없습니다. ★★★
+    // ToOne 관계인 'seller'에 대한 Fetch Join은 성능에 유리하므로 그대로 둡니다.
 
-    // 페이징/정렬만 적용 (카테고리 'ALL'일 때 사용)
-    @Query(value = "SELECT p FROM Product p JOIN FETCH p.seller",
-            countQuery = "SELECT count(p) FROM Product p")
-    Page<Product> findAllWithSeller(Pageable pageable);
-
-    // 상세 조회 시, 연관된 모든 엔티티를 한번에 가져오도록 Fetch Join 적용
-    @Query("SELECT p FROM Product p JOIN FETCH p.seller LEFT JOIN FETCH p.highestBidder LEFT JOIN FETCH p.images WHERE p.id = :productId")
-    Optional<Product> findByIdWithDetails(@Param("productId") Long productId);
-
-    // 검색어를 포함하는 상품을 찾는 쿼리 추가
-    // 카테고리가 'ALL'일 때 사용
+    // 1. 키워드 검색 (카테고리 필터 없음)
     @Query(value = "SELECT p FROM Product p JOIN FETCH p.seller WHERE p.name LIKE %:keyword% OR p.description LIKE %:keyword%",
             countQuery = "SELECT count(p) FROM Product p WHERE p.name LIKE %:keyword% OR p.description LIKE %:keyword%")
     Page<Product> findByKeywordWithSeller(@Param("keyword") String keyword, Pageable pageable);
 
-    // 카테고리 필터와 검색어를 모두 사용할 때
+    // 2. 카테고리 + 키워드 검색
     @Query(value = "SELECT p FROM Product p JOIN FETCH p.seller WHERE p.category = :category AND (p.name LIKE %:keyword% OR p.description LIKE %:keyword%)",
             countQuery = "SELECT count(p) FROM Product p WHERE p.category = :category AND (p.name LIKE %:keyword% OR p.description LIKE %:keyword%)")
     Page<Product> findByCategoryAndKeywordWithSeller(@Param("category") Category category, @Param("keyword") String keyword, Pageable pageable);
+
+    // 3. 카테고리만 필터링 (키워드 없음)
+    @Query(value = "SELECT p FROM Product p JOIN FETCH p.seller WHERE p.category = :category",
+            countQuery = "SELECT count(p) FROM Product p WHERE p.category = :category")
+    Page<Product> findByCategoryWithSeller(@Param("category") Category category, Pageable pageable);
+
+    // 4. 필터링 없이 전체 조회 (키워드, 카테고리 모두 없음)
+    @Query(value = "SELECT p FROM Product p JOIN FETCH p.seller",
+            countQuery = "SELECT count(p) FROM Product p")
+    Page<Product> findAllWithSeller(Pageable pageable);
+
+    // 단 건 조회인 상세 조회(findByIdWithDetails)는 모든 연관관계를 JOIN FETCH 하는 것이 효율적입니다. ★★★
+    // 이 부분은 수정할 필요 없이 그대로 둡니다.
+    @Query("SELECT p FROM Product p " +
+            "JOIN FETCH p.seller " +
+            "LEFT JOIN FETCH p.highestBidder " +
+            "LEFT JOIN FETCH p.images " +
+            "WHERE p.id = :productId")
+    Optional<Product> findByIdWithDetails(@Param("productId") Long productId);
 }

@@ -1,8 +1,13 @@
 spring:
   jpa:
     hibernate:
-      ddl-auto: create-drop # 개발 초기에는 update 또는 create, 운영에서는 none
+      ddl-auto: update # 개발 초기에는 update 또는 create, 운영에서는 none
     show-sql: true
+    properties:
+      default_batch_fetch_size: 100
+      hibernate.show_sql: true
+      hibernate.format_sql: true
+      hibernate.use_sql_comments: true
 
   datasource:
     driver-class-name: org.mariadb.jdbc.Driver
