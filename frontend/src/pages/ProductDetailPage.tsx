@@ -21,7 +21,7 @@ interface ProductDetail {
     highestBidderName: string;
     likeCount: number;
     likedByCurrentUser: boolean; // 현재 사용자가 찜했는지 여부
-    isSeller: boolean; // 현재 사용자가 판매자인지 여부
+    seller: boolean; // 현재 사용자가 판매자인지 여부
 }
 
 interface BidResponse {
@@ -47,6 +47,9 @@ const ProductDetailPage = () => {
             try {
                 const response = await axiosInstance.get(`/api/v1/products/${productId}`);
                 const productData = response.data;
+
+                console.log("백엔드로부터 받은 상품 데이터:", productData);
+
                 setProduct(productData);
                 setBidAmount(productData.currentPrice + 1000);
                 const endTime = new Date(productData.auctionEndTime).getTime();
@@ -246,7 +249,7 @@ const ProductDetailPage = () => {
                             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{product.description}</p>
                         </div>
 
-                        {isLoggedIn && product.isSeller && (
+                        {isLoggedIn && product.seller && (
                             <div className="flex space-x-2 my-4">
                                 <button className="flex-1 bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-md hover:bg-gray-300">
                                     상품 수정

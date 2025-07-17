@@ -119,8 +119,9 @@ public class ProductService {
 
     // 상품 소유권 확인을 위한 private 메소드
     private Product findProductAndCheckOwnership(Long productId, Long userId) {
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findByIdWithSeller(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+
         if (!product.getSeller().getId().equals(userId)) {
             throw new IllegalStateException("해당 상품에 대한 수정/삭제 권한이 없습니다.");
         }

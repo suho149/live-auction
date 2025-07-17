@@ -45,4 +45,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             "LEFT JOIN FETCH p.images " +
             "WHERE p.id = :productId")
     Optional<Product> findByIdWithDetails(@Param("productId") Long productId);
+
+    // 수정/삭제 시 사용할, seller를 함께 fetch하는 메소드 추가
+    @Query("SELECT p FROM Product p JOIN FETCH p.seller WHERE p.id = :productId")
+    Optional<Product> findByIdWithSeller(@Param("productId") Long productId);
 }
