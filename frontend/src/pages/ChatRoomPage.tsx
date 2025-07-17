@@ -28,6 +28,8 @@ const ChatRoomPage = () => {
     const stompClient = useRef<Client | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    const [isConnected, setIsConnected] = useState(false);
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
@@ -46,9 +48,10 @@ const ChatRoomPage = () => {
     useEffect(() => {
         // 필수 정보(roomId, accessToken)가 없으면 연결을 시도하지 않습니다.
         if (!roomId || !accessToken) {
-            if (!accessToken) {
+            if (!isLoggedIn) {
+                // 이 페이지는 로그인이 필수이므로, 토큰이 없으면 로그인 페이지로 보내는 것이 더 나음
                 alert("로그인이 필요한 서비스입니다.");
-                navigate('/login'); // 혹은 메인 페이지로
+                navigate('/login');
             }
             return;
         }
@@ -68,13 +71,19 @@ const ChatRoomPage = () => {
             connectHeaders: { Authorization: `Bearer ${accessToken}` },
             onConnect: () => {
                 console.log('Chat STOMP Connected!');
+                setIsConnected(true); // ★ 연결 성공
                 client.subscribe(`/sub/chat/rooms/${roomId}`, (message) => {
                     const receivedMessage = JSON.parse(message.body);
                     setMessages(prevMessages => [...prevMessages, receivedMessage]);
                 });
             },
+            onDisconnect: () => {
+                console.log('Chat STOMP Disconnected!');
+                setIsConnected(false); // ★ 연결 종료
+            },
             onStompError: (frame) => {
                 console.error('Broker reported error: ' + frame.headers['message']);
+                setIsConnected(false); // ★ 에러 발생
             },
         });
 
@@ -87,13 +96,18 @@ const ChatRoomPage = () => {
                 console.log('Chat STOMP Disconnected!');
             }
         };
-    }, [roomId, accessToken, navigate]); // 의존성 배열 수정
+    }, [roomId, accessToken, isLoggedIn, navigate]);
 
     const handleSendMessage = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!isConnected) {
+            alert("서버와 연결 중입니다. 잠시 후 다시 시도해주세요.");
+            return;
+        }
         if (newMessage.trim() && stompClient.current?.active) {
             stompClient.current.publish({
-                destination: `/pub/chat/rooms/${roomId}/message`,
+                destination: `/pub/rooms/${roomId}/message`,
+                headers: { 'Authorization': `Bearer ${accessToken}` },
                 body: JSON.stringify({ message: newMessage }),
             });
             setNewMessage('');
@@ -129,10 +143,17 @@ const ChatRoomPage = () => {
                     type="text"
                     value={newMessage}
                     onChange={e => setNewMessage(e.target.value)}
-                    placeholder="메시지를 입력하세요..."
-                    className="flex-1 border p-3 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={isConnected ? "메시지를 입력하세요..." : "서버에 연결 중입니다..."}
+                    // ★ 연결되기 전에는 입력창 비활성화
+                    disabled={!isConnected}
+                    className="flex-1 border p-3 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                 />
-                <button type="submit" className="bg-blue-500 text-white p-3 rounded-r-md hover:bg-blue-600 transition-colors">
+                <button
+                    type="submit"
+                    // ★ 연결되기 전에는 버튼 비활성화
+                    disabled={!isConnected}
+                    className="bg-blue-500 text-white p-3 rounded-r-md hover:bg-blue-600 transition-colors disabled:bg-gray-400"
+                >
                     <PaperAirplaneIcon className="w-6 h-6"/>
                 </button>
             </form>

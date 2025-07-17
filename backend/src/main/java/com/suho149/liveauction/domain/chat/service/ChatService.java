@@ -48,9 +48,13 @@ public class ChatService {
     }
 
     @Transactional
-    public void saveAndSendMessage(Long roomId, String messageContent, UserPrincipal userPrincipal) {
-        ChatRoom chatRoom = chatRoomRepository.findById(roomId).orElseThrow();
-        User sender = userRepository.getReferenceById(userPrincipal.getId());
+    public void saveAndSendMessage(Long roomId, String messageContent, String senderEmail) {
+        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+
+        // 이메일로 User 엔티티 조회
+        User sender = userRepository.findByEmail(senderEmail)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         ChatMessage chatMessage = ChatMessage.builder()
                 .chatRoom(chatRoom)
@@ -60,7 +64,6 @@ public class ChatService {
 
         chatMessageRepository.save(chatMessage);
 
-        // 웹소켓 구독자들에게 메시지 전송
         messagingTemplate.convertAndSend("/sub/chat/rooms/" + roomId, ChatMessageResponse.from(chatMessage));
     }
 }
