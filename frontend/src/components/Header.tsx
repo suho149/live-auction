@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axiosInstance, { API_BASE_URL } from '../api/axiosInstance';
+import useAuthStore from '../hooks/useAuthStore';
 
 // 사용자 정보 타입 정의 (변경 없음)
 interface UserInfo {
@@ -9,36 +10,17 @@ interface UserInfo {
 }
 
 const Header = () => {
-    const navigate = useNavigate();
-    const accessToken = localStorage.getItem('accessToken');
-    const isLoggedIn = !!accessToken;
-    const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+    // 스토어에서 상태와 액션을 직접 가져옴
+    const { isLoggedIn, userInfo, logout, fetchUserInfo } = useAuthStore();
 
+    // 앱이 로드될 때 (isLoggedIn 상태가 true이면) 사용자 정보를 가져옴
     useEffect(() => {
-        const fetchUserInfo = async () => {
-            if (isLoggedIn) {
-                try {
-                    const response = await axiosInstance.get('/api/v1/users/me');
-                    setUserInfo(response.data);
-                } catch (error) {
-                    console.error("Failed to fetch user info for header:", error);
-                    handleLogout(false);
-                }
-            }
-        };
-        fetchUserInfo();
-    }, [isLoggedIn]);
-
-    const handleLogout = (showAlert = true) => {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        if (showAlert) {
-            alert('로그아웃 되었습니다.');
+        if (isLoggedIn && !userInfo) {
+            fetchUserInfo();
         }
-        window.location.replace('/');
-    };
+    }, [isLoggedIn, userInfo, fetchUserInfo]);
 
-    // ★ 프로필 이미지 URL을 처리하는 함수 추가
+    // 프로필 이미지 URL을 처리하는 함수 추가
     const getProfileImageUrl = (url: string) => {
         // URL이 http로 시작하면 외부 URL(구글 프로필 등)로 간주하고 그대로 사용
         if (url.startsWith('http')) {
@@ -61,7 +43,6 @@ const Header = () => {
                             + 상품 등록
                         </Link>
 
-                        {/* ★★★ 레이아웃 순서 및 클래스 수정 ★★★ */}
                         <div className="flex items-center space-x-3">
                             <Link to="/mypage" className="flex items-center space-x-2 group">
                                 <img
@@ -74,7 +55,7 @@ const Header = () => {
                                 <span className="font-semibold text-gray-700 group-hover:text-blue-600">{userInfo.name}님</span>
                             </Link>
 
-                            <button onClick={() => handleLogout()} className="text-gray-500 hover:text-gray-900 text-sm">
+                            <button onClick={logout} className="text-gray-500 hover:text-gray-900 text-sm">
                                 로그아웃
                             </button>
                         </div>

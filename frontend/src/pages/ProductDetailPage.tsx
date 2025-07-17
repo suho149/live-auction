@@ -9,6 +9,7 @@ import { HeartIcon as HeartIconOutline } from '@heroicons/react/24/outline'; // 
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import {EllipsisVerticalIcon} from "@heroicons/react/16/solid";
 import AlertModal from "../components/AlertModal";
+import useAuthStore from '../hooks/useAuthStore';
 
 // 타입 정의: imageUrl -> imageUrls (문자열 배열)로 변경
 interface ProductDetail {
@@ -52,7 +53,7 @@ const ProductDetailPage = () => {
     const [bidAmount, setBidAmount] = useState<number>(0);
     const stompClient = useRef<Client | null>(null);
     const [isConnected, setIsConnected] = useState(false);
-    const isLoggedIn = !!localStorage.getItem('accessToken');
+    const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
     const [isAuctionEnded, setIsAuctionEnded] = useState(false);
     const [timeLeft, setTimeLeft] = useState("");
 
@@ -235,6 +236,16 @@ const ProductDetailPage = () => {
         }
     };
 
+    const handleChatClick = async () => {
+        try {
+            const response = await axiosInstance.post(`/api/v1/chat/rooms/${productId}`);
+            const roomId = response.data;
+            navigate(`/chat/rooms/${roomId}`);
+        } catch (error) {
+            showAlert('채팅방 생성 실패', '채팅방을 만드는 데 실패했습니다.');
+        }
+    };
+
     // 드롭다운 메뉴 바깥을 클릭하면 메뉴가 닫히도록 하는 useEffect 추가
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -323,6 +334,15 @@ const ProductDetailPage = () => {
                                                     <button onClick={() => { handleDeleteClick(); setIsMenuOpen(false); }} className="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">상품 삭제</button>
                                                 </div>
                                             )}
+                                        </div>
+                                    )}
+
+                                    {/* 2. 구매 희망자에게만 보이는 채팅하기 버튼 */}
+                                    {isLoggedIn && !product.seller && (
+                                        <div className="my-4">
+                                            <button onClick={handleChatClick} className="w-full bg-green-500 text-white font-bold py-3 rounded-md hover:bg-green-600 transition-colors">
+                                                판매자와 채팅하기
+                                            </button>
                                         </div>
                                     )}
                                 </div>

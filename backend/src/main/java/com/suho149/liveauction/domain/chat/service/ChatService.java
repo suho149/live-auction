@@ -1,0 +1,66 @@
+package com.suho149.liveauction.domain.chat.service;
+
+import com.suho149.liveauction.domain.chat.dto.ChatMessageResponse;
+import com.suho149.liveauction.domain.chat.entity.ChatMessage;
+import com.suho149.liveauction.domain.chat.entity.ChatRoom;
+import com.suho149.liveauction.domain.chat.repository.ChatMessageRepository;
+import com.suho149.liveauction.domain.chat.repository.ChatRoomRepository;
+import com.suho149.liveauction.domain.product.entity.Product;
+import com.suho149.liveauction.domain.product.repository.ProductRepository;
+import com.suho149.liveauction.domain.user.entity.User;
+import com.suho149.liveauction.domain.user.repository.UserRepository;
+import com.suho149.liveauction.global.security.UserPrincipal;
+import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessageSendingOperations;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class ChatService {
+    private final ChatRoomRepository chatRoomRepository;
+    private final ChatMessageRepository chatMessageRepository;
+    private final ProductRepository productRepository;
+    private final UserRepository userRepository;
+    private final SimpMessageSendingOperations messagingTemplate;
+
+    @Transactional
+    public ChatRoom findOrCreateChatRoom(Long productId, UserPrincipal userPrincipal) {
+        Product product = productRepository.findById(productId).orElseThrow();
+        User buyer = userRepository.getReferenceById(userPrincipal.getId());
+
+        // 판매자 본인과는 채팅방을 만들 수 없음
+        if (product.getSeller().getId().equals(buyer.getId())) {
+            throw new IllegalArgumentException("자기 자신과는 채팅할 수 없습니다.");
+        }
+
+        return chatRoomRepository.findByProductIdAndBuyerId(productId, buyer.getId())
+                .orElseGet(() -> chatRoomRepository.save(ChatRoom.builder().product(product).buyer(buyer).build()));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatMessageResponse> getChatMessages(Long roomId) {
+        return chatMessageRepository.findByChatRoomIdOrderBySentAtAsc(roomId)
+                .stream().map(ChatMessageResponse::from).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void saveAndSendMessage(Long roomId, String messageContent, UserPrincipal userPrincipal) {
+        ChatRoom chatRoom = chatRoomRepository.findById(roomId).orElseThrow();
+        User sender = userRepository.getReferenceById(userPrincipal.getId());
+
+        ChatMessage chatMessage = ChatMessage.builder()
+                .chatRoom(chatRoom)
+                .sender(sender)
+                .message(messageContent)
+                .build();
+
+        chatMessageRepository.save(chatMessage);
+
+        // 웹소켓 구독자들에게 메시지 전송
+        messagingTemplate.convertAndSend("/sub/chat/rooms/" + roomId, ChatMessageResponse.from(chatMessage));
+    }
+}

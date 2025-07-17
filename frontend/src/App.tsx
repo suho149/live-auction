@@ -7,6 +7,7 @@ import ProductRegistrationPage from './pages/ProductRegistrationPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import './index.css'; // index.css import
 import "react-responsive-carousel/lib/styles/carousel.min.css";
+import ChatRoomPage from './pages/ChatRoomPage';
 
 function App() {
     return (
@@ -18,6 +19,7 @@ function App() {
                 {/* 새로운 경로 추가 */}
                 <Route path="/products/new" element={<ProductRegistrationPage />} />
                 <Route path="/products/:productId" element={<ProductDetailPage />} />
+                <Route path="/chat/rooms/:roomId" element={<ChatRoomPage />} />
             </Routes>
         </Router>
     );
