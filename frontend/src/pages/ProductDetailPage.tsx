@@ -8,6 +8,7 @@ import Slider from "react-slick"; // Slider import
 import { HeartIcon as HeartIconOutline } from '@heroicons/react/24/outline'; // 찜 아이콘
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import {EllipsisVerticalIcon} from "@heroicons/react/16/solid";
+import AlertModal from "../components/AlertModal";
 
 // 타입 정의: imageUrl -> imageUrls (문자열 배열)로 변경
 interface ProductDetail {
@@ -66,6 +67,18 @@ const ProductDetailPage = () => {
         description: '',
         category: 'ETC',
     });
+
+    // 알림 모달을 위한 state 추가
+    const [alertInfo, setAlertInfo] = useState<{ isOpen: boolean; title: string; message: string }>({
+        isOpen: false,
+        title: '',
+        message: '',
+    });
+
+    // alert()를 대체할 공통 함수
+    const showAlert = (title: string, message: string) => {
+        setAlertInfo({ isOpen: true, title, message });
+    };
 
     // 상품 데이터를 불러오는 useEffect
     useEffect(() => {
@@ -155,19 +168,19 @@ const ProductDetailPage = () => {
 
     const handleBidSubmit = () => {
         if (!isLoggedIn) {
-            alert('로그인이 필요한 기능입니다.');
+            showAlert('로그인 필요', '입찰에 참여하려면 로그인이 필요합니다.');
             return;
         }
         if (isAuctionEnded) {
-            alert('이미 종료된 경매입니다.');
+            showAlert('경매 종료', '이미 종료된 경매입니다.');
             return;
         }
         if (!stompClient.current || !stompClient.current.active) {
-            alert('경매 서버에 연결 중입니다. 잠시 후 다시 시도해주세요.');
+            showAlert('경매 서버에 연결', '경매 서버에 연결 중입니다. 잠시 후 다시 시도해주세요.');
             return;
         }
         if (!product || bidAmount <= product.currentPrice) {
-            alert('현재 가격보다 높은 금액을 입력해야 합니다.');
+            showAlert('입찰 오류', '현재 가격보다 높은 금액을 입력해야 합니다.');
             return;
         }
         stompClient.current.publish({
@@ -179,7 +192,7 @@ const ProductDetailPage = () => {
     // 찜 버튼 클릭 핸들러
     const handleLikeClick = async () => {
         if (!isLoggedIn) {
-            alert('로그인이 필요한 기능입니다.');
+            showAlert('로그인 필요', '로그인이 필요한 기능입니다.');
             return;
         }
         try {
@@ -201,7 +214,7 @@ const ProductDetailPage = () => {
                 navigate('/');
             } catch (error) {
                 console.error("상품 삭제 실패:", error);
-                alert("상품 삭제에 실패했습니다.");
+                showAlert('삭제 실패', '상품 삭제에 실패했습니다.');
             }
         }
     };
@@ -210,7 +223,7 @@ const ProductDetailPage = () => {
         e.preventDefault();
         try {
             await axiosInstance.put(`/api/v1/products/${productId}`, editFormData);
-            alert('상품 정보가 수정되었습니다.');
+            showAlert('성공', '상품 정보가 성공적으로 수정되었습니다.');
             setIsEditModalOpen(false);
             window.location.reload(); // 가장 간단하게 변경사항을 반영하는 방법
         } catch (error: any) {
@@ -218,7 +231,7 @@ const ProductDetailPage = () => {
 
             // 서버로부터 받은 에러 메시지가 있다면 그것을 표시하고, 없다면 기본 메시지를 표시
             const errorMessage = error.response?.data?.message || "상품 수정에 실패했습니다. 다시 시도해주세요.";
-            alert(errorMessage);
+            showAlert('수정 실패', errorMessage);
         }
     };
 
@@ -391,6 +404,19 @@ const ProductDetailPage = () => {
                     </div>
                 </div>
             )}
+            {/* 알림 모달 컴포넌트 추가 */}
+            <AlertModal
+                isOpen={alertInfo.isOpen}
+                onClose={() => {
+                    setAlertInfo({ ...alertInfo, isOpen: false });
+                    // 특정 alert 후 페이지 새로고침이 필요하다면 여기에 로직 추가
+                    if (alertInfo.title === '성공') {
+                        window.location.reload();
+                    }
+                }}
+                title={alertInfo.title}
+                message={alertInfo.message}
+            />
         </div>
     );
 };
