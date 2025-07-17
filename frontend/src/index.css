@@ -1,6 +1,38 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* react-responsive-carousel 커스텀 스타일 */
+.product-carousel .carousel .slide img {
+    max-height: 500px; /* 메인 이미지 최대 높이 제한 */
+    object-fit: contain;
+    width: auto;
+}
 
+.product-carousel .carousel.carousel-slider .control-arrow {
+    background: rgba(0, 0, 0, 0.2) !important;
+    height: 40px;
+    width: 40px;
+    top: 50%;
+    margin-top: -20px;
+    border-radius: 50%;
+}
+
+.product-carousel .carousel .thumbs-wrapper {
+    margin: 20px 0;
+}
+
+.product-carousel .carousel .thumb {
+    border: 2px solid transparent;
+    border-radius: 6px;
+    transition: border-color 0.2s;
+}
+
+.product-carousel .carousel .thumb.selected,
+.product-carousel .carousel .thumb:hover {
+    border-color: #3b82f6; /* tailwind-blue-500 */
+}
+
+.product-carousel .carousel .thumb img {
+    border-radius: 4px;
+}

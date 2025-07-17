@@ -4,7 +4,7 @@ import axiosInstance, { API_BASE_URL } from '../api/axiosInstance'; // API_BASE_
 import Header from '../components/Header';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import Slider from "react-slick"; // Slider import
+import { Carousel } from 'react-responsive-carousel';
 import { HeartIcon as HeartIconOutline } from '@heroicons/react/24/outline'; // 찜 아이콘
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import {EllipsisVerticalIcon} from "@heroicons/react/16/solid";
@@ -262,47 +262,35 @@ const ProductDetailPage = () => {
         );
     }
 
-    // 2. product가 유효한 값이 되면, 이 아래 코드가 실행됨
-    const sliderSettings = {
-        dots: true,
-        infinite: product.imageUrls.length > 1, // 이제 product는 null이 아니므로 안전하게 접근 가능
-        speed: 500,
-        slidesToShow: 1,
-        slidesToScroll: 1,
-        arrows: true,
-    };
-
     return (
         <div className="bg-gray-50 min-h-screen">
             <Header />
             <main className="container mx-auto p-4 sm:p-8">
                 <div className="bg-white p-6 rounded-lg shadow-lg grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-                    <div className="w-full overflow-hidden">
-                        <Slider {...sliderSettings}>
+                    <div className="w-full">
+                        <Carousel
+                            showArrows={true}
+                            autoPlay={false}
+                            infiniteLoop={product.imageUrls.length > 1}
+                            showThumbs={true}
+                            thumbWidth={80}
+                            className="product-carousel"
+                        >
                             {product.imageUrls && product.imageUrls.length > 0 ? (
                                 product.imageUrls.map((url, index) => (
                                     <div key={index}>
-                                        <div className="aspect-square bg-gray-100 flex items-center justify-center">
-                                            <img
-                                                src={`${API_BASE_URL}${url}`}
-                                                alt={`${product.name} ${index + 1}`}
-                                                className="w-full h-full object-contain rounded-lg"
-                                            />
-                                        </div>
+                                        <img src={`${API_BASE_URL}${url}`} alt={`${product.name} ${index + 1}`} />
                                     </div>
                                 ))
                             ) : (
-                                <div>
-                                    <div className="aspect-square bg-gray-100 flex items-center justify-center">
-                                        <img
-                                            src="https://placehold.co/600x400?text=No+Image"
-                                            alt="기본 이미지"
-                                            className="w-full h-full object-contain rounded-lg"
-                                        />
+                                // 이미지가 없는 경우에도 배열 안에 요소를 넣어 반환
+                                [
+                                    <div key="no-image">
+                                        <img src="https://placehold.co/600x400?text=No+Image" alt="기본 이미지" />
                                     </div>
-                                </div>
+                                ]
                             )}
-                        </Slider>
+                        </Carousel>
                     </div>
 
                     <div className="flex flex-col">
