@@ -7,6 +7,7 @@ import SockJS from 'sockjs-client';
 import Slider from "react-slick"; // Slider import
 import { HeartIcon as HeartIconOutline } from '@heroicons/react/24/outline'; // 찜 아이콘
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
+import {EllipsisVerticalIcon} from "@heroicons/react/16/solid";
 
 // 타입 정의: imageUrl -> imageUrls (문자열 배열)로 변경
 interface ProductDetail {
@@ -40,6 +41,11 @@ const ProductDetailPage = () => {
     const isLoggedIn = !!localStorage.getItem('accessToken');
     const [isAuctionEnded, setIsAuctionEnded] = useState(false);
     const [timeLeft, setTimeLeft] = useState("");
+
+    // 드롭다운 메뉴의 열림/닫힘 상태를 관리할 state 추가
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null); // 드롭다운 메뉴 바깥 영역 클릭 감지를 위한 ref
+
 
     useEffect(() => {
         // 상품 정보 불러오기
@@ -174,6 +180,20 @@ const ProductDetailPage = () => {
         }
     };
 
+    // 드롭다운 메뉴 바깥을 클릭하면 메뉴가 닫히도록 하는 useEffect 추가
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setIsMenuOpen(false);
+            }
+        };
+        // 이벤트 리스너 등록
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            // 컴포넌트 언마운트 시 이벤트 리스너 제거
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [menuRef]);
 
     // 1. product가 null이면 로딩 화면을 먼저 렌더링
     if (!product) {
@@ -235,30 +255,39 @@ const ProductDetailPage = () => {
                             <span className="text-sm font-semibold text-blue-600">{product.category}</span>
                             <div className="flex justify-between items-start my-3">
                                 <h1 className="text-3xl lg:text-4xl font-bold mr-4">{product.name}</h1>
-                                <button onClick={handleLikeClick} className="flex-shrink-0 flex items-center space-x-1 text-gray-500 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50">
-                                    {product.likedByCurrentUser ? (
-                                        <HeartIconSolid className="w-7 h-7 text-red-500"/>
-                                    ) : (
-                                        <HeartIconOutline className="w-7 h-7"/>
+                                {/* 찜 버튼과 더보기 메뉴를 그룹으로 묶음 */}
+                                <div className="flex items-center space-x-2 flex-shrink-0">
+                                    <button onClick={handleLikeClick} className="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50">
+                                        {product.likedByCurrentUser ? (
+                                            <HeartIconSolid className="w-7 h-7 text-red-500"/>
+                                        ) : (
+                                            <HeartIconOutline className="w-7 h-7"/>
+                                        )}
+                                        <span className="font-semibold text-lg">{product.likeCount}</span>
+                                    </button>
+
+                                    {/* 판매자에게만 보이는 더보기 버튼 */}
+                                    {isLoggedIn && product.seller && (
+                                        <div className="relative" ref={menuRef}>
+                                            <button onClick={() => setIsMenuOpen(prev => !prev)} className="p-2 rounded-full hover:bg-gray-100">
+                                                <EllipsisVerticalIcon className="w-6 h-6 text-gray-600"/>
+                                            </button>
+
+                                            {/* 드롭다운 메뉴 (isMenuOpen이 true일 때만 보임) */}
+                                            {isMenuOpen && (
+                                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+                                                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">상품 수정</a>
+                                                    <a href="#" onClick={(e) => { e.preventDefault(); handleDeleteClick(); setIsMenuOpen(false); }} className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">상품 삭제</a>
+                                                </div>
+                                            )}
+                                        </div>
                                     )}
-                                    <span className="font-semibold text-lg">{product.likeCount}</span>
-                                </button>
+                                </div>
                             </div>
                             <p className="text-gray-500 mb-1">판매자: {product.sellerName}</p>
                             <p className={`text-lg font-bold mb-4 ${isAuctionEnded ? 'text-red-500' : 'text-green-600'}`}>{timeLeft}</p>
                             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{product.description}</p>
                         </div>
-
-                        {isLoggedIn && product.seller && (
-                            <div className="flex space-x-2 my-4">
-                                <button className="flex-1 bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-md hover:bg-gray-300">
-                                    상품 수정
-                                </button>
-                                <button onClick={handleDeleteClick} className="flex-1 bg-red-100 text-red-700 font-semibold py-2 px-4 rounded-md hover:bg-red-200">
-                                    상품 삭제
-                                </button>
-                            </div>
-                        )}
 
                         <div className="mt-auto pt-4">
                             <div className="bg-gray-100 p-4 rounded-lg">
