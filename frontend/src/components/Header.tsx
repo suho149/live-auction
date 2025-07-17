@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axiosInstance, { API_BASE_URL } from '../api/axiosInstance';
 import useAuthStore from '../hooks/useAuthStore';
+import { ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline';
 
 // 사용자 정보 타입 정의 (변경 없음)
 interface UserInfo {
@@ -39,6 +40,10 @@ const Header = () => {
             <nav className="flex items-center space-x-6"> {/* space-x-4 -> space-x-6로 간격 조정 */}
                 {isLoggedIn && userInfo ? (
                     <>
+                        {/* 채팅 아이콘 버튼 추가 */}
+                        <Link to="/chat/rooms" className="text-gray-500 hover:text-blue-600">
+                            <ChatBubbleLeftEllipsisIcon className="w-7 h-7" />
+                        </Link>
                         <Link to="/products/new" className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors text-sm font-semibold">
                             + 상품 등록
                         </Link>

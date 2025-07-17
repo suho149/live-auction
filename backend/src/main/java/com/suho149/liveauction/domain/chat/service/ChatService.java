@@ -1,6 +1,7 @@
 package com.suho149.liveauction.domain.chat.service;
 
 import com.suho149.liveauction.domain.chat.dto.ChatMessageResponse;
+import com.suho149.liveauction.domain.chat.dto.ChatRoomResponse;
 import com.suho149.liveauction.domain.chat.entity.ChatMessage;
 import com.suho149.liveauction.domain.chat.entity.ChatRoom;
 import com.suho149.liveauction.domain.chat.repository.ChatMessageRepository;
@@ -65,5 +66,14 @@ public class ChatService {
         chatMessageRepository.save(chatMessage);
 
         messagingTemplate.convertAndSend("/sub/chat/rooms/" + roomId, ChatMessageResponse.from(chatMessage));
+    }
+
+    public List<ChatRoomResponse> getMyChatRooms(UserPrincipal userPrincipal) {
+        Long userId = userPrincipal.getId();
+        List<ChatRoom> chatRooms = chatRoomRepository.findByUserId(userId);
+
+        return chatRooms.stream()
+                .map(chatRoom -> ChatRoomResponse.from(chatRoom, userId))
+                .collect(Collectors.toList());
     }
 }

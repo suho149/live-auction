@@ -2,6 +2,7 @@ package com.suho149.liveauction.domain.chat.controller;
 
 import com.suho149.liveauction.domain.chat.dto.ChatMessageRequest;
 import com.suho149.liveauction.domain.chat.dto.ChatMessageResponse;
+import com.suho149.liveauction.domain.chat.dto.ChatRoomResponse;
 import com.suho149.liveauction.domain.chat.entity.ChatRoom;
 import com.suho149.liveauction.domain.chat.service.ChatService;
 import com.suho149.liveauction.global.jwt.JwtTokenProvider;
@@ -68,5 +69,11 @@ public class ChatController {
         // 토큰에서 이메일 추출 후 서비스 호출
         String email = jwtTokenProvider.getEmailFromToken(jwt);
         chatService.saveAndSendMessage(roomId, request.getMessage(), email);
+    }
+
+    // 내 채팅방 목록 조회
+    @GetMapping("/rooms")
+    public ResponseEntity<List<ChatRoomResponse>> getMyChatRooms(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ResponseEntity.ok(chatService.getMyChatRooms(userPrincipal));
     }
 }
