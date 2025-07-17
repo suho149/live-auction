@@ -7,7 +7,7 @@ import SockJS from 'sockjs-client';
 import { Carousel } from 'react-responsive-carousel';
 import { HeartIcon as HeartIconOutline } from '@heroicons/react/24/outline'; // 찜 아이콘
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
-import {EllipsisVerticalIcon} from "@heroicons/react/16/solid";
+import {ChatBubbleLeftRightIcon, EllipsisVerticalIcon} from "@heroicons/react/16/solid";
 import AlertModal from "../components/AlertModal";
 import useAuthStore from '../hooks/useAuthStore';
 
@@ -340,8 +340,12 @@ const ProductDetailPage = () => {
                                     {/* 2. 구매 희망자에게만 보이는 채팅하기 버튼 */}
                                     {isLoggedIn && !product.seller && (
                                         <div className="my-4">
-                                            <button onClick={handleChatClick} className="w-full bg-green-500 text-white font-bold py-3 rounded-md hover:bg-green-600 transition-colors">
-                                                판매자와 채팅하기
+                                            <button
+                                                onClick={handleChatClick}
+                                                className="w-full bg-green-500 text-white font-bold py-3 rounded-md hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+                                            >
+                                                <ChatBubbleLeftRightIcon className="w-6 h-6" />
+                                                <span>판매자와 채팅하기</span>
                                             </button>
                                         </div>
                                     )}
