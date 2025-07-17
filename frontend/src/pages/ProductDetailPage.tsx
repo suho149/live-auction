@@ -215,7 +215,10 @@ const ProductDetailPage = () => {
             window.location.reload(); // 가장 간단하게 변경사항을 반영하는 방법
         } catch (error: any) {
             console.error("상품 수정 실패:", error);
-            alert(error.response?.data?.message || "상품 수정에 실패했습니다.");
+
+            // 서버로부터 받은 에러 메시지가 있다면 그것을 표시하고, 없다면 기본 메시지를 표시
+            const errorMessage = error.response?.data?.message || "상품 수정에 실패했습니다. 다시 시도해주세요.";
+            alert(errorMessage);
         }
     };
 
