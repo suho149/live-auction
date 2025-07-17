@@ -108,7 +108,14 @@ public class ProductService {
     @Transactional
     public void updateProduct(Long productId, ProductUpdateRequest request, UserPrincipal userPrincipal) {
         Product product = findProductAndCheckOwnership(productId, userPrincipal.getId());
+
+        // 입찰 시작 여부 확인
+        if (product.getHighestBidder() != null) {
+            throw new IllegalStateException("이미 입찰이 시작된 상품은 수정할 수 없습니다.");
+        }
+
         product.updateDetails(request.getName(), request.getDescription(), request.getCategory());
+        // 이미지 수정 로직은 더 복잡하므로, 지금은 이름/설명/카테고리만 수정
     }
 
     @Transactional

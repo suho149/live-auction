@@ -1,5 +1,6 @@
 package com.suho149.liveauction.domain.product.entity;
 
+import com.suho149.liveauction.domain.user.entity.Like;
 import com.suho149.liveauction.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -9,7 +10,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -53,6 +56,10 @@ public class Product {
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductImage> images = new ArrayList<>();
+
+    // Product가 삭제될 때 연관된 Like도 함께 삭제되도록 설정
+    @OneToMany(mappedBy = "product", cascade = CascadeType.REMOVE)
+    private Set<Like> likes = new HashSet<>();
 
     @Builder
     public Product(String name, String description, Long startPrice, Category category, LocalDateTime auctionEndTime, User seller) {

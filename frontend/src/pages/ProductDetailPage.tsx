@@ -31,6 +31,19 @@ interface BidResponse {
     bidderName: string;
 }
 
+// 수정 모달을 위한 타입 추가
+interface ProductUpdateRequest {
+    name: string;
+    description: string;
+    category: string;
+}
+
+// 카테고리 상수
+const categories = ["DIGITAL_DEVICE", "APPLIANCES", "FURNITURE", "HOME_LIFE", "CLOTHING", "BEAUTY", "SPORTS_LEISURE", "BOOKS_TICKETS", "PET_SUPPLIES", "ETC"];
+const categoryKoreanNames: { [key: string]: string } = {
+    DIGITAL_DEVICE: "디지털 기기", APPLIANCES: "생활가전", FURNITURE: "가구/인테리어", HOME_LIFE: "생활/주방", CLOTHING: "의류", BEAUTY: "뷰티/미용", SPORTS_LEISURE: "스포츠/레저", BOOKS_TICKETS: "도서/티켓/음반", PET_SUPPLIES: "반려동물용품", ETC: "기타 중고물품"
+};
+
 const ProductDetailPage = () => {
     const { productId } = useParams<{ productId: string }>();
     const navigate = useNavigate();
@@ -46,22 +59,27 @@ const ProductDetailPage = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null); // 드롭다운 메뉴 바깥 영역 클릭 감지를 위한 ref
 
+    // 수정 모달을 위한 state 추가
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editFormData, setEditFormData] = useState<ProductUpdateRequest>({
+        name: '',
+        description: '',
+        category: 'ETC',
+    });
 
+    // 상품 데이터를 불러오는 useEffect
     useEffect(() => {
-        // 상품 정보 불러오기
         const fetchProduct = async () => {
             try {
                 const response = await axiosInstance.get(`/api/v1/products/${productId}`);
                 const productData = response.data;
-
-                console.log("백엔드로부터 받은 상품 데이터:", productData);
-
                 setProduct(productData);
                 setBidAmount(productData.currentPrice + 1000);
-                const endTime = new Date(productData.auctionEndTime).getTime();
-                if (endTime < Date.now()) {
-                    setIsAuctionEnded(true);
-                }
+                setEditFormData({
+                    name: productData.name,
+                    description: productData.description,
+                    category: productData.category,
+                });
             } catch (error) {
                 console.error("상품 정보를 불러오는 데 실패했습니다.", error);
                 alert("존재하지 않는 상품이거나 정보를 불러올 수 없습니다.");
@@ -70,26 +88,33 @@ const ProductDetailPage = () => {
         };
 
         fetchProduct();
+    }, [productId, navigate]);
 
+    // 타이머와 웹소켓 연결을 관리하는 useEffect
+    // 이 useEffect는 product 데이터가 로드된 후에 실행됩니다.
+    useEffect(() => {
+        // product가 아직 로드되지 않았으면 아무것도 하지 않음
+        if (!product) return;
+
+        // 타이머 설정
         const timer = setInterval(() => {
-            if (product) {
-                const endTime = new Date(product.auctionEndTime).getTime();
-                const now = Date.now();
-                const distance = endTime - now;
-                if (distance < 0) {
-                    setTimeLeft("경매 종료");
-                    setIsAuctionEnded(true);
-                    clearInterval(timer);
-                } else {
-                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-                    setTimeLeft(`${days}일 ${hours}시간 ${minutes}분 ${seconds}초 남음`);
-                }
+            const endTime = new Date(product.auctionEndTime).getTime();
+            const now = Date.now();
+            const distance = endTime - now;
+            if (distance < 0) {
+                setTimeLeft("경매 종료");
+                setIsAuctionEnded(true);
+                clearInterval(timer);
+            } else {
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                setTimeLeft(`${days}일 ${hours}시간 ${minutes}분 ${seconds}초 남음`);
             }
         }, 1000);
 
+        // 웹소켓 연결 (로그인 상태일 때)
         if (isLoggedIn) {
             const token = localStorage.getItem('accessToken');
             const client = new Client({
@@ -119,13 +144,14 @@ const ProductDetailPage = () => {
             stompClient.current = client;
         }
 
+        // 클린업 함수: 컴포넌트가 사라지거나, 의존성이 변경되어 재실행될 때 호출됨
         return () => {
             clearInterval(timer);
             if (stompClient.current && stompClient.current.active) {
                 stompClient.current.deactivate();
             }
         };
-    }, [productId, isLoggedIn, navigate, product?.auctionEndTime]);
+    }, [product, isLoggedIn, productId]); // product, isLoggedIn, productId에 의존
 
     const handleBidSubmit = () => {
         if (!isLoggedIn) {
@@ -177,6 +203,19 @@ const ProductDetailPage = () => {
                 console.error("상품 삭제 실패:", error);
                 alert("상품 삭제에 실패했습니다.");
             }
+        }
+    };
+
+    const handleUpdateSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await axiosInstance.put(`/api/v1/products/${productId}`, editFormData);
+            alert('상품 정보가 수정되었습니다.');
+            setIsEditModalOpen(false);
+            window.location.reload(); // 가장 간단하게 변경사항을 반영하는 방법
+        } catch (error: any) {
+            console.error("상품 수정 실패:", error);
+            alert(error.response?.data?.message || "상품 수정에 실패했습니다.");
         }
     };
 
@@ -276,8 +315,8 @@ const ProductDetailPage = () => {
                                             {/* 드롭다운 메뉴 (isMenuOpen이 true일 때만 보임) */}
                                             {isMenuOpen && (
                                                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
-                                                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">상품 수정</a>
-                                                    <a href="#" onClick={(e) => { e.preventDefault(); handleDeleteClick(); setIsMenuOpen(false); }} className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">상품 삭제</a>
+                                                    <button onClick={() => { setIsEditModalOpen(true); setIsMenuOpen(false); }} className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">상품 수정</button>
+                                                    <button onClick={() => { handleDeleteClick(); setIsMenuOpen(false); }} className="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">상품 삭제</button>
                                                 </div>
                                             )}
                                         </div>
@@ -319,6 +358,36 @@ const ProductDetailPage = () => {
                     </div>
                 </div>
             </main>
+            {/* ★★★ 상품 수정 모달 UI 추가 ★★★ */}
+            {isEditModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+                    <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg">
+                        <h2 className="text-2xl font-bold mb-6">상품 정보 수정</h2>
+                        <form onSubmit={handleUpdateSubmit} className="space-y-4">
+                            <div>
+                                <label htmlFor="edit-name" className="block text-sm font-medium text-gray-700">상품명</label>
+                                <input type="text" id="edit-name" value={editFormData.name} onChange={(e) => setEditFormData({...editFormData, name: e.target.value})} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"/>
+                            </div>
+                            <div>
+                                <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700">상품 설명</label>
+                                <textarea id="edit-description" rows={4} value={editFormData.description} onChange={(e) => setEditFormData({...editFormData, description: e.target.value})} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"/>
+                            </div>
+                            <div>
+                                <label htmlFor="edit-category" className="block text-sm font-medium text-gray-700">카테고리</label>
+                                <select id="edit-category" value={editFormData.category} onChange={(e) => setEditFormData({...editFormData, category: e.target.value})} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                                    {categories.map(cat => (
+                                        <option key={cat} value={cat}>{categoryKoreanNames[cat]}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="flex justify-end space-x-4 pt-4">
+                                <button type="button" onClick={() => setIsEditModalOpen(false)} className="bg-gray-200 px-4 py-2 rounded-md hover:bg-gray-300">취소</button>
+                                <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">저장</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
