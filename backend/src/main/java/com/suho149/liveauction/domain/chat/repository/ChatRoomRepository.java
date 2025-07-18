@@ -18,4 +18,13 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             "JOIN FETCH cr.buyer " +
             "WHERE p.seller.id = :userId OR cr.buyer.id = :userId")
     List<ChatRoom> findByUserId(@Param("userId") Long userId);
+
+    // Fetch Join을 사용하여 연관된 모든 엔티티를 한번에 가져오도록 수정
+    @Query("SELECT cr FROM ChatRoom cr " +
+            "LEFT JOIN FETCH cr.messages " + // 마지막 메시지를 위해 messages를 가져와야 함
+            "JOIN FETCH cr.product p " +
+            "JOIN FETCH p.seller " +
+            "JOIN FETCH cr.buyer " +
+            "WHERE p.seller.id = :userId OR cr.buyer.id = :userId")
+    List<ChatRoom> findByUserIdWithDetails(@Param("userId") Long userId);
 }

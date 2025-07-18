@@ -12,6 +12,7 @@ interface ChatMessage {
     messageId: number;
     senderId: number;
     senderName: string;
+    senderPicture: string;
     message: string;
     sentAt: string;
 }
@@ -118,24 +119,34 @@ const ChatRoomPage = () => {
         <div className="flex flex-col h-screen bg-gray-100">
             <Header />
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.map(msg => (
-                    <div key={msg.messageId} className={`flex items-end gap-2 ${msg.senderId === userInfo?.id ? 'justify-end' : 'justify-start'}`}>
-                        {msg.senderId !== userInfo?.id && (
-                            <img
-                                src="https://placehold.co/32x32" // 상대방 프로필 사진 (나중에 실제 데이터로 교체)
-                                alt={msg.senderName}
-                                className="w-8 h-8 rounded-full bg-gray-300 flex-shrink-0"
-                            />
-                        )}
-                        <div className={`max-w-xs lg:max-w-md p-3 rounded-lg shadow-sm ${msg.senderId === userInfo?.id ? 'bg-blue-500 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none'}`}>
-                            {msg.senderId !== userInfo?.id && (
-                                <p className="text-xs font-bold mb-1 text-gray-600">{msg.senderName}</p>
+                {messages.map((msg, index) => {
+                    const isMyMessage = msg.senderId === userInfo?.id;
+                    // 이전 메시지와 보낸 사람이 같은지 확인
+                    const showSenderInfo = index === 0 || messages[index - 1].senderId !== msg.senderId;
+
+                    return (
+                        <div key={msg.messageId} className={`flex items-start gap-3 ${isMyMessage ? 'justify-end' : 'justify-start'}`}>
+                            {!isMyMessage && (
+                                <img
+                                    src={msg.senderPicture.startsWith('http') ? msg.senderPicture : `${API_BASE_URL}${msg.senderPicture}`}
+                                    alt={msg.senderName}
+                                    className={`w-10 h-10 rounded-full object-cover ${showSenderInfo ? '' : 'invisible'}`}
+                                />
                             )}
-                            <p className="text-base">{msg.message}</p>
-                            <p className="text-xs mt-1 opacity-75 text-right">{new Date(msg.sentAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</p>
+                            <div className={`flex flex-col ${isMyMessage ? 'items-end' : 'items-start'}`}>
+                                {showSenderInfo && !isMyMessage && (
+                                    <p className="text-sm font-semibold mb-1 ml-2">{msg.senderName}</p>
+                                )}
+                                <div className={`flex items-end gap-2 ${isMyMessage ? 'flex-row-reverse' : 'flex-row'}`}>
+                                    <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${isMyMessage ? 'bg-blue-500 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none'}`}>
+                                        <p className="text-base break-words">{msg.message}</p>
+                                    </div>
+                                    <p className="text-xs text-gray-500 flex-shrink-0">{new Date(msg.sentAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
                 <div ref={messagesEndRef} />
             </div>
             <form onSubmit={handleSendMessage} className="p-4 bg-white border-t flex items-center">

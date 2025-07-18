@@ -70,7 +70,7 @@ public class ChatService {
 
     public List<ChatRoomResponse> getMyChatRooms(UserPrincipal userPrincipal) {
         Long userId = userPrincipal.getId();
-        List<ChatRoom> chatRooms = chatRoomRepository.findByUserId(userId);
+        List<ChatRoom> chatRooms = chatRoomRepository.findByUserIdWithDetails(userId);
 
         return chatRooms.stream()
                 .map(chatRoom -> ChatRoomResponse.from(chatRoom, userId))
