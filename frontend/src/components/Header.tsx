@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import axiosInstance, { API_BASE_URL } from '../api/axiosInstance';
 import useAuthStore from '../hooks/useAuthStore';
 import { ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline';
+import {BellIcon} from "@heroicons/react/16/solid";
+import useNotificationStore from "../hooks/useNotificationStore";
 
 // 사용자 정보 타입 정의 (변경 없음)
 interface UserInfo {
@@ -13,6 +15,7 @@ interface UserInfo {
 const Header = () => {
     // 스토어에서 상태와 액션을 직접 가져옴
     const { isLoggedIn, userInfo, logout, fetchUserInfo } = useAuthStore();
+    const { unreadCount, fetchUnreadCount } = useNotificationStore();
 
     // 앱이 로드될 때 (isLoggedIn 상태가 true이면) 사용자 정보를 가져옴
     useEffect(() => {
@@ -31,6 +34,12 @@ const Header = () => {
         return `${API_BASE_URL}${url}`;
     };
 
+    useEffect(() => {
+        if (isLoggedIn) {
+            fetchUnreadCount();
+        }
+    }, [isLoggedIn]);
+
     return (
         <header className="bg-white shadow-md p-4 flex justify-between items-center sticky top-0 z-50">
             <Link to="/" className="text-2xl font-bold text-blue-600 flex items-center gap-2">
@@ -40,6 +49,16 @@ const Header = () => {
             <nav className="flex items-center space-x-6"> {/* space-x-4 -> space-x-6로 간격 조정 */}
                 {isLoggedIn && userInfo ? (
                     <>
+                        {/* ★ 알림 아이콘 버튼 */}
+                        <Link to="/notifications" className="relative text-gray-500 hover:text-blue-600">
+                            <BellIcon className="w-7 h-7" />
+                            {unreadCount > 0 && (
+                                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                                    {unreadCount}
+                                </span>
+                            )}
+                        </Link>
+
                         {/* 채팅 아이콘 버튼 추가 */}
                         <Link to="/chat/rooms" className="text-gray-500 hover:text-blue-600">
                             <ChatBubbleLeftEllipsisIcon className="w-7 h-7" />

@@ -1,5 +1,7 @@
 package com.suho149.liveauction.domain.product.service;
 
+import com.suho149.liveauction.domain.keyword.repository.KeywordRepository;
+import com.suho149.liveauction.domain.notification.entity.NotificationType;
 import com.suho149.liveauction.domain.product.dto.ProductCreateRequest;
 import com.suho149.liveauction.domain.product.dto.ProductDetailResponse;
 import com.suho149.liveauction.domain.product.dto.ProductResponse;
@@ -35,6 +37,7 @@ public class ProductService {
     private final UserRepository userRepository;
     private final LikeRepository likeRepository;
     private final NotificationService notificationService;
+    private final KeywordRepository keywordRepository;
 
     @Transactional
     public Product createProduct(ProductCreateRequest request, UserPrincipal userPrincipal) {
@@ -58,8 +61,18 @@ public class ProductService {
 
         Product savedProduct = productRepository.save(product);
 
-        // 상품 등록 후 알림 서비스 호출
-        notificationService.notifyNewProduct(savedProduct);
+        // 키워드 알림 로직 수정
+        String productInfo = savedProduct.getName() + " " + savedProduct.getDescription();
+        List<User> usersToNotify = keywordRepository.findUsersByKeywordIn(productInfo);
+
+        usersToNotify.forEach(user -> {
+            // 본인이 등록한 상품에 대해서는 알림을 보내지 않음
+            if (!user.getId().equals(userPrincipal.getId())) {
+                String content = "등록하신 키워드가 포함된 '" + savedProduct.getName() + "' 상품이 등록되었습니다.";
+                String url = "/products/" + savedProduct.getId();
+                notificationService.send(user, NotificationType.KEYWORD, content, url);
+            }
+        });
 
         return savedProduct;
     }

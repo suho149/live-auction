@@ -11,6 +11,7 @@ import ChatRoomPage from './pages/ChatRoomPage';
 import ChatListPage from './pages/ChatListPage';
 import {API_BASE_URL} from "./api/axiosInstance";
 import useAuthStore from "./hooks/useAuthStore";
+import NotificationListPage from "./pages/NotificationListPage";
 
 function App() {
 
@@ -74,6 +75,7 @@ function App() {
                 <Route path="/products/:productId" element={<ProductDetailPage />} />
                 <Route path="/chat/rooms" element={<ChatListPage />} />
                 <Route path="/chat/rooms/:roomId" element={<ChatRoomPage />} />
+                <Route path="/notifications" element={<NotificationListPage />} />
             </Routes>
         </Router>
     );

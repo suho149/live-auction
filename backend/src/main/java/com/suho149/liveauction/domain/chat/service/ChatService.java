@@ -6,6 +6,8 @@ import com.suho149.liveauction.domain.chat.entity.ChatMessage;
 import com.suho149.liveauction.domain.chat.entity.ChatRoom;
 import com.suho149.liveauction.domain.chat.repository.ChatMessageRepository;
 import com.suho149.liveauction.domain.chat.repository.ChatRoomRepository;
+import com.suho149.liveauction.domain.notification.entity.NotificationType;
+import com.suho149.liveauction.domain.notification.service.NotificationService;
 import com.suho149.liveauction.domain.product.entity.Product;
 import com.suho149.liveauction.domain.product.repository.ProductRepository;
 import com.suho149.liveauction.domain.user.entity.User;
@@ -27,6 +29,7 @@ public class ChatService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final SimpMessageSendingOperations messagingTemplate;
+    private final NotificationService notificationService;
 
     @Transactional
     public ChatRoom findOrCreateChatRoom(Long productId, UserPrincipal userPrincipal) {
@@ -53,7 +56,6 @@ public class ChatService {
         ChatRoom chatRoom = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
 
-        // 이메일로 User 엔티티 조회
         User sender = userRepository.findByEmail(senderEmail)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
@@ -64,6 +66,15 @@ public class ChatService {
                 .build();
 
         chatMessageRepository.save(chatMessage);
+
+        // 상대방에게 알림 발송
+        User recipient = chatRoom.getProduct().getSeller().getId().equals(sender.getId())
+                ? chatRoom.getBuyer()
+                : chatRoom.getProduct().getSeller();
+
+        String content = sender.getName() + "님으로부터 새 메시지가 도착했습니다.";
+        String url = "/chat/rooms/" + roomId;
+        notificationService.send(recipient, NotificationType.CHAT, content, url);
 
         messagingTemplate.convertAndSend("/sub/chat/rooms/" + roomId, ChatMessageResponse.from(chatMessage));
     }
