@@ -24,6 +24,9 @@ public class Notification {
     @Column(nullable = false, length = 255)
     private String content;
 
+    // 안 읽은 메시지 개수를 저장할 필드
+    private int unreadCount = 1;
+
     private String url;
 
     @Column(nullable = false)
@@ -51,5 +54,12 @@ public class Notification {
     public void updateContent(String newContent) {
         this.content = newContent;
         this.createdAt = LocalDateTime.now();
+    }
+
+    public void updateForChatNotification() {
+        this.unreadCount++; // 안 읽은 개수 1 증가
+        this.content = "새로운 메시지가 " + this.unreadCount + "개 도착했습니다.";
+        this.createdAt = LocalDateTime.now(); // 최신 시간으로 업데이트
+        this.isRead = false; // 혹시 읽음 처리되었을 수 있으니 다시 안 읽음 상태로
     }
 }

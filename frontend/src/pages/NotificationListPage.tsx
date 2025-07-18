@@ -1,26 +1,20 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
-// ★★★ 스토어와 함께 Notification 타입도 여기서 import 합니다 ★★★
 import useNotificationStore, { Notification } from '../hooks/useNotificationStore';
 
 const NotificationListPage = () => {
-    // ★★★ useState 대신 스토어에서 직접 상태와 액션을 가져옵니다. ★★★
     const { notifications, fetchNotifications, readNotification } = useNotificationStore();
     const navigate = useNavigate();
 
-    // 컴포넌트가 처음 마운트될 때, 서버로부터 전체 알림 목록을 불러옵니다.
     useEffect(() => {
         fetchNotifications();
     }, [fetchNotifications]);
 
-    // ★★★ 알림 항목 클릭 시 실행되는 핸들러 함수 ★★★
     const handleNotificationClick = (notification: Notification) => {
-        // 아직 읽지 않은 알림일 경우에만 읽음 처리 액션을 호출합니다.
         if (!notification.isRead) {
             readNotification(notification.id);
         }
-        // 알림에 연결된 URL로 페이지를 이동합니다.
         navigate(notification.url);
     };
 
@@ -38,7 +32,14 @@ const NotificationListPage = () => {
                                     className={`block p-4 transition-colors cursor-pointer ${noti.isRead ? 'bg-white' : 'bg-blue-50 hover:bg-blue-100'}`}
                                 >
                                     <div className="flex justify-between items-center">
-                                        <p className="text-gray-800">{noti.content}</p>
+                                        {/* ★★★ 이 부분을 수정합니다 ★★★ */}
+                                        <p className="text-gray-800">
+                                            {/* 채팅 알림이고, 안 읽은 개수가 1보다 크면 개수를 함께 표시 */}
+                                            {noti.type === 'CHAT' && noti.unreadCount > 1
+                                                ? `${noti.content} (+${noti.unreadCount - 1})`
+                                                : noti.content
+                                            }
+                                        </p>
                                         {!noti.isRead && <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 ml-4"></span>}
                                     </div>
                                     <p className="text-sm text-gray-500 mt-1">

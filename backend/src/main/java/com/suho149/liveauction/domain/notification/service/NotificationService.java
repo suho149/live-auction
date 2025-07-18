@@ -49,10 +49,10 @@ public class NotificationService {
     public void send(User user, NotificationType type, String content, String url) {
         if (type == NotificationType.CHAT) {
             Optional<Notification> existingOpt = notificationRepository.findFirstByUserAndUrlAndIsReadFalse(user, url);
+
             if (existingOpt.isPresent()) {
                 Notification existing = existingOpt.get();
-                // 실제로는 안 읽은 메시지 개수를 세어서 content를 업데이트하는 로직이 더 좋음
-                existing.updateContent("새로운 메시지가 도착했습니다.");
+                existing.updateForChatNotification(); // 엔티티의 업데이트 메소드 호출
                 sendToClient(user.getId(), "notificationUpdate", new NotificationResponse(existing));
                 return;
             }

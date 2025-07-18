@@ -8,6 +8,7 @@ export interface Notification {
     isRead: boolean;
     createdAt: string;
     type: 'BID' | 'CHAT' | 'KEYWORD';
+    unreadCount: number;
 }
 
 interface NotificationState {
@@ -41,12 +42,13 @@ const useNotificationStore = create<NotificationState>((set, get) => ({
         }));
     },
 
-    updateNotification: (notification) => {
+    updateNotification: (updatedNotification: Notification) => {
         set(state => ({
             notifications: state.notifications.map(n =>
-                n.id === notification.id ? notification : n
+                n.id === updatedNotification.id ? updatedNotification : n
             ),
         }));
+        // 카운트는 변동 없을 수 있으나, 동기화를 위해 호출
         get().fetchUnreadCount();
     },
 

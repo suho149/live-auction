@@ -44,6 +44,8 @@ const GlobalNotificationHandler = () => {
     const { isLoggedIn, accessToken } = useAuthStore();
     const { addNotification, updateNotification, fetchUnreadCount } = useNotificationStore();
 
+    const navigate = useNavigate();
+
     useEffect(() => {
         let eventSource: EventSource | undefined;
 
@@ -57,10 +59,10 @@ const GlobalNotificationHandler = () => {
                 try {
                     const newNotification: Notification = JSON.parse(event.data);
                     addNotification(newNotification);
-                    // ★★★ react-hot-toast로 팝업 알림 표시 ★★★
-                    toast.custom((t) => (
-                        <NotificationToast notification={newNotification} t={t} />
-                    ), { duration: 5000 }); // 5초간 표시
+                    toast.custom((t) => <NotificationToast notification={newNotification} t={t} />, {
+                        id: String(newNotification.id), // ★ 알림 ID를 토스트 ID로 사용
+                        duration: 5000
+                    });
                 } catch (e) {
                     console.error("Error parsing notification data:", e);
                 }
@@ -69,9 +71,11 @@ const GlobalNotificationHandler = () => {
             const handleUpdateNotification = (event: MessageEvent) => {
                 const updatedNotification: Notification = JSON.parse(event.data);
                 updateNotification(updatedNotification);
-                toast.custom((t) => (
-                    <NotificationToast notification={updatedNotification} t={t} />
-                ), { duration: 5000 });
+                // ★ 동일한 ID로 토스트를 띄워 기존 팝업을 업데이트
+                toast.custom((t) => <NotificationToast notification={updatedNotification} t={t} />, {
+                    id: String(updatedNotification.id), // ★ 알림 ID를 토스트 ID로 사용
+                    duration: 5000
+                });
             };
 
             eventSource.addEventListener('notification', handleNewNotification);
@@ -86,7 +90,7 @@ const GlobalNotificationHandler = () => {
         return () => {
             if (eventSource) eventSource.close();
         };
-    }, [isLoggedIn, accessToken, addNotification, updateNotification, fetchUnreadCount]);
+    }, [isLoggedIn, accessToken, addNotification, updateNotification, fetchUnreadCount, navigate]);
 
     return null;
 };

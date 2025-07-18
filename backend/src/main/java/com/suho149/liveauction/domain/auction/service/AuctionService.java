@@ -15,7 +15,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.NumberFormat;
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -42,27 +44,34 @@ public class AuctionService {
             throw new IllegalArgumentException("경매가 종료된 상품입니다.");
         }
 
+        // 입찰 정보 업데이트 전에 이전 최고 입찰자를 저장
+        User previousHighestBidder = product.getHighestBidder();
+
         // 입찰 정보 업데이트
         product.updateBid(bidder, bidRequest.getBidAmount());
 
-        // 입찰 결과를 구독자들에게 전송
+        // 입찰 결과를 구독자들에게 실시간 전송
         BidResponse bidResponse = BidResponse.builder()
                 .productId(productId)
                 .newPrice(product.getCurrentPrice())
                 .bidderName(bidder.getName())
                 .build();
+        messagingTemplate.convertAndSend("/sub/products/" + productId, bidResponse);
 
-        User previousHighestBidder = product.getHighestBidder(); // 이전 최고 입찰자 저장
+        // 알림 발송 로직
+        String url = "/products/" + productId;
+        String formattedAmount = NumberFormat.getInstance(Locale.KOREA).format(bidRequest.getBidAmount());
 
-        product.updateBid(bidder, bidRequest.getBidAmount()); // 입찰 정보 업데이트
-
-        // ★ 이전 최고 입찰자가 있었고, 현재 입찰자와 다른 경우에만 알림 발송
-        if (previousHighestBidder != null && !previousHighestBidder.getId().equals(bidder.getId())) {
-            String content = "'" + product.getName() + "' 상품에 더 높은 가격의 입찰이 등록되었습니다.";
-            String url = "/products/" + productId;
-            notificationService.send(previousHighestBidder, NotificationType.BID, content, url);
+        // 1. 판매자에게 알림 (입찰자가 판매자 본인이 아닐 경우)
+        if (!product.getSeller().getId().equals(bidder.getId())) {
+            String sellerContent = "'" + product.getName() + "' 상품에 " + formattedAmount + "원의 새로운 입찰이 등록되었습니다.";
+            notificationService.send(product.getSeller(), NotificationType.BID, sellerContent, url);
         }
 
-        messagingTemplate.convertAndSend("/sub/products/" + productId, bidResponse);
+        // 2. 이전 최고 입찰자에게 알림 (이전 입찰자가 있었고, 현재 입찰자와 다를 경우)
+        if (previousHighestBidder != null && !previousHighestBidder.getId().equals(bidder.getId())) {
+            String content = "'" + product.getName() + "' 상품에 더 높은 가격의 입찰이 등록되었습니다.";
+            notificationService.send(previousHighestBidder, NotificationType.BID, content, url);
+        }
     }
 }

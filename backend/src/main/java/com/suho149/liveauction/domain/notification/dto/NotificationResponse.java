@@ -14,7 +14,9 @@ public class NotificationResponse {
     private final boolean isRead;
     private final LocalDateTime createdAt;
     private final NotificationType type;
+    private final int unreadCount;
 
+    // 생성자를 사용하여 Notification 엔티티를 DTO로 변환
     public NotificationResponse(Notification notification) {
         this.id = notification.getId();
         this.content = notification.getContent();
@@ -22,5 +24,6 @@ public class NotificationResponse {
         this.isRead = notification.isRead();
         this.createdAt = notification.getCreatedAt();
         this.type = notification.getType();
+        this.unreadCount = notification.getUnreadCount(); // ★ unreadCount 값 매핑
     }
 }
