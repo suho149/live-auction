@@ -17,6 +17,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -46,16 +47,19 @@ public class NotificationService {
     // 알림 생성 및 발송을 위한 통합 메소드
     @Transactional
     public void send(User user, NotificationType type, String content, String url) {
-        Notification notification = Notification.builder()
-                .user(user)
-                .type(type)
-                .content(content)
-                .url(url)
-                .build();
+        if (type == NotificationType.CHAT) {
+            Optional<Notification> existingOpt = notificationRepository.findFirstByUserAndUrlAndIsReadFalse(user, url);
+            if (existingOpt.isPresent()) {
+                Notification existing = existingOpt.get();
+                // 실제로는 안 읽은 메시지 개수를 세어서 content를 업데이트하는 로직이 더 좋음
+                existing.updateContent("새로운 메시지가 도착했습니다.");
+                sendToClient(user.getId(), "notificationUpdate", new NotificationResponse(existing));
+                return;
+            }
+        }
 
-        notificationRepository.save(notification); // DB에 알림 저장
-
-        // SSE로 실시간 알림 발송
+        Notification notification = Notification.builder().user(user).type(type).content(content).url(url).build();
+        notificationRepository.save(notification);
         sendToClient(user.getId(), "notification", new NotificationResponse(notification));
     }
 

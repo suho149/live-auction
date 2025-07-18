@@ -11,11 +11,13 @@ import ChatRoomPage from './pages/ChatRoomPage';
 import ChatListPage from './pages/ChatListPage';
 import NotificationListPage from "./pages/NotificationListPage";
 import GlobalNotificationHandler from "./components/GlobalNotificationHandler";
+import {Toaster} from "react-hot-toast";
 
 function App() {
 
     return (
         <Router>
+            <Toaster position="top-right" reverseOrder={false} />
             {/* ★ SSE 핸들러를 Router 안에 배치하여 항상 활성화되도록 함 */}
             <GlobalNotificationHandler />
             <Routes>

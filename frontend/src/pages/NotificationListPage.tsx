@@ -1,47 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import axiosInstance from '../api/axiosInstance';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
-import useNotificationStore from '../hooks/useNotificationStore';
-
-interface Notification {
-    id: number;
-    content: string;
-    url: string;
-    isRead: boolean;
-    createdAt: string;
-    type: 'BID' | 'CHAT' | 'KEYWORD';
-}
+// ★★★ 스토어와 함께 Notification 타입도 여기서 import 합니다 ★★★
+import useNotificationStore, { Notification } from '../hooks/useNotificationStore';
 
 const NotificationListPage = () => {
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const { decrementUnreadCount } = useNotificationStore();
+    // ★★★ useState 대신 스토어에서 직접 상태와 액션을 가져옵니다. ★★★
+    const { notifications, fetchNotifications, readNotification } = useNotificationStore();
+    const navigate = useNavigate();
 
+    // 컴포넌트가 처음 마운트될 때, 서버로부터 전체 알림 목록을 불러옵니다.
     useEffect(() => {
-        const fetchNotifications = async () => {
-            try {
-                const response = await axiosInstance.get<Notification[]>('/api/v1/notifications');
-                setNotifications(response.data);
-            } catch (error) {
-                console.error("알림 목록을 불러오는 데 실패했습니다.", error);
-            }
-        };
         fetchNotifications();
-    }, []);
+    }, [fetchNotifications]);
 
-    const handleNotificationClick = async (notification: Notification) => {
+    // ★★★ 알림 항목 클릭 시 실행되는 핸들러 함수 ★★★
+    const handleNotificationClick = (notification: Notification) => {
+        // 아직 읽지 않은 알림일 경우에만 읽음 처리 액션을 호출합니다.
         if (!notification.isRead) {
-            try {
-                await axiosInstance.post(`/api/v1/notifications/${notification.id}/read`);
-                // UI 즉시 반영
-                setNotifications(prev =>
-                    prev.map(n => n.id === notification.id ? { ...n, isRead: true } : n)
-                );
-                decrementUnreadCount();
-            } catch (error) {
-                console.error("알림 읽음 처리 실패:", error);
-            }
+            readNotification(notification.id);
         }
+        // 알림에 연결된 URL로 페이지를 이동합니다.
+        navigate(notification.url);
     };
 
     return (
@@ -53,21 +33,22 @@ const NotificationListPage = () => {
                     <ul className="divide-y divide-gray-200">
                         {notifications.length > 0 ? notifications.map(noti => (
                             <li key={noti.id}>
-                                <Link
-                                    to={noti.url}
+                                <div
                                     onClick={() => handleNotificationClick(noti)}
-                                    className={`block p-4 transition-colors ${noti.isRead ? 'bg-white' : 'bg-blue-50 hover:bg-blue-100'}`}
+                                    className={`block p-4 transition-colors cursor-pointer ${noti.isRead ? 'bg-white' : 'bg-blue-50 hover:bg-blue-100'}`}
                                 >
                                     <div className="flex justify-between items-center">
                                         <p className="text-gray-800">{noti.content}</p>
-                                        {!noti.isRead && <span className="w-2 h-2 bg-blue-500 rounded-full"></span>}
+                                        {!noti.isRead && <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 ml-4"></span>}
                                     </div>
                                     <p className="text-sm text-gray-500 mt-1">
                                         {new Date(noti.createdAt).toLocaleString('ko-KR')}
                                     </p>
-                                </Link>
+                                </div>
                             </li>
-                        )) : <p className="p-4 text-center text-gray-500">받은 알림이 없습니다.</p>}
+                        )) : (
+                            <li className="p-4 text-center text-gray-500">받은 알림이 없습니다.</li>
+                        )}
                     </ul>
                 </div>
             </main>

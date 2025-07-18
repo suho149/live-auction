@@ -19,21 +19,21 @@ public class Notification {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user; // 알림을 받는 사용자
+    private User user;
+
+    @Column(nullable = false, length = 255)
+    private String content;
+
+    private String url;
 
     @Column(nullable = false)
-    private String content; // 알림 내용
-
-    private String url; // 클릭 시 이동할 URL
-
-    @Column(nullable = false)
-    private boolean isRead = false; // 읽음 여부
+    private boolean isRead = false;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @Enumerated(EnumType.STRING)
-    private NotificationType type; // 알림 타입
+    private NotificationType type;
 
     @Builder
     public Notification(User user, String content, String url, NotificationType type) {
@@ -46,5 +46,10 @@ public class Notification {
 
     public void read() {
         this.isRead = true;
+    }
+
+    public void updateContent(String newContent) {
+        this.content = newContent;
+        this.createdAt = LocalDateTime.now();
     }
 }
