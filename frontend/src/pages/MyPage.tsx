@@ -1,60 +1,100 @@
 import React, { useState, useEffect } from 'react';
-import axiosInstance from '../api/axiosInstance';
-import { useNavigate } from 'react-router-dom';
-
-interface UserInfo {
-    id: number;
-    name: string;
-    email: string;
-    picture: string;
-}
+import Header from '../components/Header';
+import useAuthStore from '../hooks/useAuthStore';
+import { API_BASE_URL } from '../api/axiosInstance';
+import { fetchKeywords, addKeyword, deleteKeyword, Keyword } from '../api/keywordApi'; // ★ API 함수 import
+import { XCircleIcon } from '@heroicons/react/24/solid';
 
 const MyPage = () => {
-    const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const navigate = useNavigate();
+    const { userInfo, fetchUserInfo, isLoggedIn } = useAuthStore();
+    const [keywords, setKeywords] = useState<Keyword[]>([]);
+    const [newKeyword, setNewKeyword] = useState('');
 
     useEffect(() => {
-        const fetchUserInfo = async () => {
+        if (isLoggedIn && !userInfo) {
+            fetchUserInfo();
+        }
+        if (isLoggedIn) {
+            // 로그인 상태일 때 내 키워드 목록 불러오기
+            fetchKeywords().then(setKeywords);
+        }
+    }, [isLoggedIn, userInfo, fetchUserInfo]);
+
+    const handleAddKeyword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newKeyword.trim()) {
             try {
-                // 백엔드의 테스트 API 호출
-                const response = await axiosInstance.get<UserInfo>('/api/v1/users/me');
-                setUserInfo(response.data);
-            } catch (err) {
-                console.error("Failed to fetch user info:", err);
-                setError('사용자 정보를 불러오는 데 실패했습니다. 다시 로그인해주세요.');
-                // 에러 발생 시 로컬 스토리지 클리어 및 메인으로 이동
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('refreshToken');
-                navigate('/');
+                const addedKeyword = await addKeyword(newKeyword);
+                setKeywords(prev => [...prev, addedKeyword]); // 상태에 즉시 반영
+                setNewKeyword(''); // 입력창 비우기
+            } catch (error) {
+                console.error("키워드 추가 실패:", error);
+                alert("키워드 추가에 실패했습니다.");
             }
-        };
-
-        fetchUserInfo();
-    }, [navigate]);
-
-    const handleLogout = () => {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        alert('로그아웃 되었습니다.');
-        navigate('/');
+        }
     };
 
-    if (error) {
-        return <div style={{ textAlign: 'center', marginTop: '100px', color: 'red' }}>{error}</div>;
-    }
+    const handleDeleteKeyword = async (keywordId: number) => {
+        if (window.confirm("정말로 이 키워드를 삭제하시겠습니까?")) {
+            try {
+                await deleteKeyword(keywordId);
+                setKeywords(prev => prev.filter(k => k.id !== keywordId)); // 상태에서 즉시 제거
+            } catch (error) {
+                console.error("키워드 삭제 실패:", error);
+                alert("키워드 삭제에 실패했습니다.");
+            }
+        }
+    };
 
     if (!userInfo) {
-        return <div style={{ textAlign: 'center', marginTop: '100px' }}>로딩 중...</div>;
+        return <div>로딩 중...</div>;
     }
 
     return (
-        <div style={{ textAlign: 'center', marginTop: '50px' }}>
-            <h1>마이페이지</h1>
-            <img src={userInfo.picture} alt="프로필 사진" style={{ borderRadius: '50%', width: '100px', height: '100px' }} />
-            <h2>{userInfo.name}님, 환영합니다!</h2>
-            <p>이메일: {userInfo.email}</p>
-            <button onClick={handleLogout} style={{ marginTop: '20px' }}>로그아웃</button>
+        <div className="bg-gray-50 min-h-screen">
+            <Header />
+            <main className="container mx-auto p-8 max-w-4xl">
+                <div className="flex items-center space-x-6 mb-12">
+                    <img
+                        src={userInfo.picture.startsWith('http') ? userInfo.picture : `${API_BASE_URL}${userInfo.picture}`}
+                        alt="프로필 사진"
+                        className="w-24 h-24 rounded-full object-cover shadow-lg"
+                    />
+                    <div>
+                        <h1 className="text-4xl font-bold">{userInfo.name}</h1>
+                        <p className="text-gray-600">{userInfo.email}</p>
+                    </div>
+                </div>
+
+                {/* ★ 키워드 알림 설정 섹션 ★ */}
+                <div className="bg-white p-6 rounded-lg shadow-md">
+                    <h2 className="text-2xl font-bold mb-4">키워드 알림 설정</h2>
+                    <p className="text-gray-600 mb-6">원하는 상품의 키워드를 등록하면, 해당 상품이 올라왔을 때 알림을 보내드립니다.</p>
+                    <form onSubmit={handleAddKeyword} className="flex space-x-2 mb-6">
+                        <input
+                            type="text"
+                            value={newKeyword}
+                            onChange={(e) => setNewKeyword(e.target.value)}
+                            placeholder="예: 닌텐도 스위치"
+                            className="flex-grow p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        />
+                        <button type="submit" className="bg-blue-600 text-white font-semibold px-6 py-3 rounded-md hover:bg-blue-700">
+                            추가
+                        </button>
+                    </form>
+
+                    <div className="flex flex-wrap gap-3">
+                        {keywords.map(k => (
+                            <div key={k.id} className="flex items-center bg-gray-100 rounded-full px-4 py-2">
+                                <span className="text-gray-800">{k.keyword}</span>
+                                <button onClick={() => handleDeleteKeyword(k.id)} className="ml-2 text-gray-400 hover:text-gray-600">
+                                    <XCircleIcon className="w-5 h-5"/>
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </main>
         </div>
     );
 };

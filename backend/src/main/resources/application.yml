@@ -39,6 +39,11 @@ spring:
       time-to-live: 600000 # 캐시 만료 시간 (10분, 단위: 밀리초)
       cache-null-values: false # null 값은 캐싱하지 않음
 
+  servlet:
+    multipart:
+      max-file-size: 10MB  # 개별 파일 최대 크기
+      max-request-size: 100MB # 전체 요청 최대 크기 (여러 파일 동시 업로드 대비)
+
 # JWT 설정
 jwt:
   secret: "${JWT_SECRET_KEY}"

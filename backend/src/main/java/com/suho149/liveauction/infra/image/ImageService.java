@@ -17,6 +17,11 @@ public class ImageService {
     private String uploadDir;
 
     public String uploadImage(MultipartFile file) throws IOException {
+        // 파일이 비어있는 경우 예외 처리
+        if (file.isEmpty() || file.getOriginalFilename() == null) {
+            throw new IllegalArgumentException("업로드할 파일이 비어있거나 파일 이름이 없습니다.");
+        }
+
         // 저장할 디렉토리가 없으면 생성
         File directory = new File(uploadDir);
         if (!directory.exists()) {

@@ -3,6 +3,7 @@ package com.suho149.liveauction.global.config;
 import com.suho149.liveauction.global.jwt.JwtAuthenticationFilter;
 import com.suho149.liveauction.global.oauth.CustomOAuth2UserService;
 import com.suho149.liveauction.global.oauth.OAuth2AuthenticationSuccessHandler;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -41,6 +43,10 @@ public class SecurityConfig {
                 // 세션을 사용하지 않으므로 STATELESS로 설정
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(unauthorizedEntryPoint()) // ★ 인증 실패 시 처리 로직 변경
+                )
+
                 // === URL 별 권한 관리 ===
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -61,7 +67,8 @@ public class SecurityConfig {
                         ).permitAll()
 
                         // 상품 등록(POST)과 이미지 업로드(POST)는 USER 권한이 필요함
-                        .requestMatchers(HttpMethod.POST, "/api/v1/products", "/api/v1/images/upload").hasRole("USER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/products",
+                                "/api/v1/images/upload", "/api/v1/subscribe").hasRole("USER")
 
                         .anyRequest().authenticated()
                 )
@@ -76,6 +83,13 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    // 인증 실패(401) 시 응답을 커스터마이징하기 위한 Bean
+    @Bean
+    public AuthenticationEntryPoint unauthorizedEntryPoint() {
+        return (request, response, authException) ->
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
     }
 
     // CORS 설정 소스를 Bean으로 등록

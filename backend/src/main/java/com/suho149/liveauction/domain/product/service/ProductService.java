@@ -11,6 +11,7 @@ import com.suho149.liveauction.domain.product.repository.ProductRepository;
 import com.suho149.liveauction.domain.user.entity.User;
 import com.suho149.liveauction.domain.user.repository.LikeRepository;
 import com.suho149.liveauction.domain.user.repository.UserRepository;
+import com.suho149.liveauction.domain.notification.service.NotificationService;
 import com.suho149.liveauction.global.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -33,6 +34,7 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final LikeRepository likeRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public Product createProduct(ProductCreateRequest request, UserPrincipal userPrincipal) {
@@ -54,7 +56,12 @@ public class ProductService {
                 .collect(Collectors.toList());
         images.forEach(product::addImage);
 
-        return productRepository.save(product);
+        Product savedProduct = productRepository.save(product);
+
+        // 상품 등록 후 알림 서비스 호출
+        notificationService.notifyNewProduct(savedProduct);
+
+        return savedProduct;
     }
 
     public Page<ProductResponse> getProducts(Category category, String keyword, String sortBy, Pageable pageable) {
