@@ -356,6 +356,7 @@ const ProductDetailPage = () => {
                             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{product.description}</p>
                         </div>
 
+                        {/* 하단 입찰 영역 */}
                         <div className="mt-auto pt-4">
                             <div className="bg-gray-100 p-4 rounded-lg">
                                 <div className="flex justify-between items-center">
@@ -366,16 +367,21 @@ const ProductDetailPage = () => {
                                     <span>입찰자: {product.highestBidderName}</span>
                                 </div>
                             </div>
+
                             <div className="mt-4">
                                 {isAuctionEnded ? (
                                     <div className="text-center p-4 bg-red-100 text-red-700 rounded-md font-bold">종료된 경매입니다.</div>
                                 ) : isLoggedIn ? (
-                                    <div className="flex space-x-2">
-                                        <input type="number" value={bidAmount} onChange={(e) => setBidAmount(parseInt(e.target.value, 10) || 0)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="현재가보다 높은 금액"/>
-                                        <button onClick={handleBidSubmit} className="w-1/3 bg-blue-600 text-white font-bold p-3 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400" disabled={!isConnected}>
-                                            {isConnected ? '입찰' : '연결 중'}
-                                        </button>
-                                    </div>
+                                    product.seller ? (
+                                        <div className="text-center p-4 bg-yellow-100 text-yellow-800 rounded-md font-semibold">자신이 등록한 상품입니다.</div>
+                                    ) : (
+                                        <div className="flex space-x-2">
+                                            <input type="number" value={bidAmount} onChange={(e) => setBidAmount(parseInt(e.target.value, 10) || 0)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="현재가보다 높은 금액"/>
+                                            <button onClick={handleBidSubmit} className="w-1/3 bg-blue-600 text-white font-bold p-3 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400" disabled={!isConnected}>
+                                                {isConnected ? '입찰' : '연결 중'}
+                                            </button>
+                                        </div>
+                                    )
                                 ) : (
                                     <div className="text-center p-3 bg-gray-200 rounded-md">
                                         <p>입찰에 참여하려면 <a href={'http://localhost:8080/oauth2/authorization/google'} className="text-blue-600 font-bold hover:underline">로그인</a>이 필요합니다.</p>
@@ -386,7 +392,7 @@ const ProductDetailPage = () => {
                     </div>
                 </div>
             </main>
-            {/* ★★★ 상품 수정 모달 UI 추가 ★★★ */}
+            {/* 상품 수정 모달 UI 추가 */}
             {isEditModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
                     <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg">

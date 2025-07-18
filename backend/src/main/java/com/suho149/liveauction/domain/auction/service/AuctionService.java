@@ -36,6 +36,11 @@ public class AuctionService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
 
+        // 판매자 본인 입찰 방지 로직 추가
+        if (product.getSeller().getId().equals(bidder.getId())) {
+            throw new IllegalStateException("자신이 등록한 상품에는 입찰할 수 없습니다.");
+        }
+
         // 유효성 검사
         if (bidRequest.getBidAmount() <= product.getCurrentPrice()) {
             throw new IllegalArgumentException("현재 가격보다 높은 금액으로 입찰해야 합니다.");
