@@ -114,8 +114,13 @@ public class NotificationService {
         // 1. 현재 사용자의 모든 읽지 않은 알림을 가져옴
         List<Notification> unreadNotifications = notificationRepository.findAllByUserIdAndIsReadFalse(userPrincipal.getId());
 
-        // 2. 각 알림의 isRead 상태를 true로 변경
-        unreadNotifications.forEach(Notification::read);
+        // 2. 리스트가 비어있지 않다면, 각 알림의 상태를 변경
+        if (!unreadNotifications.isEmpty()) {
+            unreadNotifications.forEach(Notification::read);
+
+            // 3. 변경된 알림 목록을 명시적으로 DB에 저장
+            notificationRepository.saveAll(unreadNotifications);
+        }
 
         // 3. 변경된 상태를 DB에 저장
         // @Transactional 어노테이션 덕분에, 메소드가 끝나면 변경된 내용(Dirty Checking)이 자동으로 DB에 반영됩니다.

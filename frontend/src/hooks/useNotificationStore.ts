@@ -19,7 +19,7 @@ interface NotificationState {
     updateNotification: (notification: Notification) => void;
     readNotification: (notificationId: number) => void;
     fetchUnreadCount: () => Promise<void>;
-    readAllNotifications: () => void;
+    readAllNotifications: () => Promise<void>;
 }
 
 const useNotificationStore = create<NotificationState>((set, get) => ({
@@ -29,11 +29,17 @@ const useNotificationStore = create<NotificationState>((set, get) => ({
     fetchNotifications: async () => {
         try {
             const response = await axiosInstance.get<Notification[]>('/api/v1/notifications');
-            set({ notifications: response.data });
+            const notifications = response.data;
+            // 서버에서 받아온 데이터를 기반으로 안 읽은 알림 개수를 직접 계산
+            const newUnreadCount = notifications.filter(n => !n.isRead).length;
+
+            // notifications와 unreadCount를 함께 업데이트
+            set({ notifications: notifications, unreadCount: newUnreadCount });
         } catch (error) {
-            console.error("알림 목록 로딩 실패:", error);
+            console.error("알림 목록을 불러오는 데 실패했습니다.", error);
         }
     },
+
 
     addNotification: (notification) => {
         if (get().notifications.some(n => n.id === notification.id)) return;
