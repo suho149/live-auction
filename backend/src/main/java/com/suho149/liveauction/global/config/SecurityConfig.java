@@ -66,9 +66,9 @@ public class SecurityConfig {
                                 "/ws-stomp/**"
                         ).permitAll()
 
-                        // 상품 등록(POST)과 이미지 업로드(POST)는 USER 권한이 필요함
-                        .requestMatchers(HttpMethod.POST, "/api/v1/products",
-                                "/api/v1/images/upload", "/api/v1/subscribe").hasRole("USER")
+                        .requestMatchers("/api/v1/keywords/**", "/api/v1/notifications/**").hasRole("USER")
+
+                        .requestMatchers(HttpMethod.POST, "/api/v1/products", "/api/v1/images/upload").hasRole("USER")
 
                         .anyRequest().authenticated()
                 )

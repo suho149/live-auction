@@ -107,4 +107,18 @@ public class NotificationService {
 
         notification.read(); // isRead를 true로 변경
     }
+
+    // '모두 읽음' 처리 메소드 추가
+    @Transactional
+    public void readAllNotifications(UserPrincipal userPrincipal) {
+        // 1. 현재 사용자의 모든 읽지 않은 알림을 가져옴
+        List<Notification> unreadNotifications = notificationRepository.findAllByUserIdAndIsReadFalse(userPrincipal.getId());
+
+        // 2. 각 알림의 isRead 상태를 true로 변경
+        unreadNotifications.forEach(Notification::read);
+
+        // 3. 변경된 상태를 DB에 저장
+        // @Transactional 어노테이션 덕분에, 메소드가 끝나면 변경된 내용(Dirty Checking)이 자동으로 DB에 반영됩니다.
+        // 명시적으로 saveAll을 호출할 필요가 없습니다.
+    }
 }

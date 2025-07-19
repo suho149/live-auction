@@ -19,6 +19,7 @@ interface NotificationState {
     updateNotification: (notification: Notification) => void;
     readNotification: (notificationId: number) => void;
     fetchUnreadCount: () => Promise<void>;
+    readAllNotifications: () => void;
 }
 
 const useNotificationStore = create<NotificationState>((set, get) => ({
@@ -73,6 +74,25 @@ const useNotificationStore = create<NotificationState>((set, get) => ({
             set({ unreadCount: response.data });
         } catch (error) {
             console.error("읽지 않은 알림 개수 로딩 실패:", error);
+        }
+    },
+
+    //'모두 읽음' 액션 구현
+    readAllNotifications: async () => {
+        try {
+            // 1. 먼저 백엔드에 '모두 읽음' API를 호출하고 응답을 기다립니다.
+            await axiosInstance.post('/api/v1/notifications/read-all');
+
+            // 2. API 호출이 성공하면, 프론트엔드의 상태를 업데이트합니다.
+            set(state => ({
+                notifications: state.notifications.map(n => ({ ...n, isRead: true })),
+                unreadCount: 0,
+            }));
+
+        } catch (err) {
+            console.error("모두 읽음 처리 API 실패:", err);
+            // 에러 발생 시 사용자에게 알려줄 수 있습니다.
+            // toast.error("모든 알림을 읽음 처리하는데 실패했습니다.");
         }
     },
 }));
