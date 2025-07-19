@@ -33,6 +33,12 @@ interface BidResponse {
     bidderName: string;
 }
 
+declare global {
+    interface Window {
+        PaymentWidget?: any; // 간단하게 any 타입으로 선언
+    }
+}
+
 // 수정 모달을 위한 타입 추가
 interface ProductUpdateRequest {
     name: string;
@@ -46,9 +52,19 @@ const categoryKoreanNames: { [key: string]: string } = {
     DIGITAL_DEVICE: "디지털 기기", APPLIANCES: "생활가전", FURNITURE: "가구/인테리어", HOME_LIFE: "생활/주방", CLOTHING: "의류", BEAUTY: "뷰티/미용", SPORTS_LEISURE: "스포츠/레저", BOOKS_TICKETS: "도서/티켓/음반", PET_SUPPLIES: "반려동물용품", ETC: "기타 중고물품"
 };
 
+// 토스페이먼츠 위젯 타입을 명시적으로 선언
 interface TossPaymentWidget {
-    renderPaymentMethods: (selector: string, amount: { value: number }) => void;
+    renderPaymentMethods: (selector: string, amount: { value: number }, options?: { variantKey?: string }) => void;
     requestPayment: (paymentInfo: any) => void;
+}
+
+// 백엔드로부터 받는 결제 정보 타입
+interface PaymentInfo {
+    orderId: string;
+    productName: string;
+    amount: number;
+    buyerName: string;
+    buyerEmail: string;
 }
 
 const ProductDetailPage = () => {
@@ -86,10 +102,42 @@ const ProductDetailPage = () => {
         setAlertInfo({ isOpen: true, title, message });
     };
 
-    // 결제 모달 및 위젯을 위한 state 추가
+    /// 결제 관련 state를 하나로 묶어서 관리
+    const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-    const paymentWidgetRef = useRef<TossPaymentWidget | null>(null);
-    const paymentMethodsRef = useRef<HTMLDivElement>(null); // 위젯이 렌더링될 DOM 요소
+    const paymentWidgetRef = useRef<any>(null); // 타입을 any로 하여 유연성 확보
+
+    // ★★★ 1. 토스페이먼츠 스크립트를 동적으로 로드하는 useEffect 추가 ★★★
+    useEffect(() => {
+        const scriptId = 'toss-payment-script';
+        // 스크립트가 이미 로드되었는지 확인
+        if (document.getElementById(scriptId)) {
+            console.log('토스페이먼츠 스크립트가 이미 존재합니다.');
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.id = scriptId;
+        script.src = 'https://js.tosspayments.com/v1/payment-widget';
+        script.async = true;
+
+        script.onload = () => {
+            console.log('토스페이먼츠 스크립트 로드 성공!');
+        };
+        script.onerror = (error) => {
+            console.error('토스페이먼츠 스크립트 로드 실패:', error);
+            showAlert('결제 시스템 오류', '결제 시스템을 불러오는 데 실패했습니다.');
+        };
+
+        document.head.appendChild(script);
+
+        return () => {
+            const existingScript = document.getElementById(scriptId);
+            if (existingScript) {
+                document.head.removeChild(existingScript);
+            }
+        };
+    }, []);
 
     // 상품 데이터를 불러오는 useEffect
     useEffect(() => {
@@ -271,61 +319,99 @@ const ProductDetailPage = () => {
         };
     }, [menuRef]);
 
-    // 결제하기 버튼 클릭 핸들러 (모달 열기)
+    // 결제하기 버튼 클릭 핸들러
     const handlePaymentClick = async () => {
+        // ★★★ 로그 1: 버튼 클릭 시점의 모든 상태 확인 ★★★
+        console.group('--- [Debug] handlePaymentClick 시작 ---');
+        console.log('Product:', product);
+        console.log('UserInfo:', userInfo);
+        console.log('isLoggedIn:', isLoggedIn);
+        console.log('window.PaymentWidget 존재 여부:', !!window.PaymentWidget);
+        console.groupEnd();
+
         if (!product || !userInfo) {
-            alert("결제 정보를 불러올 수 없습니다.");
+            showAlert('오류', '상품 또는 사용자 정보가 없습니다.');
+            return;
+        }
+
+        if (!window.PaymentWidget) {
+            showAlert('결제 시스템 오류', '결제 시스템이 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.');
             return;
         }
 
         try {
-            const res = await axiosInstance.post(`/api/v1/payments/${productId}/info`);
-            const paymentInfo = res.data;
-
-            const paymentWidget = (window as any).PaymentWidget(
-                "test_ck_QbgMGZzorzw1QlGzjDeD8l5E1em4", // 본인의 테스트 클라이언트 키
-                paymentInfo.buyerEmail // 고객을 고유하게 식별할 수 있는 값 (이메일 사용)
-            );
-
-            paymentWidgetRef.current = paymentWidget;
+            const response = await axiosInstance.post(`/api/v1/payments/${productId}/info`);
+            console.log('[Debug] 백엔드로부터 받은 결제 정보:', response.data);
+            setPaymentInfo(response.data);
             setIsPaymentModalOpen(true);
-
         } catch (error) {
             console.error("결제 정보 생성 실패:", error);
-            alert("결제 정보를 생성하는 데 실패했습니다.");
+            showAlert('결제 오류', '결제 정보를 생성하는 데 실패했습니다.');
         }
     };
 
     // 결제 위젯 렌더링을 위한 useEffect
     useEffect(() => {
-        // 모달이 열리고, 위젯 인스턴스가 생성되었고, 렌더링될 DOM 요소가 준비되었을 때 실행
-        if (isPaymentModalOpen && paymentWidgetRef.current && paymentMethodsRef.current) {
-            paymentWidgetRef.current.renderPaymentMethods(
-                '#payment-widget', // 렌더링될 div의 CSS 선택자
-                { value: product!.currentPrice } // 최종 결제 금액
-            );
+        // ★★★ 로그 2: 위젯 렌더링 useEffect 실행 시점의 상태 확인 ★★★
+        console.group('--- [Debug] 위젯 렌더링 useEffect 실행 ---');
+        console.log('isPaymentModalOpen:', isPaymentModalOpen);
+        console.log('paymentInfo:', paymentInfo);
+        console.log('userInfo:', userInfo);
+        console.log('window.PaymentWidget:', window.PaymentWidget);
+        console.groupEnd();
+
+        // 모달이 닫히거나, 필요한 정보가 없으면 실행하지 않음
+        if (!isPaymentModalOpen || !paymentInfo || !userInfo || !window.PaymentWidget) {
+            return;
         }
-    }, [isPaymentModalOpen, product]);
+
+        try {
+            // ★★★ 토스페이먼츠 개발자 센터에서 발급받은 'API 개별 연동 키'의
+            // ★★★ '클라이언트 키'를 다시 한번 정확하게 복사해서 붙여넣어 주세요.
+            const clientKey = "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm"; // <--- 이 키를 재확인 & 교체
+            const customerKey = paymentInfo.buyerEmail;
+
+            console.log('[Debug] PaymentWidget 초기화 시도. ClientKey:', clientKey);
+
+            const paymentWidget = window.PaymentWidget(clientKey, customerKey);
+            paymentWidgetRef.current = paymentWidget;
+
+            // renderPaymentMethods는 Promise를 반환하지 않으므로 .catch를 제거합니다.
+            // 대신, 이 함수는 렌더링 실패 시 에러를 throw하므로, try...catch 블록으로 전체를 감쌉니다.
+            paymentWidget.renderPaymentMethods(
+                '#payment-widget',
+                { value: paymentInfo.amount },
+                { variantKey: "DEFAULT" }
+            );
+
+        } catch (error) {
+            console.error('PaymentWidget 초기화 또는 렌더링 중 에러 발생:', error);
+            showAlert('결제 시스템 오류', '결제 화면을 불러오는 중 에러가 발생했습니다.');
+            setIsPaymentModalOpen(false); // 에러 발생 시 모달 닫기
+        }
+
+    }, [isPaymentModalOpen, paymentInfo, userInfo]);
 
     // 모달 안의 최종 결제 버튼 핸들러
     const handleFinalPayment = async () => {
-        if (!paymentWidgetRef.current || !product || !userInfo) return;
-
+        if (!paymentWidgetRef.current || !paymentInfo) {
+            showAlert('결제 오류', '결제 정보가 올바르지 않습니다.');
+            return;
+        }
         try {
-            // 백엔드에서 생성했던 결제 정보를 다시 가져오거나, state로 관리해야 함
-            // 여기서는 간단하게 다시 요청
-            const response = await axiosInstance.post(`/api/v1/payments/${productId}/info`);
-            const paymentInfo = response.data;
-
+            console.log('[Debug] requestPayment 호출. paymentInfo:', paymentInfo);
             await paymentWidgetRef.current.requestPayment({
                 orderId: paymentInfo.orderId,
-                orderName: product.name,
-                customerName: userInfo.name,
+                orderName: paymentInfo.productName,
+                customerName: paymentInfo.buyerName,
                 successUrl: `${window.location.origin}/payment/success`,
                 failUrl: `${window.location.origin}/payment/fail`,
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error("결제 요청 실패:", error);
+            if (error.code && error.code !== 'USER_CANCEL') {
+                showAlert('결제 실패', error.message || '결제 처리 중 오류가 발생했습니다.');
+            }
         }
     };
 
@@ -486,7 +572,7 @@ const ProductDetailPage = () => {
                         <h2 className="text-2xl font-bold mb-4">결제 진행</h2>
 
                         {/* 결제 위젯이 렌더링될 영역 */}
-                        <div id="payment-widget" ref={paymentMethodsRef}></div>
+                        <div id="payment-widget"></div>
 
                         <div className="flex justify-end space-x-4 mt-8">
                             <button type="button" onClick={() => setIsPaymentModalOpen(false)} className="bg-gray-200 px-4 py-2 rounded-md">취소</button>
