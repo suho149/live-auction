@@ -53,3 +53,7 @@ jwt:
 # 파일 업로드 설정
 file:
   upload-dir: ./uploads/ # 프로젝트 루트 아래에 uploads 폴더를 생성하여 저장
+
+payment:
+  toss:
+    secret-key: "${TOSS_SECRET_KEY}"

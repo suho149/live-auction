@@ -46,6 +46,11 @@ const categoryKoreanNames: { [key: string]: string } = {
     DIGITAL_DEVICE: "디지털 기기", APPLIANCES: "생활가전", FURNITURE: "가구/인테리어", HOME_LIFE: "생활/주방", CLOTHING: "의류", BEAUTY: "뷰티/미용", SPORTS_LEISURE: "스포츠/레저", BOOKS_TICKETS: "도서/티켓/음반", PET_SUPPLIES: "반려동물용품", ETC: "기타 중고물품"
 };
 
+interface TossPaymentWidget {
+    renderPaymentMethods: (selector: string, amount: { value: number }) => void;
+    requestPayment: (paymentInfo: any) => void;
+}
+
 const ProductDetailPage = () => {
     const { productId } = useParams<{ productId: string }>();
     const navigate = useNavigate();
@@ -53,7 +58,7 @@ const ProductDetailPage = () => {
     const [bidAmount, setBidAmount] = useState<number>(0);
     const stompClient = useRef<Client | null>(null);
     const [isConnected, setIsConnected] = useState(false);
-    const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+    const { isLoggedIn, userInfo } = useAuthStore();
     const [isAuctionEnded, setIsAuctionEnded] = useState(false);
     const [timeLeft, setTimeLeft] = useState("");
 
@@ -80,6 +85,11 @@ const ProductDetailPage = () => {
     const showAlert = (title: string, message: string) => {
         setAlertInfo({ isOpen: true, title, message });
     };
+
+    // 결제 모달 및 위젯을 위한 state 추가
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const paymentWidgetRef = useRef<TossPaymentWidget | null>(null);
+    const paymentMethodsRef = useRef<HTMLDivElement>(null); // 위젯이 렌더링될 DOM 요소
 
     // 상품 데이터를 불러오는 useEffect
     useEffect(() => {
@@ -261,6 +271,64 @@ const ProductDetailPage = () => {
         };
     }, [menuRef]);
 
+    // 결제하기 버튼 클릭 핸들러 (모달 열기)
+    const handlePaymentClick = async () => {
+        if (!product || !userInfo) {
+            alert("결제 정보를 불러올 수 없습니다.");
+            return;
+        }
+
+        try {
+            const res = await axiosInstance.post(`/api/v1/payments/${productId}/info`);
+            const paymentInfo = res.data;
+
+            const paymentWidget = (window as any).PaymentWidget(
+                "test_ck_QbgMGZzorzw1QlGzjDeD8l5E1em4", // 본인의 테스트 클라이언트 키
+                paymentInfo.buyerEmail // 고객을 고유하게 식별할 수 있는 값 (이메일 사용)
+            );
+
+            paymentWidgetRef.current = paymentWidget;
+            setIsPaymentModalOpen(true);
+
+        } catch (error) {
+            console.error("결제 정보 생성 실패:", error);
+            alert("결제 정보를 생성하는 데 실패했습니다.");
+        }
+    };
+
+    // 결제 위젯 렌더링을 위한 useEffect
+    useEffect(() => {
+        // 모달이 열리고, 위젯 인스턴스가 생성되었고, 렌더링될 DOM 요소가 준비되었을 때 실행
+        if (isPaymentModalOpen && paymentWidgetRef.current && paymentMethodsRef.current) {
+            paymentWidgetRef.current.renderPaymentMethods(
+                '#payment-widget', // 렌더링될 div의 CSS 선택자
+                { value: product!.currentPrice } // 최종 결제 금액
+            );
+        }
+    }, [isPaymentModalOpen, product]);
+
+    // 모달 안의 최종 결제 버튼 핸들러
+    const handleFinalPayment = async () => {
+        if (!paymentWidgetRef.current || !product || !userInfo) return;
+
+        try {
+            // 백엔드에서 생성했던 결제 정보를 다시 가져오거나, state로 관리해야 함
+            // 여기서는 간단하게 다시 요청
+            const response = await axiosInstance.post(`/api/v1/payments/${productId}/info`);
+            const paymentInfo = response.data;
+
+            await paymentWidgetRef.current.requestPayment({
+                orderId: paymentInfo.orderId,
+                orderName: product.name,
+                customerName: userInfo.name,
+                successUrl: `${window.location.origin}/payment/success`,
+                failUrl: `${window.location.origin}/payment/fail`,
+            });
+        } catch (error) {
+            console.error("결제 요청 실패:", error);
+        }
+    };
+
     // 1. product가 null이면 로딩 화면을 먼저 렌더링
     if (!product) {
         return (
@@ -370,19 +438,37 @@ const ProductDetailPage = () => {
 
                             <div className="mt-4">
                                 {isAuctionEnded ? (
-                                    <div className="text-center p-4 bg-red-100 text-red-700 rounded-md font-bold">종료된 경매입니다.</div>
+                                    // 경매가 종료된 경우
+                                    isLoggedIn && product.highestBidderName === userInfo?.name ? (
+                                        // 내가 최고 입찰자라면 '결제하기' 버튼 표시
+                                        <button
+                                            onClick={handlePaymentClick}
+                                            className="w-full bg-blue-600 text-white font-bold py-3 rounded-md hover:bg-blue-700 transition-colors"
+                                        >
+                                            결제하기
+                                        </button>
+                                    ) : (
+                                        // 그 외의 경우 '종료된 경매' 메시지 표시
+                                        <div className="text-center p-4 bg-red-100 text-red-700 rounded-md font-bold">
+                                            종료된 경매입니다.
+                                        </div>
+                                    )
                                 ) : isLoggedIn ? (
+                                    // 경매 진행 중이고 로그인한 경우
                                     product.seller ? (
-                                        <div className="text-center p-4 bg-yellow-100 text-yellow-800 rounded-md font-semibold">자신이 등록한 상품입니다.</div>
+                                        <div className="text-center p-4 bg-yellow-100 text-yellow-800 rounded-md font-semibold">
+                                            자신이 등록한 상품입니다.
+                                        </div>
                                     ) : (
                                         <div className="flex space-x-2">
-                                            <input type="number" value={bidAmount} onChange={(e) => setBidAmount(parseInt(e.target.value, 10) || 0)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="현재가보다 높은 금액"/>
+                                            <input type="number" value={bidAmount} onChange={(e) => setBidAmount(parseInt(e.target.value, 10) || 0)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" placeholder="현재가보다 높은 금액"/>
                                             <button onClick={handleBidSubmit} className="w-1/3 bg-blue-600 text-white font-bold p-3 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400" disabled={!isConnected}>
                                                 {isConnected ? '입찰' : '연결 중'}
                                             </button>
                                         </div>
                                     )
                                 ) : (
+                                    // 경매 진행 중이고 비로그인한 경우
                                     <div className="text-center p-3 bg-gray-200 rounded-md">
                                         <p>입찰에 참여하려면 <a href={'http://localhost:8080/oauth2/authorization/google'} className="text-blue-600 font-bold hover:underline">로그인</a>이 필요합니다.</p>
                                     </div>
@@ -392,6 +478,26 @@ const ProductDetailPage = () => {
                     </div>
                 </div>
             </main>
+
+            {/* 결제 모달 UI */}
+            {isPaymentModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+                    <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg">
+                        <h2 className="text-2xl font-bold mb-4">결제 진행</h2>
+
+                        {/* 결제 위젯이 렌더링될 영역 */}
+                        <div id="payment-widget" ref={paymentMethodsRef}></div>
+
+                        <div className="flex justify-end space-x-4 mt-8">
+                            <button type="button" onClick={() => setIsPaymentModalOpen(false)} className="bg-gray-200 px-4 py-2 rounded-md">취소</button>
+                            <button type="button" onClick={handleFinalPayment} className="bg-blue-600 text-white px-4 py-2 rounded-md">
+                                {product.currentPrice.toLocaleString()}원 결제
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* 상품 수정 모달 UI 추가 */}
             {isEditModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">

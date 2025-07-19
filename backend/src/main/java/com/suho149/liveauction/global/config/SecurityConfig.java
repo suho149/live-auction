@@ -66,7 +66,7 @@ public class SecurityConfig {
                                 "/ws-stomp/**"
                         ).permitAll()
 
-                        .requestMatchers("/api/v1/keywords/**", "/api/v1/notifications/**").hasRole("USER")
+                        .requestMatchers("/api/v1/keywords/**", "/api/v1/notifications/**", "/api/v1/payments/**").hasRole("USER")
 
                         .requestMatchers(HttpMethod.POST, "/api/v1/products", "/api/v1/images/upload").hasRole("USER")
 
