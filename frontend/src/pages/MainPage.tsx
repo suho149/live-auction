@@ -3,6 +3,7 @@ import axiosInstance, { API_BASE_URL } from '../api/axiosInstance'; // API_BASE_
 import Header from '../components/Header';
 import {Link, useSearchParams} from 'react-router-dom';
 
+type ProductStatus = 'ON_SALE' | 'AUCTION_ENDED' | 'SOLD_OUT' | 'EXPIRED' | 'FAILED';
 
 // 타입 정의: imageUrl -> thumbnailUrl로 변경
 interface Product {
@@ -12,7 +13,7 @@ interface Product {
     thumbnailUrl: string; // 상품 목록에서는 대표 이미지만 사용
     auctionEndTime: string;
     sellerName: string;
-    status: 'ON_SALE' | 'SOLD_OUT';
+    status: ProductStatus;
 }
 
 // 상품 카드 컴포넌트: imageUrl -> thumbnailUrl로 변경

@@ -11,6 +11,8 @@ import {ChatBubbleLeftRightIcon, EllipsisVerticalIcon} from "@heroicons/react/16
 import AlertModal from "../components/AlertModal";
 import useAuthStore from '../hooks/useAuthStore';
 
+type ProductStatus = 'ON_SALE' | 'AUCTION_ENDED' | 'SOLD_OUT' | 'EXPIRED' | 'FAILED';
+
 // 타입 정의: imageUrl -> imageUrls (문자열 배열)로 변경
 interface ProductDetail {
     id: number;
@@ -25,7 +27,7 @@ interface ProductDetail {
     likeCount: number;
     likedByCurrentUser: boolean; // 현재 사용자가 찜했는지 여부
     seller: boolean; // 현재 사용자가 판매자인지 여부
-    status: 'ON_SALE' | 'SOLD_OUT';
+    status: ProductStatus;
 }
 
 interface BidResponse {
@@ -431,6 +433,9 @@ const ProductDetailPage = () => {
     // isSoldOut 변수를 선언하여 가독성 높임
     const isSoldOut = product.status === 'SOLD_OUT';
 
+    // isAuctionEnded 변수를 더 명확하게 변경
+    const isAuctionActive = product.status === 'ON_SALE' && !isAuctionEnded;
+
     return (
         <div className="bg-gray-50 min-h-screen">
             <Header />
@@ -508,62 +513,69 @@ const ProductDetailPage = () => {
                                 </div>
                             </div>
                             <p className="text-gray-500 mb-1">판매자: {product.sellerName}</p>
-                            <p className={`text-lg font-bold mb-4 ${isAuctionEnded ? 'text-red-500' : 'text-green-600'}`}>{timeLeft}</p>
+                            <p className={`text-lg font-bold mb-4 ${isAuctionActive ? 'text-green-600' : 'text-red-500'}`}>
+                                {
+                                    {
+                                        'ON_SALE': timeLeft,
+                                        'AUCTION_ENDED': '경매 종료 (결제 대기중)',
+                                        'SOLD_OUT': '판매 완료',
+                                        'EXPIRED': '결제 기한 만료',
+                                        'FAILED': '유찰됨'
+                                    }[product.status]
+                                }
+                            </p>
                             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{product.description}</p>
                         </div>
 
-                        {/* 하단 입찰 영역 */}
-                        <div className="mt-auto pt-4">
-                            <div className="bg-gray-100 p-4 rounded-lg">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-600 text-lg">현재 최고가</span>
-                                    <span className="text-3xl font-bold text-red-500">{product.currentPrice.toLocaleString()}원</span>
-                                </div>
-                                <div className="text-right mt-1 text-sm text-gray-600">
-                                    <span>입찰자: {product.highestBidderName}</span>
-                                </div>
-                            </div>
-
-                            {/* 상태에 따른 버튼 영역 (리팩토링된 부분) */}
-                            <div className="mt-4">
-                                {(() => {
-                                    if (isSoldOut) {
-                                        return (
-                                            <div className="text-center p-4 bg-gray-200 text-gray-600 rounded-md font-bold">판매 완료된 상품입니다.</div>
-                                        );
-                                    }
-                                    if (isAuctionEnded) {
-                                        if (isLoggedIn && product.highestBidderName === userInfo?.name) {
+                        {/* 하단 입찰/결제 영역 */}
+                        <div className="mt-4">
+                            {(() => {
+                                switch (product.status) {
+                                    case 'ON_SALE':
+                                        if (!isLoggedIn) {
                                             return (
-                                                <button onClick={handlePaymentClick} className="w-full bg-blue-600 text-white font-bold py-3 rounded-md hover:bg-blue-700 transition-colors">결제하기</button>
+                                                <div className="text-center p-3 bg-gray-200 rounded-md">
+                                                    <p>입찰에 참여하려면 <a href={'http://localhost:8080/oauth2/authorization/google'} className="text-blue-600 font-bold hover:underline">로그인</a>이 필요합니다.</p>
+                                                </div>
+                                            );
+                                        }
+                                        if (product.seller) {
+                                            return (
+                                                <div className="text-center p-4 bg-yellow-100 text-yellow-800 rounded-md font-semibold">자신이 등록한 상품입니다.</div>
+                                            );
+                                        }
+                                        return ( // 입찰 폼
+                                            <div className="flex space-x-2">
+                                                <input type="number" value={bidAmount} onChange={(e) => setBidAmount(parseInt(e.target.value, 10) || 0)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" placeholder="현재가보다 높은 금액"/>
+                                                <button onClick={handleBidSubmit} className="w-1/3 bg-blue-600 text-white font-bold p-3 rounded-md hover:bg-blue-700 disabled:bg-gray-400" disabled={!isConnected || isAuctionEnded}>
+                                                    {isAuctionEnded ? '종료됨' : isConnected ? '입찰' : '연결 중'}
+                                                </button>
+                                            </div>
+                                        );
+
+                                    case 'AUCTION_ENDED':
+                                        if (isLoggedIn && product.highestBidderName === userInfo?.name) {
+                                            return ( // 결제하기 버튼 (24시간 제한 기능은 다음 단계에서 추가)
+                                                <button onClick={handlePaymentClick} className="w-full bg-blue-600 text-white font-bold py-3 rounded-md hover:bg-blue-700">결제하기</button>
                                             );
                                         }
                                         return (
-                                            <div className="text-center p-4 bg-red-100 text-red-700 rounded-md font-bold">종료된 경매입니다.</div>
+                                            <div className="text-center p-4 bg-gray-200 text-gray-600 rounded-md font-bold">경매가 종료되었습니다.</div>
                                         );
-                                    }
-                                    if (!isLoggedIn) {
-                                        return (
-                                            <div className="text-center p-3 bg-gray-200 rounded-md">
-                                                <p>입찰에 참여하려면 <a href={'http://localhost:8080/oauth2/authorization/google'} className="text-blue-600 font-bold hover:underline">로그인</a>이 필요합니다.</p>
-                                            </div>
-                                        );
-                                    }
-                                    if (product.seller) {
-                                        return (
-                                            <div className="text-center p-4 bg-yellow-100 text-yellow-800 rounded-md font-semibold">자신이 등록한 상품입니다.</div>
-                                        );
-                                    }
-                                    return (
-                                        <div className="flex space-x-2">
-                                            <input type="number" value={bidAmount} onChange={(e) => setBidAmount(parseInt(e.target.value, 10) || 0)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" placeholder="현재가보다 높은 금액"/>
-                                            <button onClick={handleBidSubmit} className="w-1/3 bg-blue-600 text-white font-bold p-3 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400" disabled={!isConnected}>
-                                                {isConnected ? '입찰' : '연결 중'}
-                                            </button>
-                                        </div>
-                                    );
-                                })()}
-                            </div>
+
+                                    case 'SOLD_OUT':
+                                        return <div className="text-center p-4 bg-gray-200 text-gray-600 rounded-md font-bold">판매 완료된 상품입니다.</div>;
+
+                                    case 'EXPIRED':
+                                        return <div className="text-center p-4 bg-red-100 text-red-700 rounded-md font-bold">낙찰자가 기간 내에 결제하지 않았습니다.</div>;
+
+                                    case 'FAILED':
+                                        return <div className="text-center p-4 bg-gray-200 text-gray-600 rounded-md font-bold">입찰자 없이 경매가 종료되었습니다.</div>;
+
+                                    default:
+                                        return null;
+                                }
+                            })()}
                         </div>
                     </div>
                 </div>

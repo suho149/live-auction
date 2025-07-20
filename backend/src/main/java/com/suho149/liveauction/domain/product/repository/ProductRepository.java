@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -57,4 +58,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             "WHERE p.seller.id = :sellerId AND p.status = :status " +
             "ORDER BY p.id DESC") // 판매 완료 시간으로 정렬하려면 Payment와 조인해야 하므로, 간단히 상품 ID 역순으로 정렬
     List<Product> findProductsBySellerIdAndStatus(@Param("sellerId") Long sellerId, @Param("status") ProductStatus status);
+
+    // 특정 상태이고, 경매 종료 시간이 특정 시간 이전인 상품 목록을 조회
+    List<Product> findByStatusAndAuctionEndTimeBefore(ProductStatus status, LocalDateTime now);
 }

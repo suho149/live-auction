@@ -108,4 +108,16 @@ public class Product {
     public void soldOut() {
         this.status = ProductStatus.SOLD_OUT;
     }
+
+    public void endAuctionWithWinner() {
+        this.status = ProductStatus.AUCTION_ENDED;
+    }
+
+    public void endAuctionWithNoBidder() {
+        this.status = ProductStatus.FAILED;
+    }
+
+    public void expirePayment() {
+        this.status = ProductStatus.EXPIRED;
+    }
 }
