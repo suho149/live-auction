@@ -61,4 +61,10 @@ public class ProductController {
         productService.deleteProduct(productId, userPrincipal);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{productId}/end-auction")
+    public ResponseEntity<Void> endAuctionEarly(@PathVariable Long productId, @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        productService.endAuctionEarly(productId, userPrincipal);
+        return ResponseEntity.ok().build();
+    }
 }

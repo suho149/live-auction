@@ -393,6 +393,22 @@ const ProductDetailPage = () => {
         }
     };
 
+    // 판매자 조기 종료 핸들러 함수 추가
+    const handleEndAuctionEarly = async () => {
+        if (window.confirm("정말로 경매를 지금 종료하시겠습니까? 현재 최고 입찰자가 낙찰됩니다. 이 작업은 되돌릴 수 없습니다.")) {
+            try {
+                await axiosInstance.post(`/api/v1/products/${productId}/end-auction`);
+                showAlert('성공', '경매가 조기 종료되었습니다. 페이지를 새로고침합니다.');
+                // 성공 시 window.location.reload()가 alertInfo.onClose에 의해 실행됨
+            } catch (error: any) {
+                const message = error.response?.data?.message || "경매 종료에 실패했습니다.";
+                showAlert('오류', message);
+            } finally {
+                setIsMenuOpen(false); // 메뉴 닫기
+            }
+        }
+    };
+
     // 1. product가 null이면 로딩 화면을 먼저 렌더링
     if (!product) {
         return (
@@ -474,6 +490,7 @@ const ProductDetailPage = () => {
                                                     </button>
                                                     {isMenuOpen && (
                                                         <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+                                                            <button onClick={handleEndAuctionEarly} className="w-full text-left block px-4 py-2 text-sm text-orange-600 hover:bg-gray-100 font-semibold">경매 즉시 종료</button>
                                                             <button onClick={() => { setIsEditModalOpen(true); setIsMenuOpen(false); }} className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">상품 수정</button>
                                                             <button onClick={() => { handleDeleteClick(); setIsMenuOpen(false); }} className="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">상품 삭제</button>
                                                         </div>

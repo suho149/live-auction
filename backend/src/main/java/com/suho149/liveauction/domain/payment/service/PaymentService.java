@@ -1,5 +1,7 @@
 package com.suho149.liveauction.domain.payment.service;
 
+import com.suho149.liveauction.domain.notification.entity.NotificationType;
+import com.suho149.liveauction.domain.notification.service.NotificationService;
 import com.suho149.liveauction.domain.payment.dto.PaymentInfoResponse;
 import com.suho149.liveauction.domain.payment.dto.PaymentRequest;
 import com.suho149.liveauction.domain.payment.dto.PaymentSuccessResponse;
@@ -30,6 +32,7 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Value("${payment.toss.secret-key}")
     private String tossSecretKey;
@@ -100,7 +103,7 @@ public class PaymentService {
         payload.put("orderId", request.getOrderId());
         payload.put("amount", String.valueOf(request.getAmount()));
 
-        // ★★★ 4. 토스페이먼츠로 보낼 최종 데이터 로그
+        // 4. 토스페이먼츠로 보낼 최종 데이터 로그
         log.info(">>>>> [토스페이먼츠 요청 데이터] orderId: {}, amount: {}", payload.get("orderId"), payload.get("amount"));
 
         HttpEntity<Map<String, String>> entity = new HttpEntity<>(payload, headers);
@@ -116,10 +119,16 @@ public class PaymentService {
                 // 결제 정보 업데이트 (상태: COMPLETED, paymentKey, paidAt)
                 payment.completePayment(request.getPaymentKey());
                 payment.getProduct().soldOut(); // 상품 상태 변경 로직
-                // ★ Product의 상태를 '판매 완료'로 바꾸는 로직 추가 고려
+                // Product의 상태를 '판매 완료'로 바꾸는 로직 추가 고려
                 // 예: payment.getProduct().updateStatus(ProductStatus.SOLD_OUT);
 
                 log.info(">>>>> [결제 승인 성공] orderId: {}", request.getOrderId());
+
+                // 결제 완료 시 판매자에게 알림 발송 로직 추가
+                String content = "'" + payment.getProduct().getName() + "' 상품의 결제가 완료되어 판매가 확정되었습니다.";
+                String url = "/products/" + payment.getProduct().getId();
+                notificationService.send(payment.getProduct().getSeller(), NotificationType.BID, content, url);
+                log.info(">>>>> [판매자에게 결제 완료 알림 발송] 상품 ID: {}, 판매자: {}", payment.getProduct().getId(), payment.getProduct().getSeller().getName());
 
                 // 성공 응답 DTO 생성 및 반환
                 return PaymentSuccessResponse.builder()

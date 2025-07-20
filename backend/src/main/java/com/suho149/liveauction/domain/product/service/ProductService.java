@@ -9,6 +9,7 @@ import com.suho149.liveauction.domain.product.dto.ProductUpdateRequest;
 import com.suho149.liveauction.domain.product.entity.Category;
 import com.suho149.liveauction.domain.product.entity.Product;
 import com.suho149.liveauction.domain.product.entity.ProductImage;
+import com.suho149.liveauction.domain.product.entity.ProductStatus;
 import com.suho149.liveauction.domain.product.repository.ProductRepository;
 import com.suho149.liveauction.domain.user.entity.User;
 import com.suho149.liveauction.domain.user.repository.LikeRepository;
@@ -153,6 +154,32 @@ public class ProductService {
             throw new IllegalStateException("해당 상품에 대한 수정/삭제 권한이 없습니다.");
         }
         return product;
+    }
+
+    @Transactional // 쓰기 작업이므로 @Transactional 추가
+    public void endAuctionEarly(Long productId, UserPrincipal userPrincipal) {
+        // 1. 상품 소유권 확인 (기존 메소드 재활용)
+        Product product = findProductAndCheckOwnership(productId, userPrincipal.getId());
+
+        // 2. 현재 경매가 진행 중인 상태인지 확인
+        if (product.getStatus() != ProductStatus.ON_SALE) {
+            throw new IllegalStateException("현재 판매 중인 경매만 조기 종료할 수 있습니다.");
+        }
+
+        String url = "/products/" + product.getId();
+
+        // 3. 최고 입찰자 유무에 따라 상태 변경 및 알림 발송 (스케줄러와 동일한 로직)
+        if (product.getHighestBidder() != null) {
+            // 낙찰자가 있는 경우
+            product.endAuctionWithWinner();
+            String winnerContent = "'" + product.getName() + "' 상품에 최종 낙찰되었습니다! 판매자가 경매를 조기 종료했습니다.";
+            notificationService.send(product.getHighestBidder(), NotificationType.BID, winnerContent, url);
+        } else {
+            // 낙찰자가 없는 경우 (유찰)
+            product.endAuctionWithNoBidder();
+            String sellerContent = "요청에 따라 '" + product.getName() + "' 상품의 경매를 조기 종료했습니다. (유찰)";
+            notificationService.send(product.getSeller(), NotificationType.BID, sellerContent, url);
+        }
     }
 
 }
