@@ -65,6 +65,8 @@ public class Product {
     @OneToMany(mappedBy = "product", cascade = CascadeType.REMOVE)
     private Set<Like> likes = new HashSet<>();
 
+    private LocalDateTime paymentDueDate;
+
     @Builder
     public Product(String name, String description, Long startPrice, Category category, LocalDateTime auctionEndTime, User seller) {
         this.name = name;
@@ -111,6 +113,7 @@ public class Product {
 
     public void endAuctionWithWinner() {
         this.status = ProductStatus.AUCTION_ENDED;
+        this.paymentDueDate = LocalDateTime.now().plusHours(24);
     }
 
     public void endAuctionWithNoBidder() {

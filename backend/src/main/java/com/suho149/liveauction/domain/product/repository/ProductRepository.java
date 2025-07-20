@@ -61,4 +61,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     // 특정 상태이고, 경매 종료 시간이 특정 시간 이전인 상품 목록을 조회
     List<Product> findByStatusAndAuctionEndTimeBefore(ProductStatus status, LocalDateTime now);
+
+    // 결제 기한이 만료된 상품을 찾기 위한 메소드
+    List<Product> findByStatusAndPaymentDueDateBefore(ProductStatus status, LocalDateTime now);
 }

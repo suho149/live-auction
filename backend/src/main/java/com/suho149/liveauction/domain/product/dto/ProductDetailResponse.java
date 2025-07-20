@@ -27,6 +27,7 @@ public class ProductDetailResponse {
     private boolean likedByCurrentUser;
     private boolean isSeller;
     private ProductStatus status;
+    private final LocalDateTime paymentDueDate;
 
     public static ProductDetailResponse from(Product product, boolean likedByCurrentUser, boolean isSeller) {
         return ProductDetailResponse.builder()
@@ -45,6 +46,7 @@ public class ProductDetailResponse {
                 .likedByCurrentUser(likedByCurrentUser)
                 .isSeller(isSeller)
                 .status(product.getStatus())
+                .paymentDueDate(product.getPaymentDueDate())
                 .build();
     }
 }

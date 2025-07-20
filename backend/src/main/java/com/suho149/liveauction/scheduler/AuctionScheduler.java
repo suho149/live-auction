@@ -58,4 +58,25 @@ public class AuctionScheduler {
             }
         }
     }
+
+    @Scheduled(cron = "30 * * * * *") // 매 분 30초에 실행
+    @Transactional
+    public void expireOverduePayments() {
+        log.info("결제 기한 만료 스케줄러 실행: {}", LocalDateTime.now());
+
+        List<Product> overdueProducts = productRepository.findByStatusAndPaymentDueDateBefore(ProductStatus.AUCTION_ENDED, LocalDateTime.now());
+
+        for (Product product : overdueProducts) {
+            product.expirePayment();
+
+            String url = "/products/" + product.getId();
+            String content = "'" + product.getName() + "' 상품의 낙찰자가 24시간 내에 결제하지 않아 거래가 취소되었습니다.";
+
+            // 판매자와 낙찰자 모두에게 알림
+            notificationService.send(product.getSeller(), NotificationType.BID, content, url);
+            notificationService.send(product.getHighestBidder(), NotificationType.BID, content, url);
+
+            log.info("상품 ID {} 결제 기한 만료 처리 완료.", product.getId());
+        }
+    }
 }
