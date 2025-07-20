@@ -2,6 +2,7 @@ package com.suho149.liveauction.domain.product.repository;
 
 import com.suho149.liveauction.domain.product.entity.Category;
 import com.suho149.liveauction.domain.product.entity.Product;
+import com.suho149.liveauction.domain.product.entity.ProductStatus;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -49,4 +50,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // 수정/삭제 시 사용할, seller를 함께 fetch하는 메소드 추가
     @Query("SELECT p FROM Product p JOIN FETCH p.seller WHERE p.id = :productId")
     Optional<Product> findByIdWithSeller(@Param("productId") Long productId);
+
+    @Query("SELECT p FROM Product p " +
+            "LEFT JOIN FETCH p.highestBidder " + // 구매자 정보
+            "LEFT JOIN FETCH p.images " +
+            "WHERE p.seller.id = :sellerId AND p.status = :status " +
+            "ORDER BY p.id DESC") // 판매 완료 시간으로 정렬하려면 Payment와 조인해야 하므로, 간단히 상품 ID 역순으로 정렬
+    List<Product> findProductsBySellerIdAndStatus(@Param("sellerId") Long sellerId, @Param("status") ProductStatus status);
 }

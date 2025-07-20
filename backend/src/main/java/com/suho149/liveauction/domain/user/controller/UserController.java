@@ -1,6 +1,7 @@
 package com.suho149.liveauction.domain.user.controller;
 
 import com.suho149.liveauction.domain.user.dto.PurchaseHistoryResponse;
+import com.suho149.liveauction.domain.user.dto.SaleHistoryResponse;
 import com.suho149.liveauction.domain.user.dto.UserResponse;
 import com.suho149.liveauction.domain.user.service.UserService;
 import com.suho149.liveauction.global.security.UserPrincipal;
@@ -34,6 +35,12 @@ public class UserController {
     @GetMapping("/me/purchases")
     public ResponseEntity<List<PurchaseHistoryResponse>> getMyPurchaseHistory(@AuthenticationPrincipal UserPrincipal userPrincipal) {
         List<PurchaseHistoryResponse> history = userService.getMyPurchaseHistory(userPrincipal);
+        return ResponseEntity.ok(history);
+    }
+
+    @GetMapping("/me/sales")
+    public ResponseEntity<List<SaleHistoryResponse>> getMySaleHistory(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        List<SaleHistoryResponse> history = userService.getMySaleHistory(userPrincipal);
         return ResponseEntity.ok(history);
     }
 }

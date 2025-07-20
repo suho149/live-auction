@@ -2,7 +2,11 @@ package com.suho149.liveauction.domain.user.service;
 
 import com.suho149.liveauction.domain.payment.entity.Payment;
 import com.suho149.liveauction.domain.payment.repository.PaymentRepository;
+import com.suho149.liveauction.domain.product.entity.Product;
+import com.suho149.liveauction.domain.product.entity.ProductStatus;
+import com.suho149.liveauction.domain.product.repository.ProductRepository;
 import com.suho149.liveauction.domain.user.dto.PurchaseHistoryResponse;
+import com.suho149.liveauction.domain.user.dto.SaleHistoryResponse;
 import com.suho149.liveauction.domain.user.dto.UserResponse;
 import com.suho149.liveauction.domain.user.entity.User;
 import com.suho149.liveauction.domain.user.repository.UserRepository;
@@ -22,6 +26,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
+    private final ProductRepository productRepository;
 
     /**
      * 현재 로그인한 사용자의 정보를 조회합니다.
@@ -40,6 +45,21 @@ public class UserService {
 
         return completedPayments.stream()
                 .map(PurchaseHistoryResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    public List<SaleHistoryResponse> getMySaleHistory(UserPrincipal userPrincipal) {
+        // 1. 내가 판매하고, 판매 완료된 상품 목록을 조회
+        List<Product> soldProducts = productRepository.findProductsBySellerIdAndStatus(userPrincipal.getId(), ProductStatus.SOLD_OUT);
+
+        // 2. 각 상품에 대한 결제 정보를 찾아 판매 완료 시간을 매핑
+        return soldProducts.stream()
+                .map(product -> {
+                    // 해당 상품의 결제 정보를 찾음 (판매 완료되었으므로 반드시 존재)
+                    Payment payment = paymentRepository.findByProductId(product.getId())
+                            .orElseThrow(() -> new IllegalStateException("판매 완료된 상품의 결제 정보를 찾을 수 없습니다: " + product.getId()));
+                    return SaleHistoryResponse.from(product, payment.getPaidAt());
+                })
                 .collect(Collectors.toList());
     }
 }

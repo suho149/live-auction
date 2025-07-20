@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 
 // ★ API 함수 import
 import { fetchPurchaseHistory, PurchaseHistory } from '../api/mypageApi';
+import { fetchSaleHistory, SaleHistory } from '../api/mypageApi';
 // 키워드 관련 컴포넌트는 별도로 분리하는 것이 좋습니다. 지금은 간단히 여기에 둡니다.
 import { fetchKeywords, addKeyword, deleteKeyword, Keyword } from '../api/keywordApi';
 import { XCircleIcon } from '@heroicons/react/24/solid';
@@ -46,6 +47,53 @@ const PurchaseHistoryList = () => {
                             <p className="text-sm text-gray-500">{new Date(item.purchasedAt).toLocaleDateString()}</p>
                             <p className="font-semibold text-lg text-gray-800">{item.productName}</p>
                             <p className="font-bold text-blue-600">{item.finalPrice.toLocaleString()}원</p>
+                        </div>
+                    </Link>
+                </li>
+            ))}
+        </ul>
+    );
+};
+
+// ★ 판매 내역을 표시할 컴포넌트
+const SaleHistoryList = () => {
+    const [history, setHistory] = useState<SaleHistory[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const getHistory = async () => {
+            try {
+                const data = await fetchSaleHistory();
+                setHistory(data);
+            } catch (error) {
+                console.error("판매 내역을 불러오는 데 실패했습니다.", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        getHistory();
+    }, []);
+
+    if (loading) return <p className="text-center p-4">로딩 중...</p>;
+    if (history.length === 0) return <p className="text-center p-4">판매 내역이 없습니다.</p>;
+
+    return (
+        <ul className="divide-y divide-gray-200">
+            {history.map(item => (
+                <li key={item.productId} className="p-4 hover:bg-gray-50">
+                    <Link to={`/products/${item.productId}`} className="flex items-center space-x-4">
+                        <img
+                            src={item.productThumbnailUrl ? `${API_BASE_URL}${item.productThumbnailUrl}` : 'https://placehold.co/100x100?text=No+Image'}
+                            alt={item.productName}
+                            className="w-20 h-20 object-cover rounded-md flex-shrink-0 bg-gray-200"
+                        />
+                        <div className="flex-1">
+                            <p className="text-sm text-gray-500">{new Date(item.soldAt).toLocaleDateString()}</p>
+                            <p className="font-semibold text-lg text-gray-800">{item.productName}</p>
+                            <div className="flex justify-between items-center mt-1">
+                                <p className="font-bold text-blue-600">{item.finalPrice.toLocaleString()}원</p>
+                                <p className="text-sm text-gray-600">구매자: {item.buyerName}</p>
+                            </div>
                         </div>
                     </Link>
                 </li>
@@ -108,7 +156,7 @@ const MyPage = () => {
 
     const tabs = {
         purchase: { name: '구매 내역', component: <PurchaseHistoryList /> },
-        sales: { name: '판매 내역', component: <p className="text-center p-4">판매 내역 기능은 곧 준비될 예정입니다.</p> }, // 판매 내역은 다음 단계에서 구현
+        sales: { name: '판매 내역', component: <SaleHistoryList /> },
         keywords: { name: '키워드 알림', component: <KeywordManager /> },
     };
 
