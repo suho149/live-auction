@@ -1,5 +1,6 @@
 package com.suho149.liveauction.domain.user.controller;
 
+import com.suho149.liveauction.domain.user.dto.PurchaseHistoryResponse;
 import com.suho149.liveauction.domain.user.dto.UserResponse;
 import com.suho149.liveauction.domain.user.service.UserService;
 import com.suho149.liveauction.global.security.UserPrincipal;
@@ -9,6 +10,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -26,5 +29,11 @@ public class UserController {
     public ResponseEntity<UserResponse> getMyInfo(@AuthenticationPrincipal UserPrincipal userPrincipal) {
         UserResponse myInfo = userService.getMyInfo(userPrincipal);
         return ResponseEntity.ok(myInfo);
+    }
+
+    @GetMapping("/me/purchases")
+    public ResponseEntity<List<PurchaseHistoryResponse>> getMyPurchaseHistory(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        List<PurchaseHistoryResponse> history = userService.getMyPurchaseHistory(userPrincipal);
+        return ResponseEntity.ok(history);
     }
 }
