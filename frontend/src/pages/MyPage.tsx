@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 // ★ API 함수 import
 import { fetchPurchaseHistory, PurchaseHistory } from '../api/mypageApi';
 import { fetchSaleHistory, SaleHistory } from '../api/mypageApi';
+import { fetchSettlementSummary, requestSettlement, fetchSettlementHistory, SettlementSummary, SettlementHistory } from '../api/mypageApi';
 // 키워드 관련 컴포넌트는 별도로 분리하는 것이 좋습니다. 지금은 간단히 여기에 둡니다.
 import { fetchKeywords, addKeyword, deleteKeyword, Keyword } from '../api/keywordApi';
 import { XCircleIcon } from '@heroicons/react/24/solid';
@@ -146,17 +147,124 @@ const KeywordManager = () => {
     );
 };
 
+// ★ 정산 관리 컴포넌트
+const SettlementManager = () => {
+    const [summary, setSummary] = useState<SettlementSummary | null>(null);
+    const [history, setHistory] = useState<SettlementHistory[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const summaryData = await fetchSettlementSummary();
+            const historyData = await fetchSettlementHistory();
+            setSummary(summaryData);
+            setHistory(historyData);
+        } catch (error) {
+            console.error("정산 정보를 불러오는 데 실패했습니다.", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const handleRequestSettlement = async () => {
+        if (summary && summary.availableSettlementAmount > 0) {
+            if (window.confirm(`${summary.availableSettlementAmount.toLocaleString()}원을 정산 요청하시겠습니까?`)) {
+                try {
+                    await requestSettlement();
+                    alert("정산 요청이 완료되었습니다. 관리자 확인 후 처리됩니다.");
+                    fetchData(); // 데이터 새로고침
+                } catch (error) {
+                    alert("정산 요청에 실패했습니다.");
+                }
+            }
+        }
+    };
+
+    const getStatusText = (status: SettlementHistory['status']) => {
+        const statusMap = { PENDING: '대기중', COMPLETED: '정산완료', REJECTED: '거절됨' };
+        return statusMap[status] || status;
+    }
+
+    if (loading) return <p className="text-center p-4">로딩 중...</p>;
+    if (!summary) return <p className="text-center p-4">정보를 불러올 수 없습니다.</p>;
+
+    return (
+        <div>
+            {/* 요약 정보 */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 text-center">
+                <div className="p-4 bg-gray-100 rounded-lg">
+                    <p className="text-sm text-gray-500">총 판매액</p>
+                    <p className="text-2xl font-bold">{summary.totalSalesAmount.toLocaleString()}원</p>
+                </div>
+                <div className="p-4 bg-gray-100 rounded-lg">
+                    <p className="text-sm text-gray-500">정산 완료액</p>
+                    <p className="text-2xl font-bold">{summary.totalSettledAmount.toLocaleString()}원</p>
+                </div>
+                <div className="p-4 bg-yellow-100 rounded-lg">
+                    <p className="text-sm text-yellow-700">처리중인 금액</p>
+                    <p className="text-2xl font-bold text-yellow-800">{summary.pendingSettlementAmount.toLocaleString()}원</p>
+                </div>
+                <div className="p-4 bg-green-100 rounded-lg">
+                    <p className="text-sm text-green-700">정산 가능액</p>
+                    <p className="text-2xl font-bold text-green-800">{summary.availableSettlementAmount.toLocaleString()}원</p>
+                </div>
+            </div>
+
+            {/* 정산 요청 버튼 */}
+            <button
+                onClick={handleRequestSettlement}
+                disabled={summary.availableSettlementAmount <= 0}
+                className="w-full bg-blue-600 text-white font-bold py-3 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+                정산 요청하기
+            </button>
+
+            {/* 정산 내역 */}
+            <h3 className="text-xl font-bold mt-12 mb-4">정산 요청 내역</h3>
+            <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                    <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">요청일</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">요청금액</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">처리일</th>
+                    </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                    {history.length > 0 ? history.map(item => (
+                        <tr key={item.id}>
+                            <td className="px-6 py-4 whitespace-nowrap">{new Date(item.requestedAt).toLocaleString()}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{item.amount.toLocaleString()}원</td>
+                            <td className="px-6 py-4 whitespace-nowrap font-semibold">{getStatusText(item.status)}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{item.completedAt ? new Date(item.completedAt).toLocaleString() : '-'}</td>
+                        </tr>
+                    )) : (
+                        <tr><td colSpan={4} className="text-center py-4">정산 요청 내역이 없습니다.</td></tr>
+                    )}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
 
 // ★ 메인 MyPage 컴포넌트
 const MyPage = () => {
     const { userInfo } = useAuthStore();
-    const [activeTab, setActiveTab] = useState<'purchase' | 'sales' | 'keywords'>('purchase');
+    const [activeTab, setActiveTab] = useState<'purchase' | 'sales' | 'settlement' | 'keywords'>('purchase');
 
     if (!userInfo) return <div>로딩 중...</div>;
 
     const tabs = {
         purchase: { name: '구매 내역', component: <PurchaseHistoryList /> },
         sales: { name: '판매 내역', component: <SaleHistoryList /> },
+        settlement: { name: '정산 관리', component: <SettlementManager /> }, // ★ 정산 탭 추가
         keywords: { name: '키워드 알림', component: <KeywordManager /> },
     };
 

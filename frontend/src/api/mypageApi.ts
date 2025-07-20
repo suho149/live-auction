@@ -31,3 +31,32 @@ export const fetchSaleHistory = async (): Promise<SaleHistory[]> => {
     const response = await axiosInstance.get('/api/v1/users/me/sales');
     return response.data;
 };
+
+export interface SettlementSummary {
+    totalSalesAmount: number;
+    totalSettledAmount: number;
+    pendingSettlementAmount: number;
+    availableSettlementAmount: number;
+}
+
+export interface SettlementHistory {
+    id: number;
+    amount: number;
+    status: 'PENDING' | 'COMPLETED' | 'REJECTED';
+    requestedAt: string;
+    completedAt: string | null;
+}
+
+export const fetchSettlementSummary = async (): Promise<SettlementSummary> => {
+    const response = await axiosInstance.get('/api/v1/users/me/settlement-summary');
+    return response.data;
+};
+
+export const requestSettlement = async (): Promise<void> => {
+    await axiosInstance.post('/api/v1/users/me/settlement-request');
+};
+
+export const fetchSettlementHistory = async (): Promise<SettlementHistory[]> => {
+    const response = await axiosInstance.get('/api/v1/users/me/settlement-history');
+    return response.data;
+};
