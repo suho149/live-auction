@@ -15,6 +15,17 @@ const PaymentFailPage = () => {
     // orderId에서 productId를 추출 (우리 시스템의 orderId 형식: "order_{productId}_{timestamp}")
     const productId = orderId ? orderId.split('_')[1] : null;
 
+    // 결제 재시도 핸들러
+    const handleRetryPayment = () => {
+        if (productId) {
+            // 상품 상세 페이지로 돌아가서 사용자가 다시 '결제하기' 버튼을 누르도록 유도
+            navigate(`/products/${productId}`);
+        } else {
+            // productId 정보가 없으면 메인으로
+            navigate('/');
+        }
+    };
+
     return (
         <div className="bg-gray-50 min-h-screen">
             <Header />
@@ -38,15 +49,15 @@ const PaymentFailPage = () => {
                     <div className="mt-8 flex flex-col sm:flex-row gap-4">
                         {productId && (
                             <button
-                                onClick={() => navigate(`/products/${productId}`)}
-                                className="w-full bg-gray-600 text-white font-semibold py-3 px-4 rounded-md hover:bg-gray-700 transition-colors"
+                                onClick={handleRetryPayment}
+                                className="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-md hover:bg-blue-700 transition-colors"
                             >
-                                이전 페이지로 돌아가기
+                                결제 다시 시도하기
                             </button>
                         )}
                         <Link
                             to="/"
-                            className="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                            className="w-full bg-gray-200 text-gray-800 font-semibold py-3 px-4 rounded-md hover:bg-gray-300 transition-colors"
                         >
                             메인으로 이동
                         </Link>

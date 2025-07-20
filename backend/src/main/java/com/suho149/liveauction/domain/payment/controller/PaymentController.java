@@ -2,6 +2,7 @@ package com.suho149.liveauction.domain.payment.controller;
 
 import com.suho149.liveauction.domain.payment.dto.PaymentInfoResponse;
 import com.suho149.liveauction.domain.payment.dto.PaymentRequest;
+import com.suho149.liveauction.domain.payment.dto.PaymentSuccessResponse;
 import com.suho149.liveauction.domain.payment.service.PaymentService;
 import com.suho149.liveauction.global.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -21,8 +22,8 @@ public class PaymentController {
     }
 
     @PostMapping("/confirm")
-    public ResponseEntity<Void> confirmPayment(@RequestBody PaymentRequest request, @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        paymentService.confirmPayment(request, userPrincipal);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<PaymentSuccessResponse> confirmPayment(@RequestBody PaymentRequest request, @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        PaymentSuccessResponse response = paymentService.confirmPayment(request, userPrincipal);
+        return ResponseEntity.ok(response);
     }
 }
