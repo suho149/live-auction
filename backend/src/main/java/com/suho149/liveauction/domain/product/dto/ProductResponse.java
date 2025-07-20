@@ -1,6 +1,7 @@
 package com.suho149.liveauction.domain.product.dto;
 
 import com.suho149.liveauction.domain.product.entity.Product;
+import com.suho149.liveauction.domain.product.entity.ProductStatus;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -15,6 +16,7 @@ public class ProductResponse {
     private String thumbnailUrl; // ★ 대표 이미지(첫 번째 이미지)
     private LocalDateTime auctionEndTime;
     private String sellerName;
+    private ProductStatus status;
 
     public static ProductResponse from(Product product) {
         return ProductResponse.builder()
@@ -25,6 +27,7 @@ public class ProductResponse {
                 .thumbnailUrl(product.getImages().isEmpty() ? null : product.getImages().get(0).getImageUrl())
                 .auctionEndTime(product.getAuctionEndTime())
                 .sellerName(product.getSeller().getName())
+                .status(product.getStatus())
                 .build();
     }
 }

@@ -36,6 +36,10 @@ public class Product {
     @Column(nullable = false)
     private Long currentPrice;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ProductStatus status = ProductStatus.ON_SALE; // 기본값은 '판매 중'
+
     @Column(nullable = false)
     private LocalDateTime auctionEndTime;
 
@@ -99,5 +103,9 @@ public class Product {
         if (this.likeCount > 0) {
             this.likeCount--;
         }
+    }
+
+    public void soldOut() {
+        this.status = ProductStatus.SOLD_OUT;
     }
 }

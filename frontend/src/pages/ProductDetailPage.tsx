@@ -25,6 +25,7 @@ interface ProductDetail {
     likeCount: number;
     likedByCurrentUser: boolean; // 현재 사용자가 찜했는지 여부
     seller: boolean; // 현재 사용자가 판매자인지 여부
+    status: 'ON_SALE' | 'SOLD_OUT';
 }
 
 interface BidResponse {
@@ -107,7 +108,7 @@ const ProductDetailPage = () => {
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const paymentWidgetRef = useRef<any>(null); // 타입을 any로 하여 유연성 확보
 
-    // ★★★ 1. 토스페이먼츠 스크립트를 동적으로 로드하는 useEffect 추가 ★★★
+    // 1. 토스페이먼츠 스크립트를 동적으로 로드하는 useEffect 추가
     useEffect(() => {
         const scriptId = 'toss-payment-script';
         // 스크립트가 이미 로드되었는지 확인
@@ -321,7 +322,7 @@ const ProductDetailPage = () => {
 
     // 결제하기 버튼 클릭 핸들러
     const handlePaymentClick = async () => {
-        // ★★★ 로그 1: 버튼 클릭 시점의 모든 상태 확인 ★★★
+        // 로그 1: 버튼 클릭 시점의 모든 상태 확인
         console.group('--- [Debug] handlePaymentClick 시작 ---');
         console.log('Product:', product);
         console.log('UserInfo:', userInfo);
@@ -352,7 +353,7 @@ const ProductDetailPage = () => {
 
     // 결제 위젯 렌더링을 위한 useEffect
     useEffect(() => {
-        // ★★★ 로그 2: 위젯 렌더링 useEffect 실행 시점의 상태 확인 ★★★
+        // 로그 2: 위젯 렌더링 useEffect 실행 시점의 상태 확인
         console.group('--- [Debug] 위젯 렌더링 useEffect 실행 ---');
         console.log('isPaymentModalOpen:', isPaymentModalOpen);
         console.log('paymentInfo:', paymentInfo);
@@ -366,8 +367,8 @@ const ProductDetailPage = () => {
         }
 
         try {
-            // ★★★ 토스페이먼츠 개발자 센터에서 발급받은 'API 개별 연동 키'의
-            // ★★★ '클라이언트 키'를 다시 한번 정확하게 복사해서 붙여넣어 주세요.
+            // 토스페이먼츠 개발자 센터에서 발급받은 'API 개별 연동 키'의
+            // '클라이언트 키'를 다시 한번 정확하게 복사해서 붙여넣어 주세요.
             const clientKey = "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm"; // <--- 이 키를 재확인 & 교체
             const customerKey = paymentInfo.buyerEmail;
 
@@ -427,6 +428,9 @@ const ProductDetailPage = () => {
         );
     }
 
+    // isSoldOut 변수를 선언하여 가독성 높임
+    const isSoldOut = product.status === 'SOLD_OUT';
+
     return (
         <div className="bg-gray-50 min-h-screen">
             <Header />
@@ -459,49 +463,47 @@ const ProductDetailPage = () => {
                     </div>
 
                     <div className="flex flex-col">
+                        {/* 상단 정보 영역 */}
                         <div>
-                            <span className="text-sm font-semibold text-blue-600">{product.category}</span>
-                            <div className="flex justify-between items-start my-3">
-                                <h1 className="text-3xl lg:text-4xl font-bold mr-4">{product.name}</h1>
-                                {/* 찜 버튼과 더보기 메뉴를 그룹으로 묶음 */}
-                                <div className="flex items-center space-x-2 flex-shrink-0">
-                                    <button onClick={handleLikeClick} className="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50">
-                                        {product.likedByCurrentUser ? (
-                                            <HeartIconSolid className="w-7 h-7 text-red-500"/>
-                                        ) : (
-                                            <HeartIconOutline className="w-7 h-7"/>
-                                        )}
-                                        <span className="font-semibold text-lg">{product.likeCount}</span>
-                                    </button>
+                            <span className="text-sm font-semibold text-blue-600">{categoryKoreanNames[product.category] || product.category}</span>
 
-                                    {/* 판매자에게만 보이는 더보기 버튼 */}
-                                    {isLoggedIn && product.seller && (
-                                        <div className="relative" ref={menuRef}>
-                                            <button onClick={() => setIsMenuOpen(prev => !prev)} className="p-2 rounded-full hover:bg-gray-100">
-                                                <EllipsisVerticalIcon className="w-6 h-6 text-gray-600"/>
+                            {/* 상품명과 버튼 그룹을 포함하는 Flex 컨테이너 */}
+                            <div className="flex justify-between items-start my-3">
+                                <h1 className="text-3xl lg:text-4xl font-bold mr-4 flex-grow">{product.name}</h1>
+
+                                {/* 오른쪽 버튼 그룹 (찜하기, 채팅, 더보기) */}
+                                <div className="flex items-center space-x-2 flex-shrink-0">
+                                    {/* 판매 완료가 아닐 때만 버튼들을 보여줌 */}
+                                    {!isSoldOut && (
+                                        <>
+                                            <button onClick={handleLikeClick} className="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50">
+                                                {product.likedByCurrentUser ? <HeartIconSolid className="w-7 h-7 text-red-500"/> : <HeartIconOutline className="w-7 h-7"/>}
+                                                <span className="font-semibold text-lg">{product.likeCount}</span>
                                             </button>
 
-                                            {/* 드롭다운 메뉴 (isMenuOpen이 true일 때만 보임) */}
-                                            {isMenuOpen && (
-                                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
-                                                    <button onClick={() => { setIsEditModalOpen(true); setIsMenuOpen(false); }} className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">상품 수정</button>
-                                                    <button onClick={() => { handleDeleteClick(); setIsMenuOpen(false); }} className="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">상품 삭제</button>
+                                            {/* 구매 희망자에게 보이는 채팅하기 버튼 */}
+                                            {isLoggedIn && !product.seller && (
+                                                <button onClick={handleChatClick} className="bg-green-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-green-600 transition-colors flex items-center justify-center gap-2 text-sm">
+                                                    <ChatBubbleLeftRightIcon className="w-5 h-5" />
+                                                    <span>채팅하기</span>
+                                                </button>
+                                            )}
+
+                                            {/* 판매자에게 보이는 더보기 버튼 */}
+                                            {isLoggedIn && product.seller && (
+                                                <div className="relative" ref={menuRef}>
+                                                    <button onClick={() => setIsMenuOpen(prev => !prev)} className="p-2 rounded-full hover:bg-gray-100">
+                                                        <EllipsisVerticalIcon className="w-6 h-6 text-gray-600"/>
+                                                    </button>
+                                                    {isMenuOpen && (
+                                                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+                                                            <button onClick={() => { setIsEditModalOpen(true); setIsMenuOpen(false); }} className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">상품 수정</button>
+                                                            <button onClick={() => { handleDeleteClick(); setIsMenuOpen(false); }} className="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">상품 삭제</button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
-                                        </div>
-                                    )}
-
-                                    {/* 2. 구매 희망자에게만 보이는 채팅하기 버튼 */}
-                                    {isLoggedIn && !product.seller && (
-                                        <div className="my-4">
-                                            <button
-                                                onClick={handleChatClick}
-                                                className="w-full bg-green-500 text-white font-bold py-3 rounded-md hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
-                                            >
-                                                <ChatBubbleLeftRightIcon className="w-6 h-6" />
-                                                <span>판매자와 채팅하기</span>
-                                            </button>
-                                        </div>
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -522,43 +524,45 @@ const ProductDetailPage = () => {
                                 </div>
                             </div>
 
+                            {/* 상태에 따른 버튼 영역 (리팩토링된 부분) */}
                             <div className="mt-4">
-                                {isAuctionEnded ? (
-                                    // 경매가 종료된 경우
-                                    isLoggedIn && product.highestBidderName === userInfo?.name ? (
-                                        // 내가 최고 입찰자라면 '결제하기' 버튼 표시
-                                        <button
-                                            onClick={handlePaymentClick}
-                                            className="w-full bg-blue-600 text-white font-bold py-3 rounded-md hover:bg-blue-700 transition-colors"
-                                        >
-                                            결제하기
-                                        </button>
-                                    ) : (
-                                        // 그 외의 경우 '종료된 경매' 메시지 표시
-                                        <div className="text-center p-4 bg-red-100 text-red-700 rounded-md font-bold">
-                                            종료된 경매입니다.
-                                        </div>
-                                    )
-                                ) : isLoggedIn ? (
-                                    // 경매 진행 중이고 로그인한 경우
-                                    product.seller ? (
-                                        <div className="text-center p-4 bg-yellow-100 text-yellow-800 rounded-md font-semibold">
-                                            자신이 등록한 상품입니다.
-                                        </div>
-                                    ) : (
+                                {(() => {
+                                    if (isSoldOut) {
+                                        return (
+                                            <div className="text-center p-4 bg-gray-200 text-gray-600 rounded-md font-bold">판매 완료된 상품입니다.</div>
+                                        );
+                                    }
+                                    if (isAuctionEnded) {
+                                        if (isLoggedIn && product.highestBidderName === userInfo?.name) {
+                                            return (
+                                                <button onClick={handlePaymentClick} className="w-full bg-blue-600 text-white font-bold py-3 rounded-md hover:bg-blue-700 transition-colors">결제하기</button>
+                                            );
+                                        }
+                                        return (
+                                            <div className="text-center p-4 bg-red-100 text-red-700 rounded-md font-bold">종료된 경매입니다.</div>
+                                        );
+                                    }
+                                    if (!isLoggedIn) {
+                                        return (
+                                            <div className="text-center p-3 bg-gray-200 rounded-md">
+                                                <p>입찰에 참여하려면 <a href={'http://localhost:8080/oauth2/authorization/google'} className="text-blue-600 font-bold hover:underline">로그인</a>이 필요합니다.</p>
+                                            </div>
+                                        );
+                                    }
+                                    if (product.seller) {
+                                        return (
+                                            <div className="text-center p-4 bg-yellow-100 text-yellow-800 rounded-md font-semibold">자신이 등록한 상품입니다.</div>
+                                        );
+                                    }
+                                    return (
                                         <div className="flex space-x-2">
                                             <input type="number" value={bidAmount} onChange={(e) => setBidAmount(parseInt(e.target.value, 10) || 0)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" placeholder="현재가보다 높은 금액"/>
                                             <button onClick={handleBidSubmit} className="w-1/3 bg-blue-600 text-white font-bold p-3 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400" disabled={!isConnected}>
                                                 {isConnected ? '입찰' : '연결 중'}
                                             </button>
                                         </div>
-                                    )
-                                ) : (
-                                    // 경매 진행 중이고 비로그인한 경우
-                                    <div className="text-center p-3 bg-gray-200 rounded-md">
-                                        <p>입찰에 참여하려면 <a href={'http://localhost:8080/oauth2/authorization/google'} className="text-blue-600 font-bold hover:underline">로그인</a>이 필요합니다.</p>
-                                    </div>
-                                )}
+                                    );
+                                })()}
                             </div>
                         </div>
                     </div>

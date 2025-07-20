@@ -115,7 +115,7 @@ public class PaymentService {
             if (response.getStatusCode() == HttpStatus.OK) {
                 // 결제 정보 업데이트 (상태: COMPLETED, paymentKey, paidAt)
                 payment.completePayment(request.getPaymentKey());
-
+                payment.getProduct().soldOut(); // 상품 상태 변경 로직
                 // ★ Product의 상태를 '판매 완료'로 바꾸는 로직 추가 고려
                 // 예: payment.getProduct().updateStatus(ProductStatus.SOLD_OUT);
 

@@ -3,6 +3,7 @@ package com.suho149.liveauction.domain.product.dto;
 import com.suho149.liveauction.domain.product.entity.Category;
 import com.suho149.liveauction.domain.product.entity.Product;
 import com.suho149.liveauction.domain.product.entity.ProductImage;
+import com.suho149.liveauction.domain.product.entity.ProductStatus;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -25,6 +26,7 @@ public class ProductDetailResponse {
     private int likeCount;
     private boolean likedByCurrentUser;
     private boolean isSeller;
+    private ProductStatus status;
 
     public static ProductDetailResponse from(Product product, boolean likedByCurrentUser, boolean isSeller) {
         return ProductDetailResponse.builder()
@@ -42,6 +44,7 @@ public class ProductDetailResponse {
                 .likeCount(product.getLikeCount())
                 .likedByCurrentUser(likedByCurrentUser)
                 .isSeller(isSeller)
+                .status(product.getStatus())
                 .build();
     }
 }
