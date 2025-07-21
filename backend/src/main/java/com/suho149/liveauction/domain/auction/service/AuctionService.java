@@ -5,7 +5,9 @@ import com.suho149.liveauction.domain.auction.dto.BidRequest;
 import com.suho149.liveauction.domain.auction.dto.BidResponse;
 import com.suho149.liveauction.domain.auction.dto.BuyNowRequest;
 import com.suho149.liveauction.domain.auction.entity.AutoBid;
+import com.suho149.liveauction.domain.auction.entity.Bid;
 import com.suho149.liveauction.domain.auction.repository.AutoBidRepository;
+import com.suho149.liveauction.domain.auction.repository.BidRepository;
 import com.suho149.liveauction.domain.notification.entity.NotificationType;
 import com.suho149.liveauction.domain.notification.service.NotificationService;
 import com.suho149.liveauction.domain.product.entity.Product;
@@ -38,6 +40,7 @@ public class AuctionService {
     private final SimpMessageSendingOperations messagingTemplate;
     private final NotificationService notificationService;
     private final AutoBidRepository autoBidRepository;
+    private final BidRepository bidRepository;
 
     private static final long EXTENSION_THRESHOLD_SECONDS = 60; // 60초(1분) 이내 입찰 시 연장
     private static final long EXTENSION_DURATION_SECONDS = 60;  // 60초(1분) 연장
@@ -265,6 +268,14 @@ public class AuctionService {
     private void updateAndNotifyBid(Product product, User bidder, long amount) {
         User previousBidder = product.getHighestBidder();
         product.updateBid(bidder, amount);
+
+        // 입찰 기록 저장
+        Bid newBid = Bid.builder()
+                .product(product)
+                .bidder(bidder)
+                .amount(amount)
+                .build();
+        bidRepository.save(newBid);
 
         BidResponse response = BidResponse.builder()
                 .productId(product.getId())

@@ -1,6 +1,7 @@
 package com.suho149.liveauction.domain.product.service;
 
 import com.suho149.liveauction.domain.auction.repository.AutoBidRepository;
+import com.suho149.liveauction.domain.auction.repository.BidRepository;
 import com.suho149.liveauction.domain.keyword.repository.KeywordRepository;
 import com.suho149.liveauction.domain.notification.entity.NotificationType;
 import com.suho149.liveauction.domain.product.dto.ProductCreateRequest;
@@ -41,6 +42,7 @@ public class ProductService {
     private final NotificationService notificationService;
     private final KeywordRepository keywordRepository;
     private final AutoBidRepository autoBidRepository;
+    private final BidRepository bidRepository;
 
     @Transactional
     public Product createProduct(ProductCreateRequest request, UserPrincipal userPrincipal) {
@@ -132,7 +134,10 @@ public class ProductService {
                     .orElse(null);
         }
 
-        return ProductDetailResponse.from(product, likedByCurrentUser, isSeller, myAutoBidMaxAmount);
+        // 총 입찰 참여자 수 계산
+        long participantCount = bidRepository.countDistinctBiddersByProductId(productId);
+
+        return ProductDetailResponse.from(product, likedByCurrentUser, isSeller, myAutoBidMaxAmount, participantCount);
     }
 
     @Transactional

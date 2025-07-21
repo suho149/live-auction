@@ -31,6 +31,7 @@ interface ProductDetail {
     paymentDueDate: string | null;
     buyNowPrice: number | null;
     myAutoBidMaxAmount: number | null;
+    participantCount: number;
 }
 
 interface BidResponse {
@@ -556,6 +557,18 @@ const ProductDetailPage = () => {
                                 </div>
                             </div>
                             <p className="text-gray-500 mb-1">판매자: {product.sellerName}</p>
+
+                            {/*  참여자 수 표시 UI 추가 */}
+                            <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
+                                <div className="flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" /></svg>
+                                    <span>참여 <span className="font-bold">{product.participantCount}</span>명</span>
+                                </div>
+                                <div className="flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" /></svg>
+                                    <span>찜 <span className="font-bold">{product.likeCount}</span>개</span>
+                                </div>
+                            </div>
 
                             {/* 상태 표시 텍스트 */}
                             <p className={`text-lg font-bold mb-4 ${product.status === 'ON_SALE' ? 'text-green-600' : 'text-red-500'}`}>
