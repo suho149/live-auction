@@ -120,4 +120,10 @@ public class ProductController {
         auctionService.setupAutoBid(productId, request, userPrincipal.getEmail());
         return ResponseEntity.ok().build();
     }
+
+    @DeleteMapping("/{productId}/auto-bid")
+    public ResponseEntity<Void> cancelAutoBid(@PathVariable Long productId, @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        auctionService.cancelAutoBid(productId, userPrincipal.getEmail());
+        return ResponseEntity.noContent().build();
+    }
 }

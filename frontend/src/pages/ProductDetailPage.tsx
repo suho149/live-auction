@@ -447,6 +447,18 @@ const ProductDetailPage = () => {
         }
     };
 
+    const handleCancelAutoBid = async () => {
+        if (window.confirm("자동 입찰 설정을 취소하시겠습니까?")) {
+            try {
+                await axiosInstance.delete(`/api/v1/products/${productId}/auto-bid`);
+                showAlert("성공", "자동 입찰 설정을 취소했습니다.");
+                fetchProduct(); // 최신 상태를 반영하기 위해 데이터 재요청
+            } catch (error: any) {
+                showAlert("실패", "자동 입찰 취소에 실패했습니다.");
+            }
+        }
+    };
+
     // 1. product가 null이면 로딩 화면을 먼저 렌더링
     if (!product) {
         return (
@@ -610,6 +622,9 @@ const ProductDetailPage = () => {
                                                             {/* 설정 변경을 위한 버튼을 여기에 추가할 수도 있음 */}
                                                             <button onClick={() => setIsAutoBidModalOpen(true)} className="text-xs text-blue-600 hover:underline mt-1">
                                                                 금액 변경
+                                                            </button>
+                                                            <button onClick={handleCancelAutoBid} className="text-xs text-red-600 hover:underline font-semibold">
+                                                                설정 취소
                                                             </button>
                                                         </div>
                                                     ) : (
