@@ -39,7 +39,8 @@ public class AuctionService {
         User bidder = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("유저를 찾을 수 없습니다: " + email));
 
-        Product product = productRepository.findById(productId)
+        // 일반 조회 대신, 비관적 락을 사용하는 조회 메소드로 변경
+        Product product = productRepository.findByIdWithPessimisticLock(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
 
         // 판매자 본인 입찰 방지 로직 추가

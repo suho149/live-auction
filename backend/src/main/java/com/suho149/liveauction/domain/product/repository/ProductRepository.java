@@ -4,9 +4,11 @@ import com.suho149.liveauction.domain.product.entity.Category;
 import com.suho149.liveauction.domain.product.entity.Product;
 import com.suho149.liveauction.domain.product.entity.ProductStatus;
 import io.lettuce.core.dynamic.annotation.Param;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
@@ -64,4 +66,14 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     // 결제 기한이 만료된 상품을 찾기 위한 메소드
     List<Product> findByStatusAndPaymentDueDateBefore(ProductStatus status, LocalDateTime now);
+
+    /**
+     * 비관적 쓰기 락(PESSIMISTIC_WRITE)을 사용하여 Product를 조회합니다.
+     * 이 메소드를 호출하는 트랜잭션은 해당 Product 행에 대한 독점적인 쓰기 권한을 가집니다.
+     * 다른 트랜잭션은 이 트랜잭션이 끝날 때까지 해당 행에 대한 수정을 시도할 경우 대기하게 됩니다.
+     * JPA는 이 어노테이션을 보고 데이터베이스에 'SELECT ... FOR UPDATE' 쿼리를 보냅니다.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Product p WHERE p.id = :productId")
+    Optional<Product> findByIdWithPessimisticLock(@Param("productId") Long productId);
 }
