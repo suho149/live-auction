@@ -1,5 +1,6 @@
 package com.suho149.liveauction.domain.product.service;
 
+import com.suho149.liveauction.domain.auction.repository.AutoBidRepository;
 import com.suho149.liveauction.domain.keyword.repository.KeywordRepository;
 import com.suho149.liveauction.domain.notification.entity.NotificationType;
 import com.suho149.liveauction.domain.product.dto.ProductCreateRequest;
@@ -39,6 +40,7 @@ public class ProductService {
     private final LikeRepository likeRepository;
     private final NotificationService notificationService;
     private final KeywordRepository keywordRepository;
+    private final AutoBidRepository autoBidRepository;
 
     @Transactional
     public Product createProduct(ProductCreateRequest request, UserPrincipal userPrincipal) {
@@ -117,14 +119,20 @@ public class ProductService {
 
         boolean likedByCurrentUser = false;
         boolean isSeller = false;
+        Long myAutoBidMaxAmount = null; // 기본값은 null
 
         // 로그인한 사용자일 경우에만 찜 여부와 판매자 여부를 확인
         if (userPrincipal != null) {
             likedByCurrentUser = likeRepository.existsByUserIdAndProductId(userPrincipal.getId(), productId);
             isSeller = product.getSeller().getId().equals(userPrincipal.getId());
+
+            // 현재 사용자의 자동 입찰 설정 금액을 조회
+            myAutoBidMaxAmount = autoBidRepository.findByUser_IdAndProduct_Id(userPrincipal.getId(), productId)
+                    .map(autoBid -> autoBid.getMaxAmount())
+                    .orElse(null);
         }
 
-        return ProductDetailResponse.from(product, likedByCurrentUser, isSeller);
+        return ProductDetailResponse.from(product, likedByCurrentUser, isSeller, myAutoBidMaxAmount);
     }
 
     @Transactional

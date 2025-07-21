@@ -1,8 +1,11 @@
 package com.suho149.liveauction.domain.auction.service;
 
+import com.suho149.liveauction.domain.auction.dto.AutoBidRequest;
 import com.suho149.liveauction.domain.auction.dto.BidRequest;
 import com.suho149.liveauction.domain.auction.dto.BidResponse;
 import com.suho149.liveauction.domain.auction.dto.BuyNowRequest;
+import com.suho149.liveauction.domain.auction.entity.AutoBid;
+import com.suho149.liveauction.domain.auction.repository.AutoBidRepository;
 import com.suho149.liveauction.domain.notification.entity.NotificationType;
 import com.suho149.liveauction.domain.notification.service.NotificationService;
 import com.suho149.liveauction.domain.product.entity.Product;
@@ -21,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Locale;
 
 @Service
@@ -32,6 +36,7 @@ public class AuctionService {
     private final UserRepository userRepository;
     private final SimpMessageSendingOperations messagingTemplate;
     private final NotificationService notificationService;
+    private final AutoBidRepository autoBidRepository;
 
     private static final long EXTENSION_THRESHOLD_SECONDS = 60; // 60초(1분) 이내 입찰 시 연장
     private static final long EXTENSION_DURATION_SECONDS = 60;  // 60초(1분) 연장
@@ -103,6 +108,9 @@ public class AuctionService {
             String content = "'" + product.getName() + "' 상품에 더 높은 가격의 입찰이 등록되었습니다.";
             notificationService.send(previousHighestBidder, NotificationType.BID, content, url);
         }
+
+        // 일반 입찰 후에도 자동 입찰 경쟁을 유발
+        processAutoBids(product);
     }
 
     @Transactional
@@ -146,5 +154,126 @@ public class AuctionService {
         String content = "'" + product.getName() + "' 상품을 즉시 구매하여 최종 낙찰되었습니다! 24시간 내에 결제를 완료해주세요.";
         notificationService.send(buyer, NotificationType.BID, content, "/products/" + product.getId());
         log.info("상품 ID {} 즉시 구매 처리 완료. 구매자: {}", productId, buyer.getName());
+    }
+
+    @Transactional
+    public void setupAutoBid(Long productId, AutoBidRequest request, String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("자동 입찰 설정 실패: 사용자를 찾을 수 없습니다. email: " + email));
+
+        // 여기서는 데이터 수정이 아닌 조회이므로 락이 필요 없습니다.
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("자동 입찰 설정 실패: 상품을 찾을 수 없습니다. ID: " + productId));
+
+        if (request.getMaxAmount() <= product.getCurrentPrice()) {
+            throw new IllegalArgumentException("자동 입찰 금액은 현재가보다 높아야 합니다.");
+        }
+
+        // 기존에 설정한 자동 입찰이 있는지 확인
+        autoBidRepository.findByUser_IdAndProduct_Id(user.getId(), productId)
+                .ifPresentOrElse(
+                        autoBid -> autoBid.updateMaxAmount(request.getMaxAmount()), // 있으면 금액만 업데이트
+                        () -> { // 없으면 새로 생성
+                            AutoBid newAutoBid = AutoBid.builder()
+                                    .user(user)
+                                    .product(product)
+                                    .maxAmount(request.getMaxAmount())
+                                    .build();
+                            autoBidRepository.save(newAutoBid);
+                        }
+                );
+
+        // 자동 입찰 설정 후, 즉시 자동 입찰 로직을 한 번 실행해볼 수 있음
+        processAutoBids(product);
+    }
+
+    private void processAutoBids(Product product) {
+        log.info("상품 ID {} 자동 입찰 프로세스 시작... 현재가: {}, 최고 입찰자: {}",
+                product.getId(), product.getCurrentPrice(), product.getHighestBidder() != null ? product.getHighestBidder().getName() : "없음");
+
+        long minBidIncrement = 1000;
+
+        // 1. 이 상품에 대한 모든 자동 입찰 설정을 최대 금액 순으로 가져옴
+        List<AutoBid> autoBids = autoBidRepository.findByProduct_IdOrderByMaxAmountDesc(product.getId());
+
+        // --- ★★★ 로직 수정 시작 ★★★ ---
+
+        // 2. 자동 입찰 설정이 아예 없으면 즉시 종료
+        if (autoBids.isEmpty()) {
+            log.info("자동 입찰 설정 없음. 종료.");
+            return;
+        }
+
+        // 3. 최고 자동 입찰 설정자 추출
+        AutoBid topAutoBidderSetting = autoBids.get(0);
+        User topAutoBidder = topAutoBidderSetting.getUser();
+        long topMaxAmount = topAutoBidderSetting.getMaxAmount();
+
+        // 4. 현재 최고 입찰자가 최고 자동 입찰 설정자와 동일한 경우, 아무것도 할 필요 없음
+        if (product.getHighestBidder() != null && product.getHighestBidder().getId().equals(topAutoBidder.getId())) {
+            log.info("현재 최고 입찰자가 이미 최고 자동 입찰자임. 종료.");
+            return;
+        }
+
+        // 5. 자동 입찰자가 입찰해야 할 금액 계산
+        //    - 경쟁자가 있으면 (자동 입찰 2순위 또는 현재 최고 입찰자)
+        //    - 경쟁자가 없으면 (현재가 + 최소입찰단위)
+        long nextBidAmount;
+
+        // 5-1. 자동 입찰 경쟁자가 있는지 확인 (2순위 자동 입찰자)
+        if (autoBids.size() > 1) {
+            AutoBid secondAutoBidderSetting = autoBids.get(1);
+            long secondMaxAmount = secondAutoBidderSetting.getMaxAmount();
+            // 2순위의 최대 입찰가보다 높게 입찰해야 함
+            nextBidAmount = Math.min(topMaxAmount, secondMaxAmount + minBidIncrement);
+        } else {
+            // 5-2. 자동 입찰 경쟁자는 없지만, 일반 입찰자가 있는 경우
+            // 현재가보다 높게 입찰해야 함
+            nextBidAmount = Math.min(topMaxAmount, product.getCurrentPrice() + minBidIncrement);
+        }
+
+        // 6. 계산된 입찰가가 현재가보다 낮은 경우는 이미 다른 사람이 더 높게 입찰한 것이므로 종료
+        if (nextBidAmount <= product.getCurrentPrice()) {
+            log.info("계산된 자동 입찰가({})가 현재가({})보다 낮거나 같음. 종료.", nextBidAmount, product.getCurrentPrice());
+            return;
+        }
+
+        // 7. 최고 자동 입찰 설정자가 입찰 실행
+        log.info("자동 입찰 실행: {}가 {}원에 입찰.", topAutoBidder.getName(), nextBidAmount);
+        updateAndNotifyBid(product, topAutoBidder, nextBidAmount);
+
+        // 8. (선택적) 한 번의 상호작용 후 다시 processAutoBids를 호출하여 연쇄 반응 처리
+        // 하지만 현재 로직에서는 한 번의 placeBid에 한 번의 자동 입찰 반응으로 충분함.
+        // processAutoBids(product); // 재귀 호출은 복잡성을 높일 수 있어 일단 보류
+    }
+
+    private void updateAndNotifyBid(Product product, User bidder, long amount) {
+        User previousBidder = product.getHighestBidder();
+        product.updateBid(bidder, amount);
+
+        BidResponse response = BidResponse.builder()
+                .productId(product.getId())
+                .newPrice(amount)
+                .bidderName(bidder.getName())
+                .auctionEndTime(product.getAuctionEndTime())
+                .build();
+        messagingTemplate.convertAndSend("/sub/products/" + product.getId(), response);
+
+        // 알림 전송 로직
+        String url = "/products/" + product.getId();
+        // 숫자를 1,000 단위 콤마가 있는 문자열로 포맷팅
+        String formattedAmount = NumberFormat.getInstance(Locale.KOREA).format(amount);
+
+        // 1. 이전 최고 입찰자에게 알림 (이전 입찰자가 있었고, 현재 입찰자와 다를 경우)
+        if (previousBidder != null && !previousBidder.getId().equals(bidder.getId())) {
+            String content = "'" + product.getName() + "' 상품에 더 높은 가격(" + formattedAmount + "원)의 입찰이 등록되었습니다.";
+            notificationService.send(previousBidder, NotificationType.BID, content, url);
+        }
+
+        // 2. 판매자에게 알림 (입찰자가 판매자 본인이 아닐 경우)
+        if (!product.getSeller().getId().equals(bidder.getId())) {
+            String sellerContent = "'" + product.getName() + "' 상품에 " + formattedAmount + "원의 새로운 입찰이 등록되었습니다.";
+            notificationService.send(product.getSeller(), NotificationType.BID, sellerContent, url);
+        }
     }
 }

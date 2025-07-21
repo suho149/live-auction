@@ -30,8 +30,9 @@ public class ProductDetailResponse {
     private ProductStatus status;
     private final LocalDateTime paymentDueDate;
     private final Long buyNowPrice;
+    private final Long myAutoBidMaxAmount; // 나의 자동 입찰 설정액 (설정 안 했으면 null)
 
-    public static ProductDetailResponse from(Product product, boolean likedByCurrentUser, boolean isSeller) {
+    public static ProductDetailResponse from(Product product, boolean likedByCurrentUser, boolean isSeller, Long myAutoBidMaxAmount) {
         return ProductDetailResponse.builder()
                 .id(product.getId())
                 .name(product.getName())
@@ -51,6 +52,7 @@ public class ProductDetailResponse {
                 .status(product.getStatus())
                 .paymentDueDate(product.getPaymentDueDate())
                 .buyNowPrice(product.getBuyNowPrice())
+                .myAutoBidMaxAmount(myAutoBidMaxAmount)
                 .build();
     }
 }

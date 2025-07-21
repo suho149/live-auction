@@ -1,5 +1,6 @@
 package com.suho149.liveauction.domain.product.controller;
 
+import com.suho149.liveauction.domain.auction.dto.AutoBidRequest;
 import com.suho149.liveauction.domain.auction.dto.BuyNowRequest;
 import com.suho149.liveauction.domain.auction.service.AuctionService;
 import com.suho149.liveauction.domain.payment.dto.PaymentInfoResponse;
@@ -100,5 +101,23 @@ public class ProductController {
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         PaymentInfoResponse info = paymentService.createPaymentInfoForBuyNow(productId, userPrincipal);
         return ResponseEntity.ok(info);
+    }
+
+    /**
+     * 상품에 대한 자동 입찰을 설정하거나 업데이트합니다.
+     * @param productId 상품의 ID
+     * @param request 자동 입찰 최대 금액 정보
+     * @param userPrincipal 현재 인증된 사용자
+     * @return ResponseEntity<Void>
+     */
+    // 자동 입찰 설정 API 엔드포인트 추가
+    @PostMapping("/{productId}/auto-bid")
+    public ResponseEntity<Void> setupAutoBid(
+            @PathVariable Long productId,
+            @RequestBody AutoBidRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ) {
+        auctionService.setupAutoBid(productId, request, userPrincipal.getEmail());
+        return ResponseEntity.ok().build();
     }
 }

@@ -30,6 +30,7 @@ interface ProductDetail {
     status: ProductStatus;
     paymentDueDate: string | null;
     buyNowPrice: number | null;
+    myAutoBidMaxAmount: number | null;
 }
 
 interface BidResponse {
@@ -95,6 +96,9 @@ const ProductDetailPage = () => {
     const [paymentInfo, setPaymentInfo] = useState<any>(null); // 타입 확장성 위해 any
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const paymentWidgetRef = useRef<any>(null);
+
+    const [isAutoBidModalOpen, setIsAutoBidModalOpen] = useState(false);
+    const [autoBidAmount, setAutoBidAmount] = useState<number>(0);
 
     // 1. product 상태를 항상 최신으로 참조하기 위한 ref 생성
     const productRef = useRef<ProductDetail | null>(product);
@@ -423,6 +427,26 @@ const ProductDetailPage = () => {
         }
     };
 
+    const handleSetupAutoBid = async () => {
+        // product가 null이면 아무것도 실행하지 않고 함수를 즉시 종료
+        if (!product) {
+            showAlert("오류", "상품 정보가 아직 로드되지 않았습니다.");
+            return;
+        }
+
+        if (autoBidAmount <= product.currentPrice) {
+            showAlert("오류", "최대 입찰가는 현재가보다 높아야 합니다.");
+            return;
+        }
+        try {
+            await axiosInstance.post(`/api/v1/products/${productId}/auto-bid`, { maxAmount: autoBidAmount });
+            showAlert("성공", `${autoBidAmount.toLocaleString()}원으로 자동 입찰이 설정되었습니다.`);
+            setIsAutoBidModalOpen(false);
+        } catch (error: any) {
+            showAlert("실패", error.response?.data?.message || "자동 입찰 설정에 실패했습니다.");
+        }
+    };
+
     // 1. product가 null이면 로딩 화면을 먼저 렌더링
     if (!product) {
         return (
@@ -565,28 +589,48 @@ const ProductDetailPage = () => {
                                                     <div className="text-center p-4 bg-yellow-100 text-yellow-800 rounded-md font-semibold">자신이 등록한 상품입니다.</div>
                                                 );
                                             }
+                                            // 입찰자일 경우 UI
                                             return (
-                                                <div>
-                                                    {/* 1. 기존 입찰 폼 */}
+                                                <div className="space-y-3">
+                                                    {/* 1. 일반 입찰 폼 */}
                                                     <div className="flex space-x-2">
-                                                        <input type="number" value={bidAmount} onChange={(e) => setBidAmount(parseInt(e.target.value, 10) || 0)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" placeholder="현재가보다 높은 금액"/>
-                                                        <button onClick={handleBidSubmit} className="w-1/3 bg-blue-600 text-white font-bold p-3 rounded-md disabled:bg-gray-400" disabled={!isConnected}>
+                                                        <input type="number" value={bidAmount} onChange={(e) => setBidAmount(parseInt(e.target.value, 10) || 0)} className="w-full p-3 border border-gray-300 rounded-md" placeholder="현재가보다 높은 금액"/>
+                                                        <button onClick={handleBidSubmit} className="w-1/3 bg-blue-600 text-white font-bold p-3 rounded-md" disabled={!isConnected}>
                                                             {isConnected ? '입찰' : '연결 중'}
                                                         </button>
                                                     </div>
 
-                                                    {/* 2. 즉시 구매 버튼 (조건부 렌더링) */}
+                                                    {/* 자동 입찰 상태 표시 UI */}
+                                                    {product.myAutoBidMaxAmount ? (
+                                                        // 자동 입찰이 설정된 경우
+                                                        <div className="text-center p-3 bg-blue-50 border border-blue-200 rounded-md">
+                                                            <p className="text-sm text-blue-700">
+                                                                자동 입찰이 <span className="font-bold">{product.myAutoBidMaxAmount.toLocaleString()}원</span>으로 설정되어 있습니다.
+                                                            </p>
+                                                            {/* 설정 변경을 위한 버튼을 여기에 추가할 수도 있음 */}
+                                                            <button onClick={() => setIsAutoBidModalOpen(true)} className="text-xs text-blue-600 hover:underline mt-1">
+                                                                금액 변경
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        // 자동 입찰이 설정되지 않은 경우
+                                                        <button
+                                                            onClick={() => setIsAutoBidModalOpen(true)}
+                                                            className="w-full text-sm text-blue-600 hover:text-blue-700 font-semibold py-2"
+                                                        >
+                                                            자동 입찰 설정하기
+                                                        </button>
+                                                    )}
+
+                                                    {/* 3. 즉시 구매 버튼 */}
                                                     {product.buyNowPrice && product.buyNowPrice > product.currentPrice && (
                                                         <>
-                                                            <div className="flex items-center my-3">
-                                                                <div className="flex-grow border-t border-gray-300"></div>
+                                                            <div className="flex items-center">
+                                                                <div className="flex-grow border-t"></div>
                                                                 <span className="flex-shrink mx-4 text-gray-500 text-sm">또는</span>
-                                                                <div className="flex-grow border-t border-gray-300"></div>
+                                                                <div className="flex-grow border-t"></div>
                                                             </div>
-                                                            <button
-                                                                onClick={handleBuyNow}
-                                                                className="w-full bg-red-500 text-white font-bold py-3 rounded-md hover:bg-red-600 transition-colors"
-                                                            >
+                                                            <button onClick={handleBuyNow} className="w-full bg-red-500 text-white font-bold py-3 rounded-md">
                                                                 즉시 구매 ({product.buyNowPrice.toLocaleString()}원)
                                                             </button>
                                                         </>
@@ -671,6 +715,46 @@ const ProductDetailPage = () => {
                     </div>
                 </div>
             )}
+
+            {/* 자동 입찰 설정 모달 UI */}
+            {isAutoBidModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+                    <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm">
+                        <h3 className="text-xl font-bold mb-2">자동 입찰 설정</h3>
+                        <p className="text-sm text-gray-600 mb-6">
+                            원하는 최대 입찰 금액을 입력하세요. 다른 사람이 입찰할 때마다 현재가보다 최소 단위만큼 높은 금액으로 시스템이 자동으로 입찰합니다.
+                        </p>
+                        <div className="mb-4">
+                            <label htmlFor="autoBidAmount" className="block text-sm font-medium text-gray-700">최대 입찰가</label>
+                            <input
+                                type="number"
+                                id="autoBidAmount"
+                                value={autoBidAmount}
+                                onChange={e => setAutoBidAmount(Number(e.target.value))}
+                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                                placeholder="현재가보다 높은 금액"
+                            />
+                        </div>
+                        <div className="flex justify-end space-x-4">
+                            <button
+                                type="button"
+                                onClick={() => setIsAutoBidModalOpen(false)}
+                                className="bg-gray-200 px-4 py-2 rounded-md hover:bg-gray-300"
+                            >
+                                취소
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleSetupAutoBid}
+                                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                            >
+                                설정하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* 알림 모달 컴포넌트 추가 */}
             <AlertModal
                 isOpen={alertInfo.isOpen}
