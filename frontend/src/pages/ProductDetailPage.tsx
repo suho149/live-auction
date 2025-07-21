@@ -623,6 +623,9 @@ const ProductDetailPage = () => {
                                                             <button onClick={() => setIsAutoBidModalOpen(true)} className="text-xs text-blue-600 hover:underline mt-1">
                                                                 금액 변경
                                                             </button>
+
+                                                            <span className="text-gray-300">|</span>
+
                                                             <button onClick={handleCancelAutoBid} className="text-xs text-red-600 hover:underline font-semibold">
                                                                 설정 취소
                                                             </button>
