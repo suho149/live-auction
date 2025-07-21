@@ -404,15 +404,21 @@ const ProductDetailPage = () => {
 
     const handleBuyNow = async () => {
         if (!product || !product.buyNowPrice) return;
-        if (window.confirm(`${product.buyNowPrice.toLocaleString()}원에 즉시 구매하시겠습니까?`)) {
+
+        if (window.confirm(`${product.buyNowPrice.toLocaleString()}원에 즉시 구매하고 바로 결제를 진행하시겠습니까?`)) {
             try {
-                await axiosInstance.post(`/api/v1/products/${productId}/buy-now`, {
-                    buyNowPrice: product.buyNowPrice
-                });
-                showAlert("성공", "즉시 구매에 성공했습니다! 결제를 진행해주세요.");
-                fetchProduct(); // 상태를 AUCTION_ENDED로 갱신하기 위해 재요청
+                // 1. [기존] 상태 변경 요청 -> [변경] 결제 정보 생성 요청
+                const response = await axiosInstance.post<PaymentInfo>(`/api/v1/products/${productId}/buy-now/payment-info`);
+                const paymentData = response.data;
+
+                console.log('[Debug] 즉시 구매를 위한 결제 정보 수신:', paymentData);
+
+                // 2. 받은 결제 정보를 state에 저장하고 결제 모달을 엶
+                setPaymentInfo(paymentData);
+                setIsPaymentModalOpen(true);
+
             } catch (error: any) {
-                showAlert("실패", error.response?.data?.message || "즉시 구매에 실패했습니다.");
+                showAlert("실패", error.response?.data?.message || "즉시 구매 준비에 실패했습니다.");
             }
         }
     };

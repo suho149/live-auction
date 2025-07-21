@@ -2,6 +2,8 @@ package com.suho149.liveauction.domain.product.controller;
 
 import com.suho149.liveauction.domain.auction.dto.BuyNowRequest;
 import com.suho149.liveauction.domain.auction.service.AuctionService;
+import com.suho149.liveauction.domain.payment.dto.PaymentInfoResponse;
+import com.suho149.liveauction.domain.payment.service.PaymentService;
 import com.suho149.liveauction.domain.product.dto.ProductCreateRequest;
 import com.suho149.liveauction.domain.product.dto.ProductDetailResponse;
 import com.suho149.liveauction.domain.product.dto.ProductResponse;
@@ -28,6 +30,7 @@ public class ProductController {
 
     private final ProductService productService;
     private final AuctionService auctionService;
+    private final PaymentService paymentService;
 
     @PostMapping
     public ResponseEntity<Void> createProduct(@RequestBody ProductCreateRequest request, @AuthenticationPrincipal UserPrincipal userPrincipal) {
@@ -79,6 +82,7 @@ public class ProductController {
      * @return ResponseEntity<Void>
      */
     // 즉시 구매 API 엔드포인트
+    // 즉시 결제로 넘어가지는 않기 때문에 우선은 비사용
     @PostMapping("/{productId}/buy-now")
     public ResponseEntity<Void> buyNow(
             @PathVariable Long productId,
@@ -88,5 +92,13 @@ public class ProductController {
         // AuctionService의 buyNow 메소드를 호출하여 실제 로직을 처리합니다.
         auctionService.buyNow(productId, request, userPrincipal.getEmail());
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{productId}/buy-now/payment-info")
+    public ResponseEntity<PaymentInfoResponse> createPaymentInfoForBuyNow(
+            @PathVariable Long productId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        PaymentInfoResponse info = paymentService.createPaymentInfoForBuyNow(productId, userPrincipal);
+        return ResponseEntity.ok(info);
     }
 }

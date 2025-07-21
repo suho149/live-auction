@@ -6,8 +6,10 @@ import com.suho149.liveauction.domain.payment.dto.PaymentInfoResponse;
 import com.suho149.liveauction.domain.payment.dto.PaymentRequest;
 import com.suho149.liveauction.domain.payment.dto.PaymentSuccessResponse;
 import com.suho149.liveauction.domain.payment.entity.Payment;
+import com.suho149.liveauction.domain.payment.entity.PaymentStatus;
 import com.suho149.liveauction.domain.payment.repository.PaymentRepository;
 import com.suho149.liveauction.domain.product.entity.Product;
+import com.suho149.liveauction.domain.product.entity.ProductStatus;
 import com.suho149.liveauction.domain.product.repository.ProductRepository;
 import com.suho149.liveauction.domain.user.entity.User;
 import com.suho149.liveauction.domain.user.repository.UserRepository;
@@ -16,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
@@ -118,9 +121,13 @@ public class PaymentService {
             if (response.getStatusCode() == HttpStatus.OK) {
                 // 결제 정보 업데이트 (상태: COMPLETED, paymentKey, paidAt)
                 payment.completePayment(request.getPaymentKey());
-                payment.getProduct().soldOut(); // 상품 상태 변경 로직
-                // Product의 상태를 '판매 완료'로 바꾸는 로직 추가 고려
-                // 예: payment.getProduct().updateStatus(ProductStatus.SOLD_OUT);
+
+                // 최종 낙찰 처리 로직 추가
+                Product product = payment.getProduct();
+                User buyer = payment.getBuyer();
+
+                product.updateBid(buyer, payment.getAmount()); // 최종 낙찰자 및 가격 확정
+                product.soldOut(); // 상태를 '판매 완료'로 변경
 
                 log.info(">>>>> [결제 승인 성공] orderId: {}", request.getOrderId());
 
@@ -146,5 +153,56 @@ public class PaymentService {
             // 에러 메시지를 포함하여 예외를 다시 던져서 GlobalExceptionHandler가 처리하도록 함
             throw new RuntimeException("결제 승인 중 오류가 발생했습니다. 토스페이먼츠 응답: " + e.getResponseBodyAsString(), e);
         }
+    }
+
+    @Transactional
+    public PaymentInfoResponse createPaymentInfoForBuyNow(Long productId, UserPrincipal userPrincipal) {
+        // 1. 비관적 락으로 상품 정보 조회 (동시에 다른 사람이 즉시 구매/입찰하는 것 방지)
+        Product product = productRepository.findByIdWithPessimisticLock(productId)
+                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다. ID: " + productId));
+
+        User buyer = userRepository.findById(userPrincipal.getId())
+                .orElseThrow(() -> new UsernameNotFoundException("인증된 사용자 정보를 DB에서 찾을 수 없습니다. ID: " + userPrincipal.getId()));
+
+        // 2. 즉시 구매 가능 여부 재확인
+        if (product.getBuyNowPrice() == null) {
+            throw new IllegalStateException("즉시 구매가 불가능한 상품입니다.");
+        }
+        if (product.getStatus() != ProductStatus.ON_SALE) {
+            throw new IllegalStateException("현재 판매 중인 상품이 아닙니다.");
+        }
+        if (product.getSeller().getId().equals(buyer.getId())) {
+            throw new IllegalStateException("자신이 등록한 상품은 구매할 수 없습니다.");
+        }
+        // 현재 입찰가가 즉시 구매가보다 높아졌는지 확인
+        if (product.getCurrentPrice() >= product.getBuyNowPrice()) {
+            throw new IllegalStateException("현재 입찰가가 즉시 구매가보다 높으므로 즉시 구매할 수 없습니다.");
+        }
+
+        // 3. 기존 PENDING 상태의 결제가 있는지 확인 (다른 사람이 동시에 시도하는 경우 방지)
+        paymentRepository.findByProductIdAndStatus(productId, PaymentStatus.PENDING).ifPresent(p -> {
+            throw new IllegalStateException("다른 사용자가 결제를 시도 중입니다. 잠시 후 다시 시도해주세요.");
+        });
+
+        // 4. 새로운 결제 정보 생성 (상태: PENDING)
+        String orderId = "order_" + productId + "_" + System.currentTimeMillis();
+        Payment payment = Payment.builder()
+                .product(product)
+                .buyer(buyer)
+                .orderId(orderId)
+                .amount(product.getBuyNowPrice()) // ★ 결제 금액은 즉시 구매가
+                .build();
+        paymentRepository.save(payment);
+
+        log.info("즉시 구매 결제 정보 생성 완료. Order ID: {}", orderId);
+
+        // 5. 프론트엔드로 결제 정보 반환
+        return PaymentInfoResponse.builder()
+                .orderId(payment.getOrderId())
+                .productName(product.getName())
+                .amount(payment.getAmount())
+                .buyerName(userPrincipal.getName())
+                .buyerEmail(userPrincipal.getEmail())
+                .build();
     }
 }
