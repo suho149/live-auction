@@ -1,5 +1,7 @@
 package com.suho149.liveauction.domain.product.controller;
 
+import com.suho149.liveauction.domain.auction.dto.BuyNowRequest;
+import com.suho149.liveauction.domain.auction.service.AuctionService;
 import com.suho149.liveauction.domain.product.dto.ProductCreateRequest;
 import com.suho149.liveauction.domain.product.dto.ProductDetailResponse;
 import com.suho149.liveauction.domain.product.dto.ProductResponse;
@@ -25,6 +27,7 @@ import java.util.List;
 public class ProductController {
 
     private final ProductService productService;
+    private final AuctionService auctionService;
 
     @PostMapping
     public ResponseEntity<Void> createProduct(@RequestBody ProductCreateRequest request, @AuthenticationPrincipal UserPrincipal userPrincipal) {
@@ -65,6 +68,25 @@ public class ProductController {
     @PostMapping("/{productId}/end-auction")
     public ResponseEntity<Void> endAuctionEarly(@PathVariable Long productId, @AuthenticationPrincipal UserPrincipal userPrincipal) {
         productService.endAuctionEarly(productId, userPrincipal);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 상품을 즉시 구매합니다.
+     * @param productId 구매할 상품의 ID
+     * @param request 즉시 구매 가격 정보
+     * @param userPrincipal 현재 인증된 사용자
+     * @return ResponseEntity<Void>
+     */
+    // 즉시 구매 API 엔드포인트
+    @PostMapping("/{productId}/buy-now")
+    public ResponseEntity<Void> buyNow(
+            @PathVariable Long productId,
+            @RequestBody BuyNowRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ) {
+        // AuctionService의 buyNow 메소드를 호출하여 실제 로직을 처리합니다.
+        auctionService.buyNow(productId, request, userPrincipal.getEmail());
         return ResponseEntity.ok().build();
     }
 }

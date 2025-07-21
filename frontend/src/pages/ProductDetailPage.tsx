@@ -29,6 +29,7 @@ interface ProductDetail {
     likedByCurrentUser: boolean; // 현재 사용자가 찜했는지 여부
     status: ProductStatus;
     paymentDueDate: string | null;
+    buyNowPrice: number | null;
 }
 
 interface BidResponse {
@@ -401,6 +402,21 @@ const ProductDetailPage = () => {
         }
     };
 
+    const handleBuyNow = async () => {
+        if (!product || !product.buyNowPrice) return;
+        if (window.confirm(`${product.buyNowPrice.toLocaleString()}원에 즉시 구매하시겠습니까?`)) {
+            try {
+                await axiosInstance.post(`/api/v1/products/${productId}/buy-now`, {
+                    buyNowPrice: product.buyNowPrice
+                });
+                showAlert("성공", "즉시 구매에 성공했습니다! 결제를 진행해주세요.");
+                fetchProduct(); // 상태를 AUCTION_ENDED로 갱신하기 위해 재요청
+            } catch (error: any) {
+                showAlert("실패", error.response?.data?.message || "즉시 구매에 실패했습니다.");
+            }
+        }
+    };
+
     // 1. product가 null이면 로딩 화면을 먼저 렌더링
     if (!product) {
         return (
@@ -544,11 +560,31 @@ const ProductDetailPage = () => {
                                                 );
                                             }
                                             return (
-                                                <div className="flex space-x-2">
-                                                    <input type="number" value={bidAmount} onChange={(e) => setBidAmount(parseInt(e.target.value, 10) || 0)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" placeholder="현재가보다 높은 금액"/>
-                                                    <button onClick={handleBidSubmit} className="w-1/3 bg-blue-600 text-white font-bold p-3 rounded-md disabled:bg-gray-400" disabled={!isConnected}>
-                                                        {isConnected ? '입찰' : '연결 중'}
-                                                    </button>
+                                                <div>
+                                                    {/* 1. 기존 입찰 폼 */}
+                                                    <div className="flex space-x-2">
+                                                        <input type="number" value={bidAmount} onChange={(e) => setBidAmount(parseInt(e.target.value, 10) || 0)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" placeholder="현재가보다 높은 금액"/>
+                                                        <button onClick={handleBidSubmit} className="w-1/3 bg-blue-600 text-white font-bold p-3 rounded-md disabled:bg-gray-400" disabled={!isConnected}>
+                                                            {isConnected ? '입찰' : '연결 중'}
+                                                        </button>
+                                                    </div>
+
+                                                    {/* 2. 즉시 구매 버튼 (조건부 렌더링) */}
+                                                    {product.buyNowPrice && product.buyNowPrice > product.currentPrice && (
+                                                        <>
+                                                            <div className="flex items-center my-3">
+                                                                <div className="flex-grow border-t border-gray-300"></div>
+                                                                <span className="flex-shrink mx-4 text-gray-500 text-sm">또는</span>
+                                                                <div className="flex-grow border-t border-gray-300"></div>
+                                                            </div>
+                                                            <button
+                                                                onClick={handleBuyNow}
+                                                                className="w-full bg-red-500 text-white font-bold py-3 rounded-md hover:bg-red-600 transition-colors"
+                                                            >
+                                                                즉시 구매 ({product.buyNowPrice.toLocaleString()}원)
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             );
 

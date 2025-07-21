@@ -16,4 +16,5 @@ public class ProductCreateRequest {
     private Category category; // 카테고리 추가
     private LocalDateTime auctionEndTime;
     private List<String> imageUrls; // 다중 이미지 URL 목록
+    private Long buyNowPrice;
 }

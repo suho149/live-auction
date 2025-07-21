@@ -2,9 +2,11 @@ package com.suho149.liveauction.domain.auction.service;
 
 import com.suho149.liveauction.domain.auction.dto.BidRequest;
 import com.suho149.liveauction.domain.auction.dto.BidResponse;
+import com.suho149.liveauction.domain.auction.dto.BuyNowRequest;
 import com.suho149.liveauction.domain.notification.entity.NotificationType;
 import com.suho149.liveauction.domain.notification.service.NotificationService;
 import com.suho149.liveauction.domain.product.entity.Product;
+import com.suho149.liveauction.domain.product.entity.ProductStatus;
 import com.suho149.liveauction.domain.product.repository.ProductRepository;
 import com.suho149.liveauction.domain.user.entity.User;
 import com.suho149.liveauction.domain.user.repository.UserRepository;
@@ -101,5 +103,48 @@ public class AuctionService {
             String content = "'" + product.getName() + "' 상품에 더 높은 가격의 입찰이 등록되었습니다.";
             notificationService.send(previousHighestBidder, NotificationType.BID, content, url);
         }
+    }
+
+    @Transactional
+    public void buyNow(Long productId, BuyNowRequest request, String email) {
+        // 사용자 조회
+        User buyer = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + email));
+
+        // 상품 조회 (비관적 락 사용)
+        Product product = productRepository.findByIdWithPessimisticLock(productId)
+                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다. ID: " + productId));
+
+        // 1. 유효성 검사
+        if (product.getBuyNowPrice() == null) {
+            throw new IllegalStateException("즉시 구매가 불가능한 상품입니다.");
+        }
+        if (!product.getBuyNowPrice().equals(request.getBuyNowPrice())) {
+            throw new IllegalStateException("즉시 구매 가격이 일치하지 않습니다.");
+        }
+        if (product.getStatus() != ProductStatus.ON_SALE) {
+            throw new IllegalStateException("현재 판매 중인 상품이 아닙니다.");
+        }
+        if (product.getSeller().getId().equals(buyer.getId())) {
+            throw new IllegalStateException("자신이 등록한 상품은 구매할 수 없습니다.");
+        }
+
+        // 2. 즉시 구매 처리
+        product.updateBid(buyer, product.getBuyNowPrice()); // 구매자를 최고 입찰자로, 현재가를 즉시 구매가로 설정
+        product.endAuctionWithWinner(); // 경매 종료 (결제 대기) 상태로 변경
+
+        // 3. 실시간 알림 전송 (가격, 상태 변경)
+        BidResponse bidResponse = BidResponse.builder()
+                .productId(productId)
+                .newPrice(product.getCurrentPrice())
+                .bidderName(buyer.getName())
+                .auctionEndTime(product.getAuctionEndTime())
+                .build();
+        messagingTemplate.convertAndSend("/sub/products/" + productId, bidResponse);
+
+        // 4. 낙찰자에게 알림 발송
+        String content = "'" + product.getName() + "' 상품을 즉시 구매하여 최종 낙찰되었습니다! 24시간 내에 결제를 완료해주세요.";
+        notificationService.send(buyer, NotificationType.BID, content, "/products/" + product.getId());
+        log.info("상품 ID {} 즉시 구매 처리 완료. 구매자: {}", productId, buyer.getName());
     }
 }

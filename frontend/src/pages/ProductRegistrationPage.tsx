@@ -18,6 +18,7 @@ const ProductRegistrationPage = () => {
     const [auctionEndTime, setAuctionEndTime] = useState('');
     const [imageFiles, setImageFiles] = useState<File[]>([]);
     const [isUploading, setIsUploading] = useState(false);
+    const [buyNowPrice, setBuyNowPrice] = useState<number | null>(null);
 
     const addFiles = useCallback((newFiles: File[]) => {
         setImageFiles(prevFiles => {
@@ -67,6 +68,13 @@ const ProductRegistrationPage = () => {
             alert('이미지를 1장 이상 등록해야 합니다.');
             return;
         }
+
+        // 즉시 구매가는 시작가보다 높아야 한다는 유효성 검사
+        if (buyNowPrice !== null && startPrice >= buyNowPrice) {
+            alert('즉시 구매가는 시작가보다 높아야 합니다.');
+            return;
+        }
+
         setIsUploading(true);
 
         try {
@@ -80,8 +88,17 @@ const ProductRegistrationPage = () => {
             });
             const imageUrls = imageUploadResponse.data; // 백엔드로부터 가짜 URL 목록을 받음
 
-            // 2. 받은 이미지 URL들과 나머지 상품 정보를 함께 백엔드로 전송
-            const productData = { name, description, startPrice, category, auctionEndTime, imageUrls };
+            // 2. 백엔드로 보낼 전체 상품 데이터 구성
+            const productData = {
+                name,
+                description,
+                startPrice,
+                category,
+                auctionEndTime,
+                imageUrls,
+                // buyNowPrice가 0보다 큰 유효한 숫자인 경우에만 값을 보내고, 아니면 null을 보냄
+                buyNowPrice: buyNowPrice && buyNowPrice > 0 ? buyNowPrice : null,
+            };
             await axiosInstance.post('/api/v1/products', productData);
 
             alert('상품이 성공적으로 등록되었습니다.');
@@ -160,6 +177,23 @@ const ProductRegistrationPage = () => {
                     <div>
                         <label htmlFor="startPrice" className="block text-sm font-medium text-gray-700">시작가 (원)</label>
                         <input type="number" name="startPrice" id="startPrice" min="0" required value={startPrice} onChange={(e) => setStartPrice(parseInt(e.target.value, 10) || 0)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"/>
+                    </div>
+                    <div>
+                        {/* 즉시 구매가 label 및 input 필드 */}
+                        <label htmlFor="buyNowPrice" className="block text-sm font-medium text-gray-700">
+                            즉시 구매가 (선택)
+                            <span className="text-xs text-gray-500 ml-2">비워두면 즉시 구매 불가</span>
+                        </label>
+                        <input
+                            type="number"
+                            name="buyNowPrice"
+                            id="buyNowPrice"
+                            min="0"
+                            value={buyNowPrice === null ? '' : buyNowPrice}
+                            onChange={(e) => setBuyNowPrice(e.target.value ? parseInt(e.target.value, 10) : null)}
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="시작가보다 높은 금액"
+                        />
                     </div>
                     <div>
                         <label htmlFor="auctionEndTime" className="block text-sm font-medium text-gray-700">경매 종료 시간</label>

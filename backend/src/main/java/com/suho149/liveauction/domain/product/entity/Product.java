@@ -67,8 +67,10 @@ public class Product {
 
     private LocalDateTime paymentDueDate;
 
+    private Long buyNowPrice; // 즉시 구매가 (null일 수 있음)
+
     @Builder
-    public Product(String name, String description, Long startPrice, Category category, LocalDateTime auctionEndTime, User seller) {
+    public Product(String name, String description, Long startPrice, Category category, LocalDateTime auctionEndTime, User seller, Long buyNowPrice) {
         this.name = name;
         this.description = description;
         this.startPrice = startPrice;
@@ -76,6 +78,7 @@ public class Product {
         this.category = category;
         this.auctionEndTime = auctionEndTime;
         this.seller = seller;
+        this.buyNowPrice = buyNowPrice;
     }
 
     // 연관관계 편의 메소드 추가

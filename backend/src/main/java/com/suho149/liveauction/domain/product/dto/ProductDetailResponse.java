@@ -29,6 +29,7 @@ public class ProductDetailResponse {
     private boolean isSeller;
     private ProductStatus status;
     private final LocalDateTime paymentDueDate;
+    private final Long buyNowPrice;
 
     public static ProductDetailResponse from(Product product, boolean likedByCurrentUser, boolean isSeller) {
         return ProductDetailResponse.builder()
@@ -49,6 +50,7 @@ public class ProductDetailResponse {
                 .isSeller(isSeller)
                 .status(product.getStatus())
                 .paymentDueDate(product.getPaymentDueDate())
+                .buyNowPrice(product.getBuyNowPrice())
                 .build();
     }
 }

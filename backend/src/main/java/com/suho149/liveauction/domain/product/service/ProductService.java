@@ -52,6 +52,7 @@ public class ProductService {
                 .category(request.getCategory())
                 .auctionEndTime(request.getAuctionEndTime())
                 .seller(seller)
+                .buyNowPrice(request.getBuyNowPrice())
                 .build();
 
         // 이미지 URL들을 ProductImage 엔티티로 변환하고 Product에 추가

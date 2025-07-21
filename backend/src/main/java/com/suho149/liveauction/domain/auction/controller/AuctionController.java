@@ -1,9 +1,11 @@
 package com.suho149.liveauction.domain.auction.controller;
 
 import com.suho149.liveauction.domain.auction.dto.BidRequest;
+import com.suho149.liveauction.domain.auction.dto.BuyNowRequest;
 import com.suho149.liveauction.domain.auction.service.AuctionService;
 import com.suho149.liveauction.global.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -11,6 +13,9 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.security.Principal;
 
@@ -37,5 +42,11 @@ public class AuctionController {
     public String handleException(Throwable exception, SimpMessageHeaderAccessor headerAccessor) {
         // 클라이언트에게 보낼 에러 메시지를 반환
         return exception.getMessage();
+    }
+
+    @PostMapping("/{productId}/buy-now")
+    public ResponseEntity<Void> buyNow(@PathVariable Long productId, @RequestBody BuyNowRequest request, @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        auctionService.buyNow(productId, request, userPrincipal.getEmail());
+        return ResponseEntity.ok().build();
     }
 }
