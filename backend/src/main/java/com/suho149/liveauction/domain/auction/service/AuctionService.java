@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -191,60 +192,89 @@ public class AuctionService {
         log.info("상품 ID {} 자동 입찰 프로세스 시작... 현재가: {}, 최고 입찰자: {}",
                 product.getId(), product.getCurrentPrice(), product.getHighestBidder() != null ? product.getHighestBidder().getName() : "없음");
 
-        long minBidIncrement = 1000;
+        long minBidIncrement = 1000; // 최소 입찰 단위
 
-        // 1. 이 상품에 대한 모든 자동 입찰 설정을 최대 금액 순으로 가져옴
-        List<AutoBid> autoBids = autoBidRepository.findByProduct_IdOrderByMaxAmountDesc(product.getId());
+        while (true) {
+            // 1. 모든 자동 입찰 설정을 가져옴
+            List<AutoBid> autoBids = autoBidRepository.findByProduct_IdOrderByMaxAmountDesc(product.getId());
 
-        // --- ★★★ 로직 수정 시작 ★★★ ---
+            // 2. 현재 최고 입찰자를 제외한 자동 입찰 설정 필터링
+            User currentHighestBidder = product.getHighestBidder();
+            List<AutoBid> contenders = autoBids.stream()
+                    .filter(ab -> currentHighestBidder == null || ab.getUser().getId() != currentHighestBidder.getId())
+                    .toList();
 
-        // 2. 자동 입찰 설정이 아예 없으면 즉시 종료
-        if (autoBids.isEmpty()) {
-            log.info("자동 입찰 설정 없음. 종료.");
-            return;
+            // 3. 경쟁자가 없으면 종료
+            if (contenders.isEmpty()) {
+                log.info("자동 입찰 경쟁 상대 없음. 종료.");
+                break;
+            }
+
+            // 4. 가장 강력한 경쟁자(contender)와 그의 최대 입찰가
+            AutoBid topContenderSetting = contenders.get(0);
+            User topContender = topContenderSetting.getUser();
+            long contenderMaxAmount = topContenderSetting.getMaxAmount();
+
+            // 5. 현재 최고가가 경쟁자의 최대 입찰가보다 높거나 같으면, 경쟁자는 포기. 종료.
+            if (product.getCurrentPrice() >= contenderMaxAmount) {
+                log.info("최고 경쟁자 {}의 한도({})를 현재가({})가 초과함. 종료.",
+                        topContender.getName(), contenderMaxAmount, product.getCurrentPrice());
+                break;
+            }
+
+            // --- 여기서부터 입찰 로직 ---
+
+            long newBidAmount;
+            User newHighestBidder;
+
+            // 6. 현재 최고 입찰자가 있는지 (즉, 최초 입찰이 아닌지) 확인
+            if (currentHighestBidder != null) {
+                // 6-1. 현재 최고 입찰자도 자동 입찰을 설정했는지 확인
+                Optional<AutoBid> currentBidderSettingOpt = autoBids.stream()
+                        .filter(ab -> ab.getUser().getId() == currentHighestBidder.getId())
+                        .findFirst();
+
+                if (currentBidderSettingOpt.isPresent()) {
+                    // [상황 A] 자동 입찰자(A) vs 자동 입찰자(B)
+                    long currentBidderMaxAmount = currentBidderSettingOpt.get().getMaxAmount();
+
+                    if (contenderMaxAmount > currentBidderMaxAmount) {
+                        // 경쟁자(B)의 한도가 더 높음 -> B가 A의 한계치+증가분으로 입찰
+                        newHighestBidder = topContender;
+                        newBidAmount = Math.min(contenderMaxAmount, currentBidderMaxAmount + minBidIncrement);
+                    } else {
+                        // 현재 입찰자(A)의 한도가 더 높거나 같음 -> A가 B의 한계치+증가분으로 입찰
+                        newHighestBidder = currentHighestBidder;
+                        newBidAmount = Math.min(currentBidderMaxAmount, contenderMaxAmount + minBidIncrement);
+                    }
+                } else {
+                    // [상황 B] 일반 입찰자(A) vs 자동 입찰자(B)
+                    // 자동 입찰자(B)가 일반 입찰가(현재가)+증가분으로 입찰
+                    newHighestBidder = topContender;
+                    newBidAmount = Math.min(contenderMaxAmount, product.getCurrentPrice() + minBidIncrement);
+                }
+            } else {
+                // [상황 C] 아무도 입찰 안 함 vs 자동 입찰자(B)
+                // 자동 입찰자(B)가 시작가(현재가)+증가분으로 입찰
+                newHighestBidder = topContender;
+                newBidAmount = Math.min(contenderMaxAmount, product.getCurrentPrice() + minBidIncrement);
+            }
+
+            // 7. 계산된 입찰가가 현재 최고가와 동일하다면 무한 루프 방지를 위해 종료
+            if (newBidAmount == product.getCurrentPrice()) {
+                log.info("새 입찰가가 현재가와 동일하여 종료.");
+                break;
+            }
+
+            // 8. 최종 입찰 실행 및 알림
+            log.info("자동 입찰 실행: {}가 {}원에 입찰.", newHighestBidder.getName(), newBidAmount);
+            updateAndNotifyBid(product, newHighestBidder, newBidAmount);
+
+            // 9. 만약 최고 입찰자가 바뀌지 않았다면, 더 이상 경쟁할 필요가 없으므로 종료
+            if (product.getHighestBidder().getId() == newHighestBidder.getId()) {
+                break;
+            }
         }
-
-        // 3. 최고 자동 입찰 설정자 추출
-        AutoBid topAutoBidderSetting = autoBids.get(0);
-        User topAutoBidder = topAutoBidderSetting.getUser();
-        long topMaxAmount = topAutoBidderSetting.getMaxAmount();
-
-        // 4. 현재 최고 입찰자가 최고 자동 입찰 설정자와 동일한 경우, 아무것도 할 필요 없음
-        if (product.getHighestBidder() != null && product.getHighestBidder().getId().equals(topAutoBidder.getId())) {
-            log.info("현재 최고 입찰자가 이미 최고 자동 입찰자임. 종료.");
-            return;
-        }
-
-        // 5. 자동 입찰자가 입찰해야 할 금액 계산
-        //    - 경쟁자가 있으면 (자동 입찰 2순위 또는 현재 최고 입찰자)
-        //    - 경쟁자가 없으면 (현재가 + 최소입찰단위)
-        long nextBidAmount;
-
-        // 5-1. 자동 입찰 경쟁자가 있는지 확인 (2순위 자동 입찰자)
-        if (autoBids.size() > 1) {
-            AutoBid secondAutoBidderSetting = autoBids.get(1);
-            long secondMaxAmount = secondAutoBidderSetting.getMaxAmount();
-            // 2순위의 최대 입찰가보다 높게 입찰해야 함
-            nextBidAmount = Math.min(topMaxAmount, secondMaxAmount + minBidIncrement);
-        } else {
-            // 5-2. 자동 입찰 경쟁자는 없지만, 일반 입찰자가 있는 경우
-            // 현재가보다 높게 입찰해야 함
-            nextBidAmount = Math.min(topMaxAmount, product.getCurrentPrice() + minBidIncrement);
-        }
-
-        // 6. 계산된 입찰가가 현재가보다 낮은 경우는 이미 다른 사람이 더 높게 입찰한 것이므로 종료
-        if (nextBidAmount <= product.getCurrentPrice()) {
-            log.info("계산된 자동 입찰가({})가 현재가({})보다 낮거나 같음. 종료.", nextBidAmount, product.getCurrentPrice());
-            return;
-        }
-
-        // 7. 최고 자동 입찰 설정자가 입찰 실행
-        log.info("자동 입찰 실행: {}가 {}원에 입찰.", topAutoBidder.getName(), nextBidAmount);
-        updateAndNotifyBid(product, topAutoBidder, nextBidAmount);
-
-        // 8. (선택적) 한 번의 상호작용 후 다시 processAutoBids를 호출하여 연쇄 반응 처리
-        // 하지만 현재 로직에서는 한 번의 placeBid에 한 번의 자동 입찰 반응으로 충분함.
-        // processAutoBids(product); // 재귀 호출은 복잡성을 높일 수 있어 일단 보류
     }
 
     private void updateAndNotifyBid(Product product, User bidder, long amount) {
