@@ -123,4 +123,8 @@ public class Product {
     public void expirePayment() {
         this.status = ProductStatus.EXPIRED;
     }
+
+    public void extendAuctionEndTime(LocalDateTime newEndTime) {
+        this.auctionEndTime = newEndTime;
+    }
 }

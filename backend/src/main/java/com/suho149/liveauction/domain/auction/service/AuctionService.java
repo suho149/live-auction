@@ -9,6 +9,7 @@ import com.suho149.liveauction.domain.product.repository.ProductRepository;
 import com.suho149.liveauction.domain.user.entity.User;
 import com.suho149.liveauction.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -16,10 +17,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.NumberFormat;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Locale;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class AuctionService {
 
@@ -27,6 +30,9 @@ public class AuctionService {
     private final UserRepository userRepository;
     private final SimpMessageSendingOperations messagingTemplate;
     private final NotificationService notificationService;
+
+    private static final long EXTENSION_THRESHOLD_SECONDS = 60; // 60초(1분) 이내 입찰 시 연장
+    private static final long EXTENSION_DURATION_SECONDS = 60;  // 60초(1분) 연장
 
     @Transactional
     public void placeBid(Long productId, BidRequest bidRequest, String email) {
@@ -49,6 +55,21 @@ public class AuctionService {
             throw new IllegalArgumentException("경매가 종료된 상품입니다.");
         }
 
+        // 경매 연장 로직 시작
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime currentEndTime = product.getAuctionEndTime();
+
+        // 1. 마감 시간까지 남은 시간 계산
+        long secondsUntilEnd = Duration.between(now, currentEndTime).getSeconds();
+
+        // 2. 남은 시간이 임계값(60초) 이하이고, 아직 경매가 끝나지 않았을 경우
+        if (secondsUntilEnd > 0 && secondsUntilEnd <= EXTENSION_THRESHOLD_SECONDS) {
+            // 3. 마감 시간을 '현재 시간'으로부터 60초 뒤로 연장
+            LocalDateTime newEndTime = now.plusSeconds(EXTENSION_DURATION_SECONDS);
+            product.extendAuctionEndTime(newEndTime);
+            log.info("상품 ID {} 경매 시간 연장. 새 마감 시간: {}", productId, newEndTime);
+        }
+
         // 입찰 정보 업데이트 전에 이전 최고 입찰자를 저장
         User previousHighestBidder = product.getHighestBidder();
 
@@ -60,6 +81,7 @@ public class AuctionService {
                 .productId(productId)
                 .newPrice(product.getCurrentPrice())
                 .bidderName(bidder.getName())
+                .auctionEndTime(product.getAuctionEndTime()) // 연장된 마감 시간 전달
                 .build();
         messagingTemplate.convertAndSend("/sub/products/" + productId, bidResponse);
 

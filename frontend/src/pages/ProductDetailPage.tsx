@@ -23,10 +23,10 @@ interface ProductDetail {
     category: string; // 카테고리 추가
     auctionEndTime: string;
     sellerName: string;
+    sellerId: number;
     highestBidderName: string;
     likeCount: number;
     likedByCurrentUser: boolean; // 현재 사용자가 찜했는지 여부
-    seller: boolean; // 현재 사용자가 판매자인지 여부
     status: ProductStatus;
     paymentDueDate: string | null;
 }
@@ -35,6 +35,7 @@ interface BidResponse {
     productId: number;
     newPrice: number;
     bidderName: string;
+    auctionEndTime: string;
 }
 
 declare global {
@@ -84,7 +85,7 @@ const ProductDetailPage = () => {
     const [timeLeft, setTimeLeft] = useState("");
     const [paymentTimeLeft, setPaymentTimeLeft] = useState("");
 
-    // --- UI 상태 관리 (변경 없음) ---
+    // --- UI 상태 관리 ---
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -94,15 +95,21 @@ const ProductDetailPage = () => {
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const paymentWidgetRef = useRef<any>(null);
 
-    // --- 공통 함수 (변경 없음) ---
+    // 1. product 상태를 항상 최신으로 참조하기 위한 ref 생성
+    const productRef = useRef<ProductDetail | null>(product);
+    useEffect(() => {
+        productRef.current = product;
+    }, [product]);
+
+    // --- 공통 함수 ---
     const showAlert = (title: string, message: string) => setAlertInfo({ isOpen: true, title, message });
 
-    // --- ★★★ 1. 상품 데이터 최초 로딩 및 재로딩을 위한 useEffect ★★★ ---
+    // 2. 상품 데이터 로딩 함수 및 useEffect
     const fetchProduct = async () => {
         try {
             const response = await axiosInstance.get<ProductDetail>(`/api/v1/products/${productId}`);
             setProduct(response.data);
-            if(response.data.status === 'ON_SALE') {
+            if (response.data.status === 'ON_SALE') {
                 setBidAmount(response.data.currentPrice + 1000);
             }
             setEditFormData({
@@ -121,27 +128,20 @@ const ProductDetailPage = () => {
         fetchProduct();
     }, [productId]);
 
-    // --- 2. 타이머 통합 관리 useEffect (수정됨) ---
+    // ★ 3. 타이머 통합 관리 useEffect (ref 사용으로 수정)
     useEffect(() => {
-        // product 객체가 없으면 아무것도 실행하지 않음
-        if (!product) return;
-
-        // 1초마다 실행될 타이머 설정
         const timer = setInterval(() => {
-            // --- 경매 타이머 로직 ---
-            if (product.status === 'ON_SALE') {
-                const endTime = new Date(product.auctionEndTime).getTime();
-                const now = Date.now();
+            const currentProduct = productRef.current;
+            if (!currentProduct) return;
 
-                if (endTime < now) {
-                    // 경매 시간이 지났을 경우
+            if (currentProduct.status === 'ON_SALE') {
+                const endTime = new Date(currentProduct.auctionEndTime).getTime();
+                if (endTime < Date.now()) {
                     setTimeLeft("경매 종료 처리 중...");
-                    // 2초 후 서버로부터 최신 상태를 다시 가져와 UI를 업데이트
                     setTimeout(() => fetchProduct(), 2000);
-                    clearInterval(timer); // 타이머 정리
+                    clearInterval(timer);
                 } else {
-                    // 경매가 진행 중일 경우 남은 시간 계산
-                    const distance = endTime - now;
+                    const distance = endTime - Date.now();
                     const days = Math.floor(distance / (1000 * 60 * 60 * 24));
                     const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                     const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
@@ -150,20 +150,14 @@ const ProductDetailPage = () => {
                 }
             }
 
-            // --- 결제 기한 타이머 로직 ---
-            if (product.status === 'AUCTION_ENDED' && product.paymentDueDate) {
-                const endTime = new Date(product.paymentDueDate).getTime();
-                const now = Date.now();
-
-                if (endTime < now) {
-                    // 결제 기한이 지났을 경우
+            if (currentProduct.status === 'AUCTION_ENDED' && currentProduct.paymentDueDate) {
+                const endTime = new Date(currentProduct.paymentDueDate).getTime();
+                if (endTime < Date.now()) {
                     setPaymentTimeLeft("결제 기한 만료");
-                    // 서버의 스케줄러가 상태를 EXPIRED로 변경할 것이므로, 2초 후 동기화
                     setTimeout(() => fetchProduct(), 2000);
-                    clearInterval(timer); // 타이머 정리
+                    clearInterval(timer);
                 } else {
-                    // 결제 기한이 남았을 경우 남은 시간 계산
-                    const distance = endTime - now;
+                    const distance = endTime - Date.now();
                     const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                     const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
                     const seconds = Math.floor((distance % (1000 * 60)) / 1000);
@@ -172,16 +166,14 @@ const ProductDetailPage = () => {
             }
         }, 1000);
 
-        // 컴포넌트가 언마운트되거나 의존성이 변경될 때 타이머를 반드시 정리
         return () => clearInterval(timer);
+    }, []); // 의존성 배열을 비워서 최초 1회만 실행
 
-    }, [product?.status, product?.auctionEndTime, product?.paymentDueDate]); // 의존성 배열은 그대로 유지
-
-
-    // --- ★★★ 3. 웹소켓 연결 useEffect ★★★ ---
+    // ★ 4. 웹소켓 연결 useEffect (의존성 수정)
     useEffect(() => {
-        if (!isLoggedIn || !productId || (product && product.status !== 'ON_SALE')) {
-            return; // ON_SALE 상태일 때만 연결
+        if (!isLoggedIn || !productId || !product || product.status !== 'ON_SALE') {
+            if (stompClient.current?.active) stompClient.current.deactivate();
+            return;
         }
 
         const token = localStorage.getItem('accessToken');
@@ -189,15 +181,17 @@ const ProductDetailPage = () => {
             webSocketFactory: () => new SockJS(`${API_BASE_URL}/ws-stomp`),
             connectHeaders: { Authorization: `Bearer ${token}` },
             onConnect: () => {
-                console.log('STOMP Connected!');
                 setIsConnected(true);
                 client.subscribe(`/sub/products/${productId}`, (message) => {
                     const bidResponse: BidResponse = JSON.parse(message.body);
-                    setProduct(prev => prev ? { ...prev, currentPrice: bidResponse.newPrice, highestBidderName: bidResponse.bidderName } : null);
+                    setProduct(prev => prev ? {
+                        ...prev,
+                        currentPrice: bidResponse.newPrice,
+                        highestBidderName: bidResponse.bidderName,
+                        auctionEndTime: bidResponse.auctionEndTime
+                    } : null);
                 });
-                client.subscribe('/user/queue/errors', (message) => {
-                    showAlert('입찰 실패', message.body);
-                });
+                client.subscribe('/user/queue/errors', (message) => showAlert('입찰 실패', message.body));
             },
             onDisconnect: () => setIsConnected(false),
             onStompError: (frame) => console.error('Broker error:', frame.headers['message']),
@@ -207,9 +201,7 @@ const ProductDetailPage = () => {
         stompClient.current = client;
 
         return () => {
-            if (stompClient.current?.active) {
-                stompClient.current.deactivate();
-            }
+            if (stompClient.current?.active) stompClient.current.deactivate();
         };
     }, [isLoggedIn, productId, product?.status]);
 
@@ -424,6 +416,9 @@ const ProductDetailPage = () => {
     // isSoldOut 변수를 선언하여 가독성 높임
     const isSoldOut = product.status === 'SOLD_OUT';
 
+    // 5. 렌더링 시점마다 현재 사용자가 판매자인지 실시간으로 계산
+    const isCurrentUserTheSeller = userInfo?.id === product.sellerId;
+
     return (
         <div className="bg-gray-50 min-h-screen">
             <Header />
@@ -475,7 +470,7 @@ const ProductDetailPage = () => {
                                             </button>
 
                                             {/* 구매 희망자에게 보이는 채팅하기 버튼 */}
-                                            {isLoggedIn && !product.seller && (
+                                            {isLoggedIn && !isCurrentUserTheSeller && (
                                                 <button onClick={handleChatClick} className="bg-green-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-green-600 transition-colors flex items-center justify-center gap-2 text-sm">
                                                     <ChatBubbleLeftRightIcon className="w-5 h-5" />
                                                     <span>채팅하기</span>
@@ -483,7 +478,8 @@ const ProductDetailPage = () => {
                                             )}
 
                                             {/* 판매자에게 보이는 더보기 버튼 */}
-                                            {isLoggedIn && product.seller && (
+
+                                            {isLoggedIn && isCurrentUserTheSeller && product.status === 'ON_SALE' && (
                                                 <div className="relative" ref={menuRef}>
                                                     <button onClick={() => setIsMenuOpen(prev => !prev)} className="p-2 rounded-full hover:bg-gray-100">
                                                         <EllipsisVerticalIcon className="w-6 h-6 text-gray-600"/>
@@ -542,7 +538,7 @@ const ProductDetailPage = () => {
                                                     </div>
                                                 );
                                             }
-                                            if (product.seller) {
+                                            if (isCurrentUserTheSeller) {
                                                 return (
                                                     <div className="text-center p-4 bg-yellow-100 text-yellow-800 rounded-md font-semibold">자신이 등록한 상품입니다.</div>
                                                 );
