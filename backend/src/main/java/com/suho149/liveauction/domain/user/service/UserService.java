@@ -1,7 +1,9 @@
 package com.suho149.liveauction.domain.user.service;
 
+import com.suho149.liveauction.domain.auction.repository.BidRepository;
 import com.suho149.liveauction.domain.payment.entity.Payment;
 import com.suho149.liveauction.domain.payment.repository.PaymentRepository;
+import com.suho149.liveauction.domain.product.dto.ProductResponse;
 import com.suho149.liveauction.domain.product.entity.Product;
 import com.suho149.liveauction.domain.product.entity.ProductStatus;
 import com.suho149.liveauction.domain.product.repository.ProductRepository;
@@ -16,6 +18,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,6 +30,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
     private final ProductRepository productRepository;
+    private final BidRepository bidRepository;
 
     /**
      * 현재 로그인한 사용자의 정보를 조회합니다.
@@ -60,6 +64,35 @@ public class UserService {
                             .orElseThrow(() -> new IllegalStateException("판매 완료된 상품의 결제 정보를 찾을 수 없습니다: " + product.getId()));
                     return SaleHistoryResponse.from(product, payment.getPaidAt());
                 })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 현재 사용자가 입찰에 참여 중인 상품 목록을 조회
+     */
+    @Transactional(readOnly = true)
+    public List<ProductResponse> getMyBiddingProducts(UserPrincipal userPrincipal) {
+        List<Product> products = bidRepository.findBiddingProductsByBidderIdAndStatus(userPrincipal.getId(), ProductStatus.ON_SALE);
+        return products.stream()
+                .map(ProductResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 현재 사용자가 판매 중(또는 경매 종료)인 상품 목록을 조회
+     */
+    @Transactional(readOnly = true)
+    public List<ProductResponse> getMySellingProducts(UserPrincipal userPrincipal) {
+        // 판매 완료(SOLD_OUT)를 제외한 모든 상태
+        List<ProductStatus> statuses = Arrays.asList(
+                ProductStatus.ON_SALE,
+                ProductStatus.AUCTION_ENDED,
+                ProductStatus.EXPIRED,
+                ProductStatus.FAILED
+        );
+        List<Product> products = productRepository.findBySellerIdAndStatusInOrderByIdDesc(userPrincipal.getId(), statuses);
+        return products.stream()
+                .map(ProductResponse::from)
                 .collect(Collectors.toList());
     }
 }

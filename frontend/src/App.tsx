@@ -14,6 +14,7 @@ import GlobalNotificationHandler from "./components/GlobalNotificationHandler";
 import {Toaster} from "react-hot-toast";
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentFailPage from './pages/PaymentFailPage';
+import MyAuctionsPage from "./pages/MyAuctionsPage";
 
 function App() {
 
@@ -32,6 +33,7 @@ function App() {
                 <Route path="/chat/rooms" element={<ChatListPage />} />
                 <Route path="/chat/rooms/:roomId" element={<ChatRoomPage />} />
                 <Route path="/notifications" element={<NotificationListPage />} />
+                <Route path="/my-auctions" element={<MyAuctionsPage />} />
                 {/*  결제 성공/실패 경로 추가 */}
                 <Route path="/payment/success" element={<PaymentSuccessPage />} />
                 <Route path="/payment/fail" element={<PaymentFailPage />} />

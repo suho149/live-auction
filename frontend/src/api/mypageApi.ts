@@ -1,5 +1,6 @@
 // mypageApi.ts
 import axiosInstance from './axiosInstance';
+import { ProductCardProps } from '../components/ProductCard';
 
 // 구매 내역 타입 정의
 export interface PurchaseHistory {
@@ -58,5 +59,15 @@ export const requestSettlement = async (): Promise<void> => {
 
 export const fetchSettlementHistory = async (): Promise<SettlementHistory[]> => {
     const response = await axiosInstance.get('/api/v1/users/me/settlement-history');
+    return response.data;
+};
+
+export const fetchBiddingProducts = async (): Promise<ProductCardProps[]> => {
+    const response = await axiosInstance.get('/api/v1/users/me/bidding');
+    return response.data;
+};
+
+export const fetchSellingProducts = async (): Promise<ProductCardProps[]> => {
+    const response = await axiosInstance.get('/api/v1/users/me/selling');
     return response.data;
 };

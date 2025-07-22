@@ -1,5 +1,6 @@
 package com.suho149.liveauction.domain.user.controller;
 
+import com.suho149.liveauction.domain.product.dto.ProductResponse;
 import com.suho149.liveauction.domain.user.dto.*;
 import com.suho149.liveauction.domain.user.service.SettlementService;
 import com.suho149.liveauction.domain.user.service.UserService;
@@ -59,5 +60,15 @@ public class UserController {
     @GetMapping("/me/settlement-history")
     public ResponseEntity<List<SettlementHistoryResponse>> getSettlementHistory(@AuthenticationPrincipal UserPrincipal userPrincipal) {
         return ResponseEntity.ok(settlementService.getSettlementHistory(userPrincipal));
+    }
+
+    @GetMapping("/me/bidding")
+    public ResponseEntity<List<ProductResponse>> getMyBiddingProducts(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ResponseEntity.ok(userService.getMyBiddingProducts(userPrincipal));
+    }
+
+    @GetMapping("/me/selling")
+    public ResponseEntity<List<ProductResponse>> getMySellingProducts(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        return ResponseEntity.ok(userService.getMySellingProducts(userPrincipal));
     }
 }

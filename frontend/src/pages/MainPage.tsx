@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axiosInstance, { API_BASE_URL } from '../api/axiosInstance'; // API_BASE_URL import
 import Header from '../components/Header';
 import {Link, useSearchParams} from 'react-router-dom';
+import ProductCard, { ProductCardProps } from '../components/ProductCard';
 
 type ProductStatus = 'ON_SALE' | 'AUCTION_ENDED' | 'SOLD_OUT' | 'EXPIRED' | 'FAILED';
 
@@ -16,39 +17,6 @@ interface Product {
     status: ProductStatus;
 }
 
-// 상품 카드 컴포넌트: imageUrl -> thumbnailUrl로 변경
-const ProductCard = ({ product }: { product: Product }) => { // ★ 소괄호 ()를 중괄호 {}로 변경
-    // ★ return문 이전에 변수 선언
-    const isSoldOut = product.status === 'SOLD_OUT';
-
-    return ( // ★ return문 추가
-        <Link to={`/products/${product.id}`} className="relative block border rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 bg-white group">
-            <img
-                src={product.thumbnailUrl ? `${API_BASE_URL}${product.thumbnailUrl}` : "https://placehold.co/400x300?text=No+Image"}
-                alt={product.name}
-                className={`w-full h-48 object-cover bg-gray-200 transition-transform duration-300 group-hover:scale-105 ${isSoldOut ? 'filter grayscale' : ''}`}
-            />
-            <div className="p-4">
-                <h3 className="text-lg font-semibold mb-2 truncate">{product.name}</h3>
-                <p className="text-sm text-gray-600 mb-2">판매자: {product.sellerName}</p>
-                {/* ★ 이제 isSoldOut 변수에 정상적으로 접근 가능 */}
-                <p className={`text-xl font-bold ${isSoldOut ? 'text-gray-500' : 'text-blue-600'}`}>
-                    {product.currentPrice.toLocaleString()}원
-                </p>
-                <p className="text-xs text-gray-500 mt-2">
-                    경매 마감: {new Date(product.auctionEndTime).toLocaleString()}
-                </p>
-            </div>
-
-            {isSoldOut && (
-                <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
-                    <span className="text-white text-2xl font-bold border-2 border-white px-4 py-2 rounded">판매 완료</span>
-                </div>
-            )}
-        </Link>
-    );
-};
-
 // 카테고리 상수 (백엔드 Enum과 일치)
 const categories = ["ALL", "DIGITAL_DEVICE", "APPLIANCES", "FURNITURE", "HOME_LIFE", "CLOTHING", "BEAUTY", "SPORTS_LEISURE", "BOOKS_TICKETS", "PET_SUPPLIES", "ETC"];
 const categoryKoreanNames: { [key: string]: string } = {
@@ -56,7 +24,7 @@ const categoryKoreanNames: { [key: string]: string } = {
 };
 
 const MainPage = () => {
-    const [products, setProducts] = useState<Product[]>([]);
+    const [products, setProducts] = useState<ProductCardProps[]>([]);
     const [searchParams, setSearchParams] = useSearchParams(); // ★ URL 쿼리 파라미터 관리 훅
 
     // URL에서 검색 조건들을 읽어옴

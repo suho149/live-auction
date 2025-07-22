@@ -68,6 +68,7 @@ const Header = () => {
                         </Link>
 
                         <div className="flex items-center space-x-3">
+                            <Link to="/my-auctions" className="font-semibold text-gray-700 hover:text-blue-600">나의 경매</Link>
                             <Link to="/mypage" className="flex items-center space-x-2 group">
                                 <img
                                     // ★ getProfileImageUrl 함수 사용

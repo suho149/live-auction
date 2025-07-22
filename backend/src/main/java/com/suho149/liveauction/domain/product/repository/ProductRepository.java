@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -76,4 +77,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Product p WHERE p.id = :productId")
     Optional<Product> findByIdWithPessimisticLock(@Param("productId") Long productId);
+
+    // 판매자 ID와 여러 상태값으로 상품 목록을 조회 (판매 완료 제외)
+    List<Product> findBySellerIdAndStatusInOrderByIdDesc(Long sellerId, Collection<ProductStatus> statuses);
 }
