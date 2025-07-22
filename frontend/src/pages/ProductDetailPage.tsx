@@ -379,6 +379,7 @@ const ProductDetailPage = () => {
             await paymentWidgetRef.current.requestPayment({
                 orderId: paymentInfo.orderId,
                 orderName: paymentInfo.productName,
+                amount: paymentInfo.amount,
                 customerName: paymentInfo.buyerName,
                 successUrl: `${window.location.origin}/payment/success`,
                 failUrl: `${window.location.origin}/payment/fail`,
@@ -698,7 +699,7 @@ const ProductDetailPage = () => {
             </main>
 
             {/* 결제 모달 UI */}
-            {isPaymentModalOpen && (
+            {isPaymentModalOpen && paymentInfo && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
                     <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg">
                         <h2 className="text-2xl font-bold mb-4">결제 진행</h2>
