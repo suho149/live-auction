@@ -23,6 +23,8 @@ public class ProductDetailResponse {
     private LocalDateTime auctionEndTime;
     private String sellerName;
     private final Long sellerId; // 판매자 ID 필드 추가
+    private final double sellerRating; // 판매자 평균 평점
+    private final int sellerSalesCount; // 판매자 판매 횟수
     private String highestBidderName;
     private int likeCount;
     private boolean likedByCurrentUser;
@@ -46,6 +48,8 @@ public class ProductDetailResponse {
                 .auctionEndTime(product.getAuctionEndTime())
                 .sellerName(product.getSeller().getName())
                 .sellerId(product.getSeller().getId())
+                .sellerRating(product.getSeller().getRatingScore())
+                .sellerSalesCount(product.getSeller().getSalesCount())
                 .highestBidderName(product.getHighestBidder() != null ? product.getHighestBidder().getName() : "입찰자 없음")
                 .likeCount(product.getLikeCount())
                 .likedByCurrentUser(likedByCurrentUser)

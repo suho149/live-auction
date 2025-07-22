@@ -32,6 +32,8 @@ public class User {
 
     private int reviewCount = 0;
 
+    private int salesCount = 0;
+
     @Builder
     public User(String name, String email, String picture, Role role) {
         this.name = name;
@@ -54,5 +56,10 @@ public class User {
     public void addReview(int newRating) {
         this.ratingScore = ((this.ratingScore * this.reviewCount) + newRating) / (this.reviewCount + 1);
         this.reviewCount++;
+    }
+
+    // 판매가 완료되었을 때 호출할 메소드
+    public void incrementSalesCount() {
+        this.salesCount++;
     }
 }

@@ -24,6 +24,8 @@ interface ProductDetail {
     auctionEndTime: string;
     sellerName: string;
     sellerId: number;
+    sellerRating: number;
+    sellerSalesCount: number;
     highestBidderName: string;
     likeCount: number;
     likedByCurrentUser: boolean; // 현재 사용자가 찜했는지 여부
@@ -571,7 +573,28 @@ const ProductDetailPage = () => {
                                     )}
                                 </div>
                             </div>
-                            <p className="text-gray-500 mb-1">판매자: {product.sellerName}</p>
+
+                            <div className="flex items-center space-x-4 border-b pb-4 mb-4">
+                                {/* 판매자 정보 */}
+                                <div className="flex items-center mb-3">
+                                    <div className="flex-grow">
+                                        <p className="font-semibold text-gray-800">{product.sellerName}</p>
+                                        <div className="flex items-center space-x-3 text-sm text-gray-500 mt-1">
+                                            {/* 평점 표시 */}
+                                            <div className="flex items-center">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-400 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                </svg>
+                                                <span>
+                                            {product.sellerRating > 0 ? product.sellerRating.toFixed(1) : '평점 없음'}
+                                        </span>
+                                            </div>
+                                            <span className="text-gray-300">|</span>
+                                            <span>판매 {product.sellerSalesCount}회</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                             {/*  참여자 수 표시 UI 추가 */}
                             <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">

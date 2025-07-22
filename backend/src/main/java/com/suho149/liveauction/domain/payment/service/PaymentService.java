@@ -118,6 +118,10 @@ public class PaymentService {
                 product.updateBid(buyer, payment.getAmount()); // 최종 낙찰자 및 가격 확정
                 product.soldOut(); // 상태를 '판매 완료'로 변경
 
+                // 판매자의 판매 횟수(salesCount) 1 증가
+                User seller = payment.getProduct().getSeller();
+                seller.incrementSalesCount();
+
                 log.info(">>>>> [결제 승인 성공] orderId: {}", request.getOrderId());
 
                 // 결제 완료 시 판매자에게 알림 발송 로직 추가
