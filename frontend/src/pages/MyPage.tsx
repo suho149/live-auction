@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import Header from '../components/Header';
 import useAuthStore from '../hooks/useAuthStore';
 import { API_BASE_URL } from '../api/axiosInstance';
 import { Link } from 'react-router-dom';
 import StarRating from '../components/StarRating';
-import { fetchMyReviews, Review } from '../api/reviewApi';
+import {fetchMyReviews, fetchMyWrittenReviews, Review} from '../api/reviewApi';
 
-// ★ API 함수 import
+// API 함수 import
 import { fetchPurchaseHistory, PurchaseHistory } from '../api/mypageApi';
 import { fetchSaleHistory, SaleHistory } from '../api/mypageApi';
 import { fetchSettlementSummary, requestSettlement, fetchSettlementHistory, SettlementSummary, SettlementHistory } from '../api/mypageApi';
@@ -15,25 +15,28 @@ import { fetchKeywords, addKeyword, deleteKeyword, Keyword } from '../api/keywor
 import { XCircleIcon } from '@heroicons/react/24/solid';
 import ReviewModal from '../components/ReviewModal';
 
-// ★ 구매 내역을 표시할 컴포넌트
+// 구매 내역을 표시할 컴포넌트
 const PurchaseHistoryList = () => {
     const [history, setHistory] = useState<PurchaseHistory[]>([]);
     const [loading, setLoading] = useState(true);
     const [reviewTarget, setReviewTarget] = useState<{productId: number, productName: string} | null>(null);
 
-    useEffect(() => {
-        const getHistory = async () => {
-            try {
-                const data = await fetchPurchaseHistory();
-                setHistory(data);
-            } catch (error) {
-                console.error("구매 내역을 불러오는 데 실패했습니다.", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        getHistory();
+    // 데이터를 다시 불러오는 함수를 useCallback으로 감싸서 자식 컴포넌트에 넘겨줌
+    const getHistory = useCallback(async () => {
+        setLoading(true);
+        try {
+            const data = await fetchPurchaseHistory();
+            setHistory(data);
+        } catch (error) {
+            console.error("구매 내역 로딩 실패:", error);
+        } finally {
+            setLoading(false);
+        }
     }, []);
+
+    useEffect(() => {
+        getHistory();
+    }, [getHistory]);
 
     if (loading) return <p className="text-center p-4">로딩 중...</p>;
     if (history.length === 0) return <p className="text-center p-4">구매 내역이 없습니다.</p>;
@@ -56,10 +59,17 @@ const PurchaseHistoryList = () => {
                             </div>
                         </Link>
                         {/* 백엔드에서 reviewWritten 플래그를 보낸다고 가정 */}
-                        {!item.reviewWritten && (
+                        {item.reviewWritten ? (
+                            <button
+                                disabled
+                                className="ml-4 bg-gray-300 text-white text-sm px-3 py-1 rounded-md cursor-not-allowed"
+                            >
+                                리뷰 작성 완료
+                            </button>
+                        ) : (
                             <button
                                 onClick={() => setReviewTarget({ productId: item.productId, productName: item.productName })}
-                                className="ml-4 bg-green-500 text-white text-sm px-3 py-1 rounded-md"
+                                className="ml-4 bg-green-500 text-white text-sm px-3 py-1 rounded-md hover:bg-green-600"
                             >
                                 리뷰 쓰기
                             </button>
@@ -72,15 +82,13 @@ const PurchaseHistoryList = () => {
                 onClose={() => setReviewTarget(null)}
                 productId={reviewTarget?.productId!}
                 productName={reviewTarget?.productName!}
-                onSubmitSuccess={() => {
-                    // 리뷰 작성 성공 후 목록을 새로고침하는 로직 (fetchHistory() 다시 호출)
-                }}
+                onSubmitSuccess={getHistory} // 성공 시 getHistory 함수를 다시 호출하여 목록을 새로고침
             />
         </>
     );
 };
 
-// ★ 판매 내역을 표시할 컴포넌트
+// 판매 내역을 표시할 컴포넌트
 const SaleHistoryList = () => {
     const [history, setHistory] = useState<SaleHistory[]>([]);
     const [loading, setLoading] = useState(true);
@@ -127,7 +135,7 @@ const SaleHistoryList = () => {
     );
 };
 
-// ★ 키워드 관리 컴포넌트 (기존 로직을 별도 컴포넌트로 분리)
+// 키워드 관리 컴포넌트 (기존 로직을 별도 컴포넌트로 분리)
 const KeywordManager = () => {
     const [keywords, setKeywords] = useState<Keyword[]>([]);
     const [newKeyword, setNewKeyword] = useState('');
@@ -171,7 +179,7 @@ const KeywordManager = () => {
     );
 };
 
-// ★ 정산 관리 컴포넌트
+// 정산 관리 컴포넌트
 const SettlementManager = () => {
     const [summary, setSummary] = useState<SettlementSummary | null>(null);
     const [history, setHistory] = useState<SettlementHistory[]>([]);
@@ -313,10 +321,46 @@ const MyReviewsList = () => {
     );
 };
 
+const MyWrittenReviewsList = () => {
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const getReviews = async () => {
+            try {
+                // API 호출 함수만 변경
+                setReviews(await fetchMyWrittenReviews());
+            } finally {
+                setLoading(false);
+            }
+        };
+        getReviews();
+    }, []);
+
+    if (loading) return <p className="text-center p-4">로딩 중...</p>;
+    if (reviews.length === 0) return <p className="text-center p-4">작성한 리뷰가 없습니다.</p>;
+
+    return (
+        <ul className="divide-y divide-gray-200">
+            {reviews.map(review => (
+                <li key={review.reviewId} className="p-4">
+                    {/* 내가 쓴 리뷰이므로 '누구에게' 썼는지를 보여주면 더 좋음. (백엔드 수정 필요) */}
+                    {/* 지금은 기존 ReviewResponse를 재사용하므로, 받은 리뷰와 UI가 동일 */}
+                    <div className="flex justify-between items-center mb-2">
+                        <p className="font-semibold">"{review.productName}" 거래에 대한 나의 리뷰</p>
+                        <StarRating rating={review.rating} />
+                    </div>
+                    <p className="text-gray-600 mb-2">"{review.comment}"</p>
+                </li>
+            ))}
+        </ul>
+    );
+};
+
 // 메인 MyPage 컴포넌트
 const MyPage = () => {
     const { userInfo } = useAuthStore();
-    const [activeTab, setActiveTab] = useState<'purchase' | 'sales' | 'settlement' | 'keywords' | 'reviews'>('purchase');
+    const [activeTab, setActiveTab] = useState<'purchase' | 'sales' | 'settlement' | 'writtenReviews' | 'reviews' | 'keywords'>('purchase');
 
     if (!userInfo) return <div>로딩 중...</div>;
 
@@ -324,7 +368,8 @@ const MyPage = () => {
         purchase: { name: '구매 내역', component: <PurchaseHistoryList /> },
         sales: { name: '판매 내역', component: <SaleHistoryList /> },
         settlement: { name: '정산 관리', component: <SettlementManager /> },
-        reviews: { name: '내가 받은 리뷰', component: <MyReviewsList /> }, // 리뷰 탭 추가
+        writtenReviews: { name: '내가 쓴 리뷰', component: <MyWrittenReviewsList /> },
+        reviews: { name: '내가 받은 리뷰', component: <MyReviewsList /> },
         keywords: { name: '키워드 알림', component: <KeywordManager /> },
     };
 

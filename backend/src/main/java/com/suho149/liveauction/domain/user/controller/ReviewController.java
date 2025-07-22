@@ -28,4 +28,10 @@ public class ReviewController {
     public ResponseEntity<List<ReviewResponse>> getMyReviews(@AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(reviewService.getMyReviews(principal));
     }
+
+    // 내가 쓴 리뷰
+    @GetMapping("/users/me/reviews/written")
+    public ResponseEntity<List<ReviewResponse>> getMyWrittenReviews(@AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(reviewService.getMyWrittenReviews(principal));
+    }
 }

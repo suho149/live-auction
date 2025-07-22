@@ -73,4 +73,12 @@ public class ReviewService {
         return reviewRepository.findByRevieweeIdOrderByIdDesc(userPrincipal.getId())
                 .stream().map(ReviewResponse::new).collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
+    public List<ReviewResponse> getMyWrittenReviews(UserPrincipal userPrincipal) {
+        return reviewRepository.findByReviewerIdOrderByIdDesc(userPrincipal.getId())
+                .stream()
+                .map(ReviewResponse::new) // 기존 ReviewResponse 재사용
+                .collect(Collectors.toList());
+    }
 }

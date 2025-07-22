@@ -26,3 +26,9 @@ export const fetchMyReviews = async (): Promise<Review[]> => {
 export const createReview = async (productId: number, reviewData: ReviewRequest): Promise<void> => {
     await axiosInstance.post(`/api/v1/products/${productId}/reviews`, reviewData);
 };
+
+/** 내가 쓴 리뷰 목록을 조회하는 API */
+export const fetchMyWrittenReviews = async (): Promise<Review[]> => {
+    const response = await axiosInstance.get('/api/v1/users/me/reviews/written');
+    return response.data;
+};
