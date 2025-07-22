@@ -709,8 +709,12 @@ const ProductDetailPage = () => {
 
                         <div className="flex justify-end space-x-4 mt-8">
                             <button type="button" onClick={() => setIsPaymentModalOpen(false)} className="bg-gray-200 px-4 py-2 rounded-md">취소</button>
-                            <button type="button" onClick={handleFinalPayment} className="bg-blue-600 text-white px-4 py-2 rounded-md">
-                                {product.currentPrice.toLocaleString()}원 결제
+                            <button
+                                type="button"
+                                onClick={handleFinalPayment}
+                                className="bg-blue-600 text-white px-4 py-2 rounded-md"
+                            >
+                                {paymentInfo.amount.toLocaleString()}원 결제
                             </button>
                         </div>
                     </div>
