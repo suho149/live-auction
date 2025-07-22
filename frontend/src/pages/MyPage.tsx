@@ -3,6 +3,8 @@ import Header from '../components/Header';
 import useAuthStore from '../hooks/useAuthStore';
 import { API_BASE_URL } from '../api/axiosInstance';
 import { Link } from 'react-router-dom';
+import StarRating from '../components/StarRating';
+import { fetchMyReviews, Review } from '../api/reviewApi';
 
 // ★ API 함수 import
 import { fetchPurchaseHistory, PurchaseHistory } from '../api/mypageApi';
@@ -11,11 +13,13 @@ import { fetchSettlementSummary, requestSettlement, fetchSettlementHistory, Sett
 // 키워드 관련 컴포넌트는 별도로 분리하는 것이 좋습니다. 지금은 간단히 여기에 둡니다.
 import { fetchKeywords, addKeyword, deleteKeyword, Keyword } from '../api/keywordApi';
 import { XCircleIcon } from '@heroicons/react/24/solid';
+import ReviewModal from '../components/ReviewModal';
 
 // ★ 구매 내역을 표시할 컴포넌트
 const PurchaseHistoryList = () => {
     const [history, setHistory] = useState<PurchaseHistory[]>([]);
     const [loading, setLoading] = useState(true);
+    const [reviewTarget, setReviewTarget] = useState<{productId: number, productName: string} | null>(null);
 
     useEffect(() => {
         const getHistory = async () => {
@@ -35,24 +39,44 @@ const PurchaseHistoryList = () => {
     if (history.length === 0) return <p className="text-center p-4">구매 내역이 없습니다.</p>;
 
     return (
-        <ul className="divide-y divide-gray-200">
-            {history.map(item => (
-                <li key={item.productId} className="p-4 hover:bg-gray-50">
-                    <Link to={`/products/${item.productId}`} className="flex items-center space-x-4">
-                        <img
-                            src={item.productThumbnailUrl ? `${API_BASE_URL}${item.productThumbnailUrl}` : 'https://placehold.co/100x100?text=No+Image'}
-                            alt={item.productName}
-                            className="w-20 h-20 object-cover rounded-md flex-shrink-0 bg-gray-200"
-                        />
-                        <div className="flex-1">
-                            <p className="text-sm text-gray-500">{new Date(item.purchasedAt).toLocaleDateString()}</p>
-                            <p className="font-semibold text-lg text-gray-800">{item.productName}</p>
-                            <p className="font-bold text-blue-600">{item.finalPrice.toLocaleString()}원</p>
-                        </div>
-                    </Link>
-                </li>
-            ))}
-        </ul>
+        <>
+            <ul className="divide-y divide-gray-200">
+                {history.map(item => (
+                    <li key={item.productId} className="p-4 flex justify-between items-center">
+                        <Link to={`/products/${item.productId}`} className="flex items-center space-x-4">
+                            <img
+                                src={item.productThumbnailUrl ? `${API_BASE_URL}${item.productThumbnailUrl}` : 'https://placehold.co/100x100?text=No+Image'}
+                                alt={item.productName}
+                                className="w-20 h-20 object-cover rounded-md flex-shrink-0 bg-gray-200"
+                            />
+                            <div className="flex-1">
+                                <p className="text-sm text-gray-500">{new Date(item.purchasedAt).toLocaleDateString()}</p>
+                                <p className="font-semibold text-lg text-gray-800">{item.productName}</p>
+                                <p className="font-bold text-blue-600">{item.finalPrice.toLocaleString()}원</p>
+                            </div>
+                        </Link>
+                        {/* 백엔드에서 reviewWritten 플래그를 보낸다고 가정 */}
+                        {!item.reviewWritten && (
+                            <button
+                                onClick={() => setReviewTarget({ productId: item.productId, productName: item.productName })}
+                                className="ml-4 bg-green-500 text-white text-sm px-3 py-1 rounded-md"
+                            >
+                                리뷰 쓰기
+                            </button>
+                        )}
+                    </li>
+                ))}
+            </ul>
+            <ReviewModal
+                isOpen={!!reviewTarget}
+                onClose={() => setReviewTarget(null)}
+                productId={reviewTarget?.productId!}
+                productName={reviewTarget?.productName!}
+                onSubmitSuccess={() => {
+                    // 리뷰 작성 성공 후 목록을 새로고침하는 로직 (fetchHistory() 다시 호출)
+                }}
+            />
+        </>
     );
 };
 
@@ -254,17 +278,53 @@ const SettlementManager = () => {
     );
 }
 
-// ★ 메인 MyPage 컴포넌트
+// 내가 받은 리뷰를 표시할 컴포넌트
+const MyReviewsList = () => {
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const getReviews = async () => {
+            try {
+                setReviews(await fetchMyReviews());
+            } finally {
+                setLoading(false);
+            }
+        };
+        getReviews();
+    }, []);
+
+    if (loading) return <p className="text-center p-4">로딩 중...</p>;
+    if (reviews.length === 0) return <p className="text-center p-4">받은 리뷰가 없습니다.</p>;
+
+    return (
+        <ul className="divide-y divide-gray-200">
+            {reviews.map(review => (
+                <li key={review.reviewId} className="p-4">
+                    <div className="flex justify-between items-center mb-2">
+                        <p className="font-semibold">{review.reviewerName}님의 리뷰</p>
+                        <StarRating rating={review.rating} />
+                    </div>
+                    <p className="text-gray-600 mb-2">"{review.comment}"</p>
+                    <p className="text-right text-xs text-gray-400">- "{review.productName}" 거래</p>
+                </li>
+            ))}
+        </ul>
+    );
+};
+
+// 메인 MyPage 컴포넌트
 const MyPage = () => {
     const { userInfo } = useAuthStore();
-    const [activeTab, setActiveTab] = useState<'purchase' | 'sales' | 'settlement' | 'keywords'>('purchase');
+    const [activeTab, setActiveTab] = useState<'purchase' | 'sales' | 'settlement' | 'keywords' | 'reviews'>('purchase');
 
     if (!userInfo) return <div>로딩 중...</div>;
 
     const tabs = {
         purchase: { name: '구매 내역', component: <PurchaseHistoryList /> },
         sales: { name: '판매 내역', component: <SaleHistoryList /> },
-        settlement: { name: '정산 관리', component: <SettlementManager /> }, // ★ 정산 탭 추가
+        settlement: { name: '정산 관리', component: <SettlementManager /> },
+        reviews: { name: '내가 받은 리뷰', component: <MyReviewsList /> }, // 리뷰 탭 추가
         keywords: { name: '키워드 알림', component: <KeywordManager /> },
     };
 

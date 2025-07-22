@@ -14,8 +14,9 @@ public class PurchaseHistoryResponse {
     private final String productThumbnailUrl;
     private final Long finalPrice;
     private final LocalDateTime purchasedAt;
+    private final boolean reviewWritten;
 
-    public static PurchaseHistoryResponse from(Payment payment) {
+    public static PurchaseHistoryResponse from(Payment payment, boolean reviewWritten) {
         return PurchaseHistoryResponse.builder()
                 .productId(payment.getProduct().getId())
                 .productName(payment.getProduct().getName())
@@ -25,6 +26,7 @@ public class PurchaseHistoryResponse {
                 )
                 .finalPrice(payment.getAmount())
                 .purchasedAt(payment.getPaidAt())
+                .reviewWritten(reviewWritten)
                 .build();
     }
 }

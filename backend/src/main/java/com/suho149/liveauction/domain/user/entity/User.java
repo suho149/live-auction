@@ -28,6 +28,10 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
+    private double ratingScore = 0.0;
+
+    private int reviewCount = 0;
+
     @Builder
     public User(String name, String email, String picture, Role role) {
         this.name = name;
@@ -44,5 +48,11 @@ public class User {
 
     public String getRoleKey() {
         return this.role.getKey();
+    }
+
+    // 리뷰를 받았을 때 평점을 업데이트하는 메소드
+    public void addReview(int newRating) {
+        this.ratingScore = ((this.ratingScore * this.reviewCount) + newRating) / (this.reviewCount + 1);
+        this.reviewCount++;
     }
 }

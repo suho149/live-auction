@@ -9,6 +9,7 @@ export interface PurchaseHistory {
     productThumbnailUrl: string | null;
     finalPrice: number;
     purchasedAt: string;
+    reviewWritten: boolean;
 }
 
 // 구매 내역 API 호출 함수

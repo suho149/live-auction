@@ -11,6 +11,7 @@ import com.suho149.liveauction.domain.user.dto.PurchaseHistoryResponse;
 import com.suho149.liveauction.domain.user.dto.SaleHistoryResponse;
 import com.suho149.liveauction.domain.user.dto.UserResponse;
 import com.suho149.liveauction.domain.user.entity.User;
+import com.suho149.liveauction.domain.user.repository.ReviewRepository;
 import com.suho149.liveauction.domain.user.repository.UserRepository;
 import com.suho149.liveauction.global.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class UserService {
     private final PaymentRepository paymentRepository;
     private final ProductRepository productRepository;
     private final BidRepository bidRepository;
+    private final ReviewRepository reviewRepository;
 
     /**
      * 현재 로그인한 사용자의 정보를 조회합니다.
@@ -44,11 +46,20 @@ public class UserService {
         return UserResponse.from(user);
     }
 
+    @Transactional(readOnly = true)
     public List<PurchaseHistoryResponse> getMyPurchaseHistory(UserPrincipal userPrincipal) {
         List<Payment> completedPayments = paymentRepository.findCompletedPaymentsByBuyerId(userPrincipal.getId());
 
         return completedPayments.stream()
-                .map(PurchaseHistoryResponse::from)
+                .map(payment -> {
+                    // 현재 사용자가 이 거래에 대해 리뷰를 썼는지 확인
+                    boolean hasWrittenReview = reviewRepository.existsByReviewerIdAndProductId(
+                            userPrincipal.getId(),
+                            payment.getProduct().getId()
+                    );
+                    // 확인된 값을 from 메소드에 전달
+                    return PurchaseHistoryResponse.from(payment, hasWrittenReview);
+                })
                 .collect(Collectors.toList());
     }
 
