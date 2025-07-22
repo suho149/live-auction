@@ -2,6 +2,9 @@ package com.suho149.liveauction.scheduler;
 
 import com.suho149.liveauction.domain.notification.entity.NotificationType;
 import com.suho149.liveauction.domain.notification.service.NotificationService;
+import com.suho149.liveauction.domain.payment.entity.Payment;
+import com.suho149.liveauction.domain.payment.entity.PaymentStatus;
+import com.suho149.liveauction.domain.payment.repository.PaymentRepository;
 import com.suho149.liveauction.domain.product.entity.Product;
 import com.suho149.liveauction.domain.product.entity.ProductStatus;
 import com.suho149.liveauction.domain.product.repository.ProductRepository;
@@ -20,6 +23,8 @@ import java.util.List;
 public class AuctionScheduler {
     private final ProductRepository productRepository;
     private final NotificationService notificationService;
+    private final PaymentRepository paymentRepository;
+    private static final int PENDING_EXPIRATION_MINUTES = 10;
 
     /**
      * 매 분 0초에 실행되어, 마감 시간이 지난 경매를 처리합니다.
@@ -77,6 +82,24 @@ public class AuctionScheduler {
             notificationService.send(product.getHighestBidder(), NotificationType.BID, content, url);
 
             log.info("상품 ID {} 결제 기한 만료 처리 완료.", product.getId());
+        }
+    }
+
+    /**
+     * 10분마다 실행되어, 생성된 지 오래된 PENDING 상태의 결제 정보를 삭제합니다.
+     * (사용자가 결제창을 열었다가 그냥 닫아버린 경우 등)
+     */
+    @Scheduled(cron = "0 */10 * * * *") // 매 10분마다 실행
+    @Transactional
+    public void cleanupExpiredPendingPayments() {
+        LocalDateTime tenMinutesAgo = LocalDateTime.now().minusMinutes(PENDING_EXPIRATION_MINUTES);
+        log.info("만료된 PENDING 결제 정리 스케줄러 실행. 기준 시간: {}", tenMinutesAgo);
+
+        List<Payment> expiredPayments = paymentRepository.findByStatusAndCreatedAtBefore(PaymentStatus.PENDING, tenMinutesAgo);
+
+        if (!expiredPayments.isEmpty()) {
+            log.info("{}개의 만료된 PENDING 결제를 삭제합니다.", expiredPayments.size());
+            paymentRepository.deleteAll(expiredPayments);
         }
     }
 }
