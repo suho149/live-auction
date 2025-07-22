@@ -24,9 +24,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -37,43 +39,30 @@ public class PaymentService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
 
+    private static final int PENDING_EXPIRATION_MINUTES = 1; // 1분
+
     @Value("${payment.toss.secret-key}")
     private String tossSecretKey;
 
     @Transactional
     public PaymentInfoResponse createPaymentInfo(Long productId, UserPrincipal userPrincipal) {
-        Product product = productRepository.findById(productId).orElseThrow();
+        Product product = productRepository.findByIdWithPessimisticLock(productId)
+                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다. ID: " + productId));
+
+        User buyer = userRepository.findById(userPrincipal.getId())
+                .orElseThrow(() -> new UsernameNotFoundException("인증된 사용자 정보를 DB에서 찾을 수 없습니다. ID: " + userPrincipal.getId()));
 
         // 낙찰자인지 확인
         if (product.getHighestBidder() == null || !product.getHighestBidder().getId().equals(userPrincipal.getId())) {
             throw new IllegalStateException("결제 권한이 없습니다.");
         }
 
-        // 기존 결제 정보가 있는지 먼저 확인
-        Payment payment = paymentRepository.findByProductId(productId)
-                .orElseGet(() -> {
-                    // 기존 정보가 없으면, 새로 생성하고 저장
-                    String orderId = "order_" + productId + "_" + System.currentTimeMillis();
-                    User buyer = userRepository.getReferenceById(userPrincipal.getId());
+        if (product.getStatus() != ProductStatus.AUCTION_ENDED) {
+            throw new IllegalStateException("결제 가능한 상태의 상품이 아닙니다.");
+        }
 
-                    return paymentRepository.save(
-                            Payment.builder()
-                                    .product(product)
-                                    .buyer(buyer)
-                                    .orderId(orderId)
-                                    .amount(product.getCurrentPrice())
-                                    .build()
-                    );
-                });
-
-        // 기존 정보가 있든, 새로 만들었든, 해당 payment 정보를 기반으로 응답 DTO 생성
-        return PaymentInfoResponse.builder()
-                .orderId(payment.getOrderId())
-                .productName(product.getName())
-                .amount(payment.getAmount())
-                .buyerName(userPrincipal.getName())
-                .buyerEmail(userPrincipal.getEmail())
-                .build();
+        // 공통 로직 호출
+        return getOrCreatePendingPayment(product, buyer, product.getCurrentPrice());
     }
 
     @Transactional
@@ -179,30 +168,64 @@ public class PaymentService {
             throw new IllegalStateException("현재 입찰가가 즉시 구매가보다 높으므로 즉시 구매할 수 없습니다.");
         }
 
-        // 3. 기존 PENDING 상태의 결제가 있는지 확인 (다른 사람이 동시에 시도하는 경우 방지)
-        paymentRepository.findByProductIdAndStatus(productId, PaymentStatus.PENDING).ifPresent(p -> {
-            throw new IllegalStateException("다른 사용자가 결제를 시도 중입니다. 잠시 후 다시 시도해주세요.");
-        });
+        // 공통 로직 호출
+        return getOrCreatePendingPayment(product, buyer, product.getBuyNowPrice());
+    }
 
-        // 4. 새로운 결제 정보 생성 (상태: PENDING)
-        String orderId = "order_" + productId + "_" + System.currentTimeMillis();
+    private PaymentInfoResponse getOrCreatePendingPayment(Product product, User buyer, Long amount) {
+        Optional<Payment> existingPendingPaymentOpt = paymentRepository.findByProductIdAndStatus(product.getId(), PaymentStatus.PENDING);
+        Payment paymentToProceed;
+
+        log.info(">>>>> [결제 정보 생성 시작] 상품 ID: {}, 요청자: {}", product.getId(), buyer.getName());
+
+        if (existingPendingPaymentOpt.isPresent()) {
+            Payment pending = existingPendingPaymentOpt.get();
+            LocalDateTime expirationTime = pending.getCreatedAt().plusMinutes(PENDING_EXPIRATION_MINUTES);
+            boolean isExpired = LocalDateTime.now().isAfter(expirationTime);
+
+            // ★★★ 1. 기존 PENDING 결제 정보 로그 ★★★
+            log.info(">>>>> 기존 PENDING 결제 발견. 생성 시간: {}, 만료 시간: {}, 현재 시간: {}, 만료 여부: {}",
+                    pending.getCreatedAt(), expirationTime, LocalDateTime.now(), isExpired);
+
+            if (isExpired) {
+                log.info(">>>>> PENDING 결제가 만료되어 삭제 후 새로 생성합니다.");
+                paymentRepository.delete(pending);
+                paymentToProceed = createNewPendingPayment(product, buyer, amount);
+            } else {
+                log.info(">>>>> 유효한 PENDING 결제 존재. 소유자 확인 시작. 기존 구매자 ID: {}, 요청자 ID: {}",
+                        pending.getBuyer().getId(), buyer.getId());
+
+                if (pending.getBuyer().getId().equals(buyer.getId())) {
+                    log.info(">>>>> 요청자가 기존 PENDING 결제 소유자이므로 재사용합니다.");
+                    paymentToProceed = pending;
+                } else {
+                    log.error(">>>>> 다른 사용자가 생성한 유효한 PENDING 결제가 있어 요청을 거부합니다.");
+                    throw new IllegalStateException("다른 사용자가 결제를 시도 중입니다. 잠시 후 다시 시도해주세요.");
+                }
+            }
+        } else {
+            log.info(">>>>> PENDING 결제 없음. 새로 생성합니다.");
+            paymentToProceed = createNewPendingPayment(product, buyer, amount);
+        }
+
+        log.info("결제 정보 생성/재사용 완료. Order ID: {}", paymentToProceed.getOrderId());
+        return PaymentInfoResponse.builder()
+                .orderId(paymentToProceed.getOrderId())
+                .productName(product.getName())
+                .amount(paymentToProceed.getAmount())
+                .buyerName(buyer.getName())
+                .buyerEmail(buyer.getEmail())
+                .build();
+    }
+
+    private Payment createNewPendingPayment(Product product, User buyer, Long amount) {
+        String orderId = "order_" + product.getId() + "_" + System.currentTimeMillis();
         Payment payment = Payment.builder()
                 .product(product)
                 .buyer(buyer)
                 .orderId(orderId)
-                .amount(product.getBuyNowPrice()) // ★ 결제 금액은 즉시 구매가
+                .amount(amount)
                 .build();
-        paymentRepository.save(payment);
-
-        log.info("즉시 구매 결제 정보 생성 완료. Order ID: {}", orderId);
-
-        // 5. 프론트엔드로 결제 정보 반환
-        return PaymentInfoResponse.builder()
-                .orderId(payment.getOrderId())
-                .productName(product.getName())
-                .amount(payment.getAmount())
-                .buyerName(userPrincipal.getName())
-                .buyerEmail(userPrincipal.getEmail())
-                .build();
+        return paymentRepository.save(payment);
     }
 }
