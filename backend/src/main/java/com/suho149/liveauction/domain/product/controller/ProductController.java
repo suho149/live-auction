@@ -126,4 +126,16 @@ public class ProductController {
         auctionService.cancelAutoBid(productId, userPrincipal.getEmail());
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * 진행 중인(PENDING) 결제를 취소합니다.
+     */
+    @DeleteMapping("/{productId}/payment")
+    public ResponseEntity<Void> cancelPayment(
+            @PathVariable Long productId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ) {
+        paymentService.cancelPendingPayment(productId, userPrincipal);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -228,4 +228,25 @@ public class PaymentService {
                 .build();
         return paymentRepository.save(payment);
     }
+
+    /**
+     * 사용자가 결제를 명시적으로 취소할 때 PENDING 상태의 결제 정보를 삭제합니다.
+     */
+    @Transactional
+    public void cancelPendingPayment(Long productId, UserPrincipal userPrincipal) {
+        // 1. PENDING 상태인 결제 정보를 찾습니다.
+        Payment pendingPayment = paymentRepository.findByProductIdAndStatus(productId, PaymentStatus.PENDING)
+                .orElse(null); // 없으면 그냥 무시하고 넘어가도 됨
+
+        // 2. PENDING 결제가 있고, 요청한 사용자가 생성한 것이 맞는지 확인
+        if (pendingPayment != null && pendingPayment.getBuyer().getId().equals(userPrincipal.getId())) {
+            log.info("사용자 {}의 요청으로 상품 ID {}의 PENDING 결제를 취소합니다. Order ID: {}",
+                    userPrincipal.getName(), productId, pendingPayment.getOrderId());
+            paymentRepository.delete(pendingPayment);
+        } else if (pendingPayment != null) {
+            // 다른 사람의 PENDING 결제를 취소하려는 시도 (일어날 확률은 거의 없음)
+            log.warn("사용자 {}가 다른 사용자의 PENDING 결제(상품 ID: {}) 취소를 시도했습니다.",
+                    userPrincipal.getName(), productId);
+        }
+    }
 }

@@ -461,6 +461,20 @@ const ProductDetailPage = () => {
         }
     };
 
+    // 결제 취소 핸들러 함수
+    const handleCancelPayment = async () => {
+        // 모달을 먼저 닫아 사용자에게 즉각적인 피드백을 줌
+        setIsPaymentModalOpen(false);
+        try {
+            // 백엔드로 취소 API 호출 (성공/실패 여부를 굳이 기다릴 필요 없음 - "fire and forget")
+            await axiosInstance.delete(`/api/v1/products/${productId}/payment`);
+            console.log("결제 시도가 취소되었습니다.");
+        } catch (error) {
+            // 취소 실패는 사용자에게 굳이 알릴 필요는 없음. 서버에서 처리하도록 둠.
+            console.error("결제 취소 API 호출 실패:", error);
+        }
+    };
+
     // 1. product가 null이면 로딩 화면을 먼저 렌더링
     if (!product) {
         return (
@@ -700,15 +714,28 @@ const ProductDetailPage = () => {
 
             {/* 결제 모달 UI */}
             {isPaymentModalOpen && paymentInfo && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-                    <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg">
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
+                    onClick={handleCancelPayment} // 바깥 영역 클릭 시 취소
+                >
+                    <div
+                        className="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg"
+                        onClick={(e) => e.stopPropagation()} // 모달 내부 클릭 시 이벤트 전파 방지
+                    >
                         <h2 className="text-2xl font-bold mb-4">결제 진행</h2>
 
                         {/* 결제 위젯이 렌더링될 영역 */}
                         <div id="payment-widget"></div>
 
                         <div className="flex justify-end space-x-4 mt-8">
-                            <button type="button" onClick={() => setIsPaymentModalOpen(false)} className="bg-gray-200 px-4 py-2 rounded-md">취소</button>
+                            <button
+                                type="button"
+                                onClick={handleCancelPayment}
+                                className="bg-gray-200 px-4 py-2 rounded-md"
+                            >
+                                취소
+                            </button>
+
                             <button
                                 type="button"
                                 onClick={handleFinalPayment}
