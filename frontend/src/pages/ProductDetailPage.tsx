@@ -24,6 +24,7 @@ interface ProductDetail {
     auctionEndTime: string;
     sellerName: string;
     sellerId: number;
+    sellerProfileImageUrl: string | null;
     sellerRating: number;
     sellerSalesCount: number;
     highestBidderName: string;
@@ -577,6 +578,19 @@ const ProductDetailPage = () => {
                             <div className="flex items-center space-x-4 border-b pb-4 mb-4">
                                 {/* 판매자 정보 */}
                                 <div className="flex items-center mb-3">
+                                    {/* 판매자 프로필 이미지 추가 */}
+                                    <img
+                                        // Google 프로필(http로 시작)과 로컬 업로드 이미지를 모두 처리
+                                        src={
+                                            product.sellerProfileImageUrl
+                                                ? product.sellerProfileImageUrl.startsWith('http')
+                                                    ? product.sellerProfileImageUrl
+                                                    : `${API_BASE_URL}${product.sellerProfileImageUrl}`
+                                                : 'https://placehold.co/48x48?text=S' // 기본 이미지
+                                        }
+                                        alt={product.sellerName}
+                                        className="w-12 h-12 rounded-full object-cover mr-4 border" // mr-4로 오른쪽 여백 추가
+                                    />
                                     <div className="flex-grow">
                                         <p className="font-semibold text-gray-800">{product.sellerName}</p>
                                         <div className="flex items-center space-x-3 text-sm text-gray-500 mt-1">
