@@ -1,5 +1,7 @@
 package com.suho149.liveauction.domain.payment.service;
 
+import com.suho149.liveauction.domain.delivery.entity.Delivery;
+import com.suho149.liveauction.domain.delivery.repository.DeliveryRepository;
 import com.suho149.liveauction.domain.notification.entity.NotificationType;
 import com.suho149.liveauction.domain.notification.service.NotificationService;
 import com.suho149.liveauction.domain.payment.dto.PaymentInfoResponse;
@@ -38,6 +40,7 @@ public class PaymentService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final DeliveryRepository deliveryRepository;
 
     private static final int PENDING_EXPIRATION_MINUTES = 1; // 1분
 
@@ -121,6 +124,10 @@ public class PaymentService {
                 // 판매자의 판매 횟수(salesCount) 1 증가
                 User seller = payment.getProduct().getSeller();
                 seller.incrementSalesCount();
+
+                // 결제 완료 시 Delivery 객체 생성
+                Delivery delivery = Delivery.builder().payment(payment).build();
+                deliveryRepository.save(delivery);
 
                 log.info(">>>>> [결제 승인 성공] orderId: {}", request.getOrderId());
 

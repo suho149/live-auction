@@ -2,14 +2,20 @@
 import axiosInstance from './axiosInstance';
 import { ProductCardProps } from '../components/ProductCard';
 
+// DeliveryStatus 타입을 명시적으로 정의
+export type DeliveryStatus = 'ADDRESS_PENDING' | 'PENDING' | 'SHIPPING' | 'COMPLETED' | 'CANCELED';
+
 // 구매 내역 타입 정의
 export interface PurchaseHistory {
     productId: number;
+    paymentId: number;
     productName: string;
     productThumbnailUrl: string | null;
     finalPrice: number;
     purchasedAt: string;
     reviewWritten: boolean;
+    deliveryStatus: DeliveryStatus;
+    trackingNumber: string | null;
 }
 
 // 구매 내역 API 호출 함수

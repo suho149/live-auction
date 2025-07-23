@@ -5,9 +5,10 @@ import { API_BASE_URL } from '../api/axiosInstance';
 import { Link } from 'react-router-dom';
 import StarRating from '../components/StarRating';
 import {fetchMyReviews, fetchMyWrittenReviews, Review} from '../api/reviewApi';
+import DeliveryModal from '../components/DeliveryModal';
 
 // API 함수 import
-import { fetchPurchaseHistory, PurchaseHistory } from '../api/mypageApi';
+import { fetchPurchaseHistory, PurchaseHistory, DeliveryStatus } from '../api/mypageApi';
 import { fetchSaleHistory, SaleHistory } from '../api/mypageApi';
 import { fetchSettlementSummary, requestSettlement, fetchSettlementHistory, SettlementSummary, SettlementHistory } from '../api/mypageApi';
 // 키워드 관련 컴포넌트는 별도로 분리하는 것이 좋습니다. 지금은 간단히 여기에 둡니다.
@@ -20,8 +21,8 @@ const PurchaseHistoryList = () => {
     const [history, setHistory] = useState<PurchaseHistory[]>([]);
     const [loading, setLoading] = useState(true);
     const [reviewTarget, setReviewTarget] = useState<{productId: number, productName: string} | null>(null);
+    const [deliveryTarget, setDeliveryTarget] = useState<number | null>(null);
 
-    // 데이터를 다시 불러오는 함수를 useCallback으로 감싸서 자식 컴포넌트에 넘겨줌
     const getHistory = useCallback(async () => {
         setLoading(true);
         try {
@@ -41,48 +42,68 @@ const PurchaseHistoryList = () => {
     if (loading) return <p className="text-center p-4">로딩 중...</p>;
     if (history.length === 0) return <p className="text-center p-4">구매 내역이 없습니다.</p>;
 
+    const renderActionButtons = (item: PurchaseHistory) => {
+        const actions: { [key in DeliveryStatus]?: React.ReactNode } = {
+            ADDRESS_PENDING: <button onClick={() => setDeliveryTarget(item.paymentId)} className="bg-orange-500 text-white text-sm font-semibold px-3 py-2 rounded-md hover:bg-orange-600">배송지 입력</button>,
+            PENDING: <span className="text-sm text-gray-500 font-medium">배송 준비 중</span>,
+            SHIPPING: <a href="#" className="bg-blue-500 text-white text-sm font-semibold px-3 py-2 rounded-md hover:bg-blue-600">배송 조회</a>,
+            COMPLETED: <span className="text-sm text-green-600 font-medium px-3 py-2">배송 완료</span>,
+            CANCELED: <span className="text-sm text-red-500 font-medium px-3 py-2">주문 취소</span>,
+        };
+        return actions[item.deliveryStatus] || null;
+    };
+
     return (
         <>
             <ul className="divide-y divide-gray-200">
                 {history.map(item => (
-                    <li key={item.productId} className="p-4 flex justify-between items-center">
-                        <Link to={`/products/${item.productId}`} className="flex items-center space-x-4">
-                            <img
-                                src={item.productThumbnailUrl ? `${API_BASE_URL}${item.productThumbnailUrl}` : 'https://placehold.co/100x100?text=No+Image'}
-                                alt={item.productName}
-                                className="w-20 h-20 object-cover rounded-md flex-shrink-0 bg-gray-200"
-                            />
-                            <div className="flex-1">
-                                <p className="text-sm text-gray-500">{new Date(item.purchasedAt).toLocaleDateString()}</p>
-                                <p className="font-semibold text-lg text-gray-800">{item.productName}</p>
-                                <p className="font-bold text-blue-600">{item.finalPrice.toLocaleString()}원</p>
+                    <li key={item.paymentId} className="p-4"> {/* ★★★ key를 paymentId로 변경 ★★★ */}
+                        <div className="flex justify-between items-center">
+                            <Link to={`/products/${item.productId}`} className="flex items-center space-x-4 flex-grow">
+                                <img
+                                    src={item.productThumbnailUrl ? `${API_BASE_URL}${item.productThumbnailUrl}` : 'https://placehold.co/100x100?text=No+Image'}
+                                    alt={item.productName}
+                                    className="w-20 h-20 object-cover rounded-md flex-shrink-0 bg-gray-200"
+                                />
+                                <div className="flex-1">
+                                    <p className="text-sm text-gray-500">{new Date(item.purchasedAt).toLocaleDateString()}</p>
+                                    <p className="font-semibold text-lg text-gray-800">{item.productName}</p>
+                                    <p className="font-bold text-blue-600">{item.finalPrice.toLocaleString()}원</p>
+                                </div>
+                            </Link>
+
+                            <div className="ml-4 flex-shrink-0 flex flex-col items-end space-y-2 w-32">
+                                {/* 1. 배송 상태 표시 */}
+                                {renderActionButtons(item)}
+
+                                {/* 2. 리뷰 작성 버튼 (배송 완료 시에만 표시) */}
+                                {item.deliveryStatus === 'COMPLETED' && (
+                                    item.reviewWritten ?
+                                        <button disabled className="bg-gray-300 text-white text-xs font-semibold px-2 py-1 rounded-md cursor-not-allowed w-full">작성 완료</button> :
+                                        <button onClick={() => setReviewTarget({ productId: item.productId, productName: item.productName })} className="bg-gray-600 text-white text-xs font-semibold px-2 py-1 rounded-md hover:bg-gray-700 w-full">리뷰 쓰기</button>
+                                )}
                             </div>
-                        </Link>
-                        {/* 백엔드에서 reviewWritten 플래그를 보낸다고 가정 */}
-                        {item.reviewWritten ? (
-                            <button
-                                disabled
-                                className="ml-4 bg-gray-300 text-white text-sm px-3 py-1 rounded-md cursor-not-allowed"
-                            >
-                                리뷰 작성 완료
-                            </button>
-                        ) : (
-                            <button
-                                onClick={() => setReviewTarget({ productId: item.productId, productName: item.productName })}
-                                className="ml-4 bg-green-500 text-white text-sm px-3 py-1 rounded-md hover:bg-green-600"
-                            >
-                                리뷰 쓰기
-                            </button>
+                        </div>
+                        {item.trackingNumber && (
+                            <p className="text-right text-xs mt-1 text-gray-500">운송장 번호: {item.trackingNumber}</p>
                         )}
                     </li>
                 ))}
             </ul>
+
+            {/* 모달 컴포넌트들 렌더링 */}
             <ReviewModal
                 isOpen={!!reviewTarget}
                 onClose={() => setReviewTarget(null)}
                 productId={reviewTarget?.productId!}
                 productName={reviewTarget?.productName!}
-                onSubmitSuccess={getHistory} // 성공 시 getHistory 함수를 다시 호출하여 목록을 새로고침
+                onSubmitSuccess={getHistory}
+            />
+            <DeliveryModal
+                isOpen={!!deliveryTarget}
+                onClose={() => setDeliveryTarget(null)}
+                paymentId={deliveryTarget!}
+                onSubmitSuccess={getHistory}
             />
         </>
     );

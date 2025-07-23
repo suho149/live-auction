@@ -1,5 +1,6 @@
 package com.suho149.liveauction.domain.payment.entity;
 
+import com.suho149.liveauction.domain.delivery.entity.Delivery;
 import com.suho149.liveauction.domain.product.entity.Product;
 import com.suho149.liveauction.domain.user.entity.User;
 import jakarta.persistence.*;
@@ -44,6 +45,10 @@ public class Payment {
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt; // 생성 시간
+
+    // Delivery와의 양방향 1:1 관계 설정
+    @OneToOne(mappedBy = "payment", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private Delivery delivery;
 
     @Builder
     public Payment(Product product, User buyer, String orderId, Long amount) {
