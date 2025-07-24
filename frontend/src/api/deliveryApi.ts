@@ -32,3 +32,11 @@ export const fetchTrackingInfo = async (trackingNumber: string): Promise<Trackin
     const response = await axiosInstance.get(`/api/v1/deliveries/track/${trackingNumber}`);
     return response.data;
 };
+
+/** 구매 확정 API */
+export const confirmPurchase = async (deliveryId: number): Promise<void> => {
+    // 백엔드 DeliveryController에 deliveryId로 구매 확정하는 API가 있다고 가정
+    // 예: @PostMapping("/deliveries/{deliveryId}/confirm")
+    // PaymentId를 사용한다면 그에 맞게 수정
+    await axiosInstance.post(`/api/v1/deliveries/${deliveryId}/confirm`);
+};

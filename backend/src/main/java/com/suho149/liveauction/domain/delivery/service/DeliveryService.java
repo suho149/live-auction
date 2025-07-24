@@ -13,6 +13,7 @@ import com.suho149.liveauction.domain.payment.entity.Payment;
 import com.suho149.liveauction.domain.payment.repository.PaymentRepository;
 import com.suho149.liveauction.domain.product.entity.Product;
 import com.suho149.liveauction.domain.user.entity.User;
+import com.suho149.liveauction.domain.user.service.SettlementService;
 import com.suho149.liveauction.global.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ public class DeliveryService {
     private final DeliveryRepository deliveryRepository;
     private final PaymentRepository paymentRepository;
     private final NotificationService notificationService;
+    private final SettlementService settlementService;
 
     @Transactional
     public void updateDeliveryInfo(Long paymentId, DeliveryInfoRequest request, UserPrincipal userPrincipal) {
@@ -157,20 +159,12 @@ public class DeliveryService {
         Product product = delivery.getPayment().getProduct();
         User seller = product.getSeller();
 
-        // --- 5. TODO 1: 판매자에게 알림 발송 ---
+        // 구매가 확정되었으므로, 이 거래에 대한 정산을 생성
+        settlementService.createSettlement(delivery.getPayment());
+
+        // 판매자에게 알림 발송
         String content = "'" + product.getName() + "' 상품에 대해 구매자가 구매를 확정했습니다. 정산 내역을 확인해주세요.";
         String url = "/mypage?tab=settlement"; // 마이페이지의 정산 탭으로 바로 이동
         notificationService.send(seller, NotificationType.DELIVERY, content, url);
-
-        // --- 6. TODO 2: 판매자 정산 관련 로직 트리거 ---
-        // 여기서는 판매자의 '정산 가능 금액'을 업데이트하는 로직을 직접 호출하기보다,
-        // Settlement(정산) 엔티티를 생성하여 정산 대기 상태로 만드는 것이 더 좋습니다.
-        // 또는, SettlementService에 public 메소드를 만들고 여기서 호출할 수 있습니다.
-        // 지금은 User 엔티티에 '정산 가능 금액' 필드를 추가하고 업데이트하는 간단한 방식으로 구현합니다.
-
-        // User 엔티티에 `private Long availableSettlementAmount = 0L;` 와
-        // `public void addSettlementAmount(Long amount) { this.availableSettlementAmount += amount; }`
-        // 메소드가 추가되었다고 가정합니다.
-//        seller.addSettlementAmount(delivery.getPayment().getAmount());
     }
 }

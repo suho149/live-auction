@@ -16,6 +16,7 @@ import { fetchKeywords, addKeyword, deleteKeyword, Keyword } from '../api/keywor
 import { XCircleIcon } from '@heroicons/react/24/solid';
 import ReviewModal from '../components/ReviewModal';
 import TrackingModal from "../components/TrackingModal";
+import { confirmPurchase } from '../api/deliveryApi';
 
 // 구매 내역을 표시할 컴포넌트
 const PurchaseHistoryList = () => {
@@ -41,6 +42,23 @@ const PurchaseHistoryList = () => {
         getHistory();
     }, [getHistory]);
 
+    // 구매 확정 핸들러 함수 추가
+    const handleConfirmPurchase = async (deliveryId: number | null) => {
+        if (!deliveryId) {
+            alert("유효하지 않은 주문입니다.");
+            return;
+        }
+        if (window.confirm("상품을 잘 받으셨나요? 구매를 확정하시면 거래가 종료되며, 판매자에게 정산이 진행됩니다.")) {
+            try {
+                await confirmPurchase(deliveryId);
+                alert("구매가 확정되었습니다.");
+                getHistory(); // 목록을 새로고침하여 '리뷰 쓰기' 버튼을 표시
+            } catch (error) {
+                alert("구매 확정에 실패했습니다.");
+            }
+        }
+    };
+
     if (loading) return <p className="text-center p-4">로딩 중...</p>;
     if (history.length === 0) return <p className="text-center p-4">구매 내역이 없습니다.</p>;
 
@@ -61,7 +79,8 @@ const PurchaseHistoryList = () => {
                     배송 조회
                 </button>
             ),
-            COMPLETED: <span className="text-sm text-green-600 font-medium px-3 py-2">배송 완료</span>,
+            COMPLETED: <button onClick={() => handleConfirmPurchase(item.deliveryId)} className="bg-purple-500 text-white text-sm font-semibold px-3 py-2 rounded-md hover:bg-purple-600 w-full">구매 확정</button>,
+            CONFIRMED: <span className="text-sm text-green-600 font-medium px-3 py-2">거래 완료</span>,
             CANCELED: <span className="text-sm text-red-500 font-medium px-3 py-2">주문 취소</span>,
         };
         return actions[item.deliveryStatus] || null;
@@ -91,9 +110,9 @@ const PurchaseHistoryList = () => {
                                 {renderActionButtons(item)}
 
                                 {/* 2. 리뷰 작성 버튼 (배송 완료 시에만 표시) */}
-                                {item.deliveryStatus === 'COMPLETED' && (
+                                {item.deliveryStatus === 'CONFIRMED' && (
                                     item.reviewWritten ?
-                                        <button disabled className="bg-gray-300 text-white text-xs font-semibold px-2 py-1 rounded-md cursor-not-allowed w-full">작성 완료</button> :
+                                        <button disabled className="bg-gray-300 text-white text-xs font-semibold px-2 py-1 rounded-md cursor-not-allowed w-full">리뷰 작성 완료</button> :
                                         <button onClick={() => setReviewTarget({ productId: item.productId, productName: item.productName })} className="bg-gray-600 text-white text-xs font-semibold px-2 py-1 rounded-md hover:bg-gray-700 w-full">리뷰 쓰기</button>
                                 )}
                             </div>

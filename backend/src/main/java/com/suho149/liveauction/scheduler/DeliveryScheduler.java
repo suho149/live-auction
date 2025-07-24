@@ -7,12 +7,14 @@ import com.suho149.liveauction.domain.notification.entity.NotificationType;
 import com.suho149.liveauction.domain.notification.service.NotificationService;
 import com.suho149.liveauction.domain.product.entity.Product;
 import com.suho149.liveauction.domain.user.entity.User;
+import com.suho149.liveauction.domain.user.service.SettlementService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -23,6 +25,7 @@ import java.util.UUID;
 public class DeliveryScheduler {
     private final DeliveryRepository deliveryRepository;
     private final NotificationService notificationService;
+    private final SettlementService settlementService;
 
     /**
      * 매일 평일 오후 4시에 실행되어, '배송 준비 중'인 모든 주문을 일괄 '발송 처리'합니다.
@@ -78,6 +81,9 @@ public class DeliveryScheduler {
 
             log.info("배송 ID {} 자동 구매 확정 처리.", delivery.getId());
 
+            // 구매가 확정되었으므로, 이 거래에 대한 정산을 생성
+            settlementService.createSettlement(delivery.getPayment());
+
             // --- TODO: 판매자에게 자동 구매 확정 알림 발송 ---
             String content = "'" + product.getName() + "' 상품의 구매가 자동으로 확정되었습니다. 정산 내역을 확인해주세요.";
             String url = "/mypage?tab=settlement";
@@ -86,5 +92,48 @@ public class DeliveryScheduler {
             // --- 자동 확정 시에도 정산 가능 금액 업데이트 ---
 //            seller.addSettlementAmount(delivery.getPayment().getAmount());
         }
+    }
+
+    /**
+     * 1시간마다 실행되어, '배송 중'인 상품들의 상태를 확인하고 '배송 완료'로 변경합니다.
+     * (외부 택배사 API 연동 시뮬레이션)
+     */
+    @Scheduled(fixedRate = 60000)
+//    @Scheduled(fixedRate = 3600000) // 1시간 (3,600,000 밀리초) 마다 실행
+    @Transactional
+    public void updateDeliveryStatusToCompleted() {
+        log.info("배송 완료 상태 업데이트 스케줄러 시작...");
+
+        // 1. '배송 중(SHIPPING)' 상태인 모든 배송 건 조회
+        List<Delivery> deliveriesInTransit = deliveryRepository.findByStatus(DeliveryStatus.SHIPPING);
+
+        if (deliveriesInTransit.isEmpty()) {
+            log.info("상태를 업데이트할 배송 건이 없습니다.");
+            return;
+        }
+
+        for (Delivery delivery : deliveriesInTransit) {
+            LocalDateTime shippedAt = delivery.getShippedAt();
+            if (shippedAt == null) continue; // 발송 시간이 없으면 건너뜀
+
+//            // 2. [시뮬레이션 로직] 발송된 지 14시간이 지났으면 '배송 완료'로 간주
+//            long hoursPassed = Duration.between(shippedAt, LocalDateTime.now()).toHours();
+            // [시뮬레이션 로직] 발송된 지 5분이 지났으면 '배송 완료'로 간주
+            long minutesPassed = Duration.between(shippedAt, LocalDateTime.now()).toMinutes();
+            if (minutesPassed >= 5) {
+                delivery.completeDelivery(); // status를 COMPLETED로, completedAt을 현재시간으로 설정
+                log.info("배송 ID {} '배송 완료' 처리.", delivery.getId());
+
+                // 3. 구매자에게 '배송 완료' 알림 발송
+                String content = "'" + delivery.getPayment().getProduct().getName() + "' 상품의 배송이 완료되었습니다. 마이페이지에서 구매를 확정해주세요.";
+                notificationService.send(
+                        delivery.getPayment().getBuyer(),
+                        NotificationType.DELIVERY,
+                        content,
+                        "/mypage?tab=purchase" // 마이페이지 구매내역 탭으로
+                );
+            }
+        }
+        log.info("배송 완료 상태 업데이트 스케줄러 종료.");
     }
 }
