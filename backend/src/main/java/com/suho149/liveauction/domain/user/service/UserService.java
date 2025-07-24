@@ -1,6 +1,7 @@
 package com.suho149.liveauction.domain.user.service;
 
 import com.suho149.liveauction.domain.auction.repository.BidRepository;
+import com.suho149.liveauction.domain.delivery.entity.Address;
 import com.suho149.liveauction.domain.payment.entity.Payment;
 import com.suho149.liveauction.domain.payment.repository.PaymentRepository;
 import com.suho149.liveauction.domain.product.dto.ProductResponse;
@@ -105,5 +106,12 @@ public class UserService {
         return products.stream()
                 .map(ProductResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void updateDefaultAddress(UserPrincipal principal, Address address) {
+        User user = userRepository.findById(principal.getId())
+                .orElseThrow(() -> new UsernameNotFoundException("기본 배송지를 업데이트할 사용자를 찾을 수 없습니다. ID: " + principal.getId()));
+        user.updateDefaultAddress(address);
     }
 }

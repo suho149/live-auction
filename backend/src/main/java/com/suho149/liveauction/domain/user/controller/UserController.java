@@ -1,5 +1,6 @@
 package com.suho149.liveauction.domain.user.controller;
 
+import com.suho149.liveauction.domain.delivery.entity.Address;
 import com.suho149.liveauction.domain.product.dto.ProductResponse;
 import com.suho149.liveauction.domain.user.dto.*;
 import com.suho149.liveauction.domain.user.service.SettlementService;
@@ -8,10 +9,7 @@ import com.suho149.liveauction.global.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -70,5 +68,11 @@ public class UserController {
     @GetMapping("/me/selling")
     public ResponseEntity<List<ProductResponse>> getMySellingProducts(@AuthenticationPrincipal UserPrincipal userPrincipal) {
         return ResponseEntity.ok(userService.getMySellingProducts(userPrincipal));
+    }
+
+    @PutMapping("/me/address")
+    public ResponseEntity<Void> updateMyDefaultAddress(@RequestBody Address address, @AuthenticationPrincipal UserPrincipal principal) {
+        userService.updateDefaultAddress(principal, address);
+        return ResponseEntity.ok().build();
     }
 }

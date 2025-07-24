@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import axiosInstance from '../api/axiosInstance';
+import { DeliveryInfo as Address } from '../api/deliveryApi';
 
 // 사용자 정보 타입
 interface UserInfo {
@@ -7,6 +8,7 @@ interface UserInfo {
     name: string;
     email: string;
     picture: string;
+    defaultAddress: Address | null;
 }
 
 // 스토어 상태 타입 (actions를 제거하고 함수들을 직접 포함)

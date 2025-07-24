@@ -1,5 +1,6 @@
 package com.suho149.liveauction.domain.user.entity;
 
+import com.suho149.liveauction.domain.delivery.entity.Address;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
@@ -34,6 +35,9 @@ public class User {
 
     private int salesCount = 0;
 
+    @Embedded // 기본 배송지 정보를 User 테이블에 포함
+    private Address defaultAddress;
+
     @Builder
     public User(String name, String email, String picture, Role role) {
         this.name = name;
@@ -61,5 +65,10 @@ public class User {
     // 판매가 완료되었을 때 호출할 메소드
     public void incrementSalesCount() {
         this.salesCount++;
+    }
+
+    // 기본 배송지 업데이트 메소드
+    public void updateDefaultAddress(Address newAddress) {
+        this.defaultAddress = newAddress;
     }
 }

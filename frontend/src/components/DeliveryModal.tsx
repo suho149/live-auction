@@ -1,7 +1,8 @@
 // src/components/DeliveryModal.tsx
 
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import { updateDeliveryInfo, DeliveryInfo } from '../api/deliveryApi';
+import useAuthStore from "../hooks/useAuthStore";
 
 interface DeliveryModalProps {
     isOpen: boolean;
@@ -10,7 +11,17 @@ interface DeliveryModalProps {
     onSubmitSuccess: () => void;
 }
 
+// 카카오 우편번호 타입을 TypeScript에 알려줌
+declare global {
+    interface Window {
+        daum: any;
+    }
+}
+
 const DeliveryModal: React.FC<DeliveryModalProps> = ({ isOpen, onClose, paymentId, onSubmitSuccess }) => {
+
+    const { userInfo } = useAuthStore(); // 스토어에서 사용자 정보 가져오기
+
     const [formData, setFormData] = useState<DeliveryInfo>({
         recipientName: '',
         recipientPhone: '',
@@ -18,6 +29,19 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({ isOpen, onClose, paymentI
         mainAddress: '',
         detailAddress: ''
     });
+
+    useEffect(() => {
+        if (isOpen && userInfo?.defaultAddress) {
+            setFormData(userInfo.defaultAddress);
+        } else if (isOpen) {
+            // 기본 배송지가 없으면 폼 초기화
+            setFormData({
+                recipientName: '', recipientPhone: '', postalCode: '',
+                mainAddress: '', detailAddress: ''
+            });
+        }
+    }, [isOpen, userInfo]);
+
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,6 +70,22 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({ isOpen, onClose, paymentI
         }
     };
 
+    // 주소 검색 버튼 클릭 핸들러
+    const handleAddressSearch = () => {
+        new window.daum.Postcode({
+            oncomplete: function(data: any) {
+                // 팝업에서 검색결과 항목을 클릭했을때 실행할 코드를 작성하는 부분.
+
+                // 우편번호와 주소 정보를 해당 필드에 넣는다.
+                setFormData(prev => ({
+                    ...prev,
+                    postalCode: data.zonecode,
+                    mainAddress: data.address,
+                }));
+            }
+        }).open();
+    }
+
     if (!isOpen) return null;
 
     return (
@@ -61,9 +101,28 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({ isOpen, onClose, paymentI
                         <label htmlFor="recipientPhone" className="block text-sm font-medium text-gray-700">연락처</label>
                         <input type="text" id="recipientPhone" name="recipientPhone" value={formData.recipientPhone} onChange={handleChange} placeholder="'-' 없이 숫자만 입력" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"/>
                     </div>
+                    {/* ★ 우편번호 검색 기능이 포함된 UI */}
                     <div>
                         <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700">우편번호</label>
-                        <input type="text" id="postalCode" name="postalCode" value={formData.postalCode} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"/>
+                        <div className="mt-1 flex rounded-md shadow-sm">
+                            <input
+                                type="text"
+                                name="postalCode"
+                                id="postalCode"
+                                value={formData.postalCode}
+                                onChange={handleChange}
+                                readOnly
+                                className="block w-full flex-1 rounded-none rounded-l-md bg-gray-100 px-3 py-2 border-gray-300"
+                                placeholder="주소 검색을 이용하세요"
+                            />
+                            <button
+                                type="button"
+                                onClick={handleAddressSearch}
+                                className="relative -ml-px inline-flex items-center space-x-2 rounded-r-md border border-gray-300 bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                            >
+                                주소 검색
+                            </button>
+                        </div>
                     </div>
                     <div>
                         <label htmlFor="mainAddress" className="block text-sm font-medium text-gray-700">기본 주소</label>
