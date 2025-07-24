@@ -5,12 +5,15 @@ import com.suho149.liveauction.domain.delivery.entity.DeliveryStatus;
 import com.suho149.liveauction.domain.delivery.repository.DeliveryRepository;
 import com.suho149.liveauction.domain.notification.entity.NotificationType;
 import com.suho149.liveauction.domain.notification.service.NotificationService;
+import com.suho149.liveauction.domain.product.entity.Product;
+import com.suho149.liveauction.domain.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -58,5 +61,30 @@ public class DeliveryScheduler {
             );
         }
         log.info("일일 배송 일괄 처리 완료.");
+    }
+
+    @Scheduled(cron = "0 0 1 * * *") // 매일 새벽 1시에 실행
+    @Transactional
+    public void autoConfirmDeliveries() {
+        // 배송 완료(COMPLETED)된 지 7일이 지난 Delivery 목록 조회
+        LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
+        List<Delivery> deliveriesToConfirm = deliveryRepository.findByStatusAndCompletedAtBefore(DeliveryStatus.COMPLETED, sevenDaysAgo);
+
+        for (Delivery delivery : deliveriesToConfirm) {
+            delivery.confirmPurchase();
+
+            Product product = delivery.getPayment().getProduct();
+            User seller = product.getSeller();
+
+            log.info("배송 ID {} 자동 구매 확정 처리.", delivery.getId());
+
+            // --- TODO: 판매자에게 자동 구매 확정 알림 발송 ---
+            String content = "'" + product.getName() + "' 상품의 구매가 자동으로 확정되었습니다. 정산 내역을 확인해주세요.";
+            String url = "/mypage?tab=settlement";
+            notificationService.send(seller, NotificationType.DELIVERY, content, url);
+
+            // --- 자동 확정 시에도 정산 가능 금액 업데이트 ---
+//            seller.addSettlementAmount(delivery.getPayment().getAmount());
+        }
     }
 }

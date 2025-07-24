@@ -30,6 +30,7 @@ public class Delivery {
 
     private String trackingNumber; // 운송장 번호
     private LocalDateTime shippedAt; // 발송 일시
+    private LocalDateTime completedAt; // 배송 완료 일시
 
     @Builder
     public Delivery(Payment payment) {
@@ -48,5 +49,14 @@ public class Delivery {
         this.trackingNumber = trackingNumber;
         this.status = DeliveryStatus.SHIPPING;
         this.shippedAt = LocalDateTime.now();
+    }
+
+    public void completeDelivery() {
+        this.status = DeliveryStatus.COMPLETED;
+        this.completedAt = LocalDateTime.now();
+    }
+
+    public void confirmPurchase() {
+        this.status = DeliveryStatus.CONFIRMED;
     }
 }

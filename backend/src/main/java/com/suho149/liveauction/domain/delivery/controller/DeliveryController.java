@@ -32,4 +32,10 @@ public class DeliveryController {
     public ResponseEntity<TrackingInfo> getTrackingInfo(@PathVariable String trackingNumber) {
         return ResponseEntity.ok(deliveryService.getTrackingInfo(trackingNumber));
     }
+
+    @PostMapping("/deliveries/{deliveryId}/confirm")
+    public ResponseEntity<Void> confirmPurchase(@PathVariable Long deliveryId, @AuthenticationPrincipal UserPrincipal principal) {
+        deliveryService.confirmPurchase(deliveryId, principal);
+        return ResponseEntity.ok().build();
+    }
 }

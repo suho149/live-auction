@@ -5,6 +5,7 @@ import com.suho149.liveauction.domain.delivery.dto.ShipRequest;
 import com.suho149.liveauction.domain.delivery.dto.TrackingInfo;
 import com.suho149.liveauction.domain.delivery.entity.Address;
 import com.suho149.liveauction.domain.delivery.entity.Delivery;
+import com.suho149.liveauction.domain.delivery.entity.DeliveryStatus;
 import com.suho149.liveauction.domain.delivery.repository.DeliveryRepository;
 import com.suho149.liveauction.domain.notification.entity.NotificationType;
 import com.suho149.liveauction.domain.notification.service.NotificationService;
@@ -132,5 +133,44 @@ public class DeliveryService {
                 product.getName(),
                 history
         );
+    }
+
+    @Transactional
+    public void confirmPurchase(Long deliveryId, UserPrincipal userPrincipal) {
+        // --- 1. orElseThrow 완성 ---
+        Delivery delivery = deliveryRepository.findById(deliveryId)
+                .orElseThrow(() -> new IllegalArgumentException("구매 확정할 배송 정보를 찾을 수 없습니다. ID: " + deliveryId));
+
+        // --- 2. 구매자 본인 확인 ---
+        if (!delivery.getPayment().getBuyer().getId().equals(userPrincipal.getId())) {
+            throw new IllegalStateException("구매 확정 권한이 없습니다.");
+        }
+
+        // --- 3. 배송 완료 상태인지 확인 ---
+        if (delivery.getStatus() != DeliveryStatus.COMPLETED) {
+            throw new IllegalStateException("배송이 완료된 상품만 구매 확정할 수 있습니다.");
+        }
+
+        // --- 4. 상태 변경 ---
+        delivery.confirmPurchase();
+
+        Product product = delivery.getPayment().getProduct();
+        User seller = product.getSeller();
+
+        // --- 5. TODO 1: 판매자에게 알림 발송 ---
+        String content = "'" + product.getName() + "' 상품에 대해 구매자가 구매를 확정했습니다. 정산 내역을 확인해주세요.";
+        String url = "/mypage?tab=settlement"; // 마이페이지의 정산 탭으로 바로 이동
+        notificationService.send(seller, NotificationType.DELIVERY, content, url);
+
+        // --- 6. TODO 2: 판매자 정산 관련 로직 트리거 ---
+        // 여기서는 판매자의 '정산 가능 금액'을 업데이트하는 로직을 직접 호출하기보다,
+        // Settlement(정산) 엔티티를 생성하여 정산 대기 상태로 만드는 것이 더 좋습니다.
+        // 또는, SettlementService에 public 메소드를 만들고 여기서 호출할 수 있습니다.
+        // 지금은 User 엔티티에 '정산 가능 금액' 필드를 추가하고 업데이트하는 간단한 방식으로 구현합니다.
+
+        // User 엔티티에 `private Long availableSettlementAmount = 0L;` 와
+        // `public void addSettlementAmount(Long amount) { this.availableSettlementAmount += amount; }`
+        // 메소드가 추가되었다고 가정합니다.
+//        seller.addSettlementAmount(delivery.getPayment().getAmount());
     }
 }

@@ -4,6 +4,7 @@ import com.suho149.liveauction.domain.delivery.entity.Delivery;
 import com.suho149.liveauction.domain.delivery.entity.DeliveryStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,4 +21,9 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long> {
      * @return Optional<Delivery>
      */
     Optional<Delivery> findByTrackingNumber(String trackingNumber);
+
+    /**
+     * 특정 상태이고, 배송 완료 시간이 주어진 시간 이전인 배송 목록을 조회합니다.
+     */
+    List<Delivery> findByStatusAndCompletedAtBefore(DeliveryStatus status, LocalDateTime dateTime);
 }
