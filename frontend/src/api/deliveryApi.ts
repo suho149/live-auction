@@ -12,3 +12,23 @@ export interface DeliveryInfo {
 export const updateDeliveryInfo = async (paymentId: number, data: DeliveryInfo): Promise<void> => {
     await axiosInstance.post(`/api/v1/payments/${paymentId}/delivery-info`, data);
 };
+
+export interface TrackingDetail {
+    time: string;
+    location: string;
+    status: string;
+    description: string;
+}
+
+export interface TrackingInfo {
+    trackingNumber: string;
+    senderName: string;
+    recipientName: string;
+    productName: string;
+    history: TrackingDetail[];
+}
+
+export const fetchTrackingInfo = async (trackingNumber: string): Promise<TrackingInfo> => {
+    const response = await axiosInstance.get(`/api/v1/deliveries/track/${trackingNumber}`);
+    return response.data;
+};

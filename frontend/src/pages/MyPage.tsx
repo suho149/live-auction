@@ -15,6 +15,7 @@ import { fetchSettlementSummary, requestSettlement, fetchSettlementHistory, Sett
 import { fetchKeywords, addKeyword, deleteKeyword, Keyword } from '../api/keywordApi';
 import { XCircleIcon } from '@heroicons/react/24/solid';
 import ReviewModal from '../components/ReviewModal';
+import TrackingModal from "../components/TrackingModal";
 
 // 구매 내역을 표시할 컴포넌트
 const PurchaseHistoryList = () => {
@@ -22,6 +23,7 @@ const PurchaseHistoryList = () => {
     const [loading, setLoading] = useState(true);
     const [reviewTarget, setReviewTarget] = useState<{productId: number, productName: string} | null>(null);
     const [deliveryTarget, setDeliveryTarget] = useState<number | null>(null);
+    const [trackingTarget, setTrackingTarget] = useState<string | null>(null);
 
     const getHistory = useCallback(async () => {
         setLoading(true);
@@ -45,8 +47,20 @@ const PurchaseHistoryList = () => {
     const renderActionButtons = (item: PurchaseHistory) => {
         const actions: { [key in DeliveryStatus]?: React.ReactNode } = {
             ADDRESS_PENDING: <button onClick={() => setDeliveryTarget(item.paymentId)} className="bg-orange-500 text-white text-sm font-semibold px-3 py-2 rounded-md hover:bg-orange-600">배송지 입력</button>,
-            PENDING: <span className="text-sm text-gray-500 font-medium">배송 준비 중</span>,
-            SHIPPING: <a href="#" className="bg-blue-500 text-white text-sm font-semibold px-3 py-2 rounded-md hover:bg-blue-600">배송 조회</a>,
+            PENDING: (
+                <span className="text-sm text-gray-500 font-medium px-3 py-2">
+                배송 준비 중
+                </span>
+            ),
+
+            SHIPPING: (
+                <button
+                    onClick={() => setTrackingTarget(item.trackingNumber)}
+                    className="bg-blue-500 text-white text-sm font-semibold px-3 py-2 rounded-md hover:bg-blue-600 w-full"
+                >
+                    배송 조회
+                </button>
+            ),
             COMPLETED: <span className="text-sm text-green-600 font-medium px-3 py-2">배송 완료</span>,
             CANCELED: <span className="text-sm text-red-500 font-medium px-3 py-2">주문 취소</span>,
         };
@@ -104,6 +118,11 @@ const PurchaseHistoryList = () => {
                 onClose={() => setDeliveryTarget(null)}
                 paymentId={deliveryTarget!}
                 onSubmitSuccess={getHistory}
+            />
+            <TrackingModal
+                isOpen={!!trackingTarget}
+                onClose={() => setTrackingTarget(null)}
+                trackingNumber={trackingTarget}
             />
         </>
     );

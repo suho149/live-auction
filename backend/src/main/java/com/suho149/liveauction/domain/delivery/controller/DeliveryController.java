@@ -2,6 +2,7 @@ package com.suho149.liveauction.domain.delivery.controller;
 
 import com.suho149.liveauction.domain.delivery.dto.DeliveryInfoRequest;
 import com.suho149.liveauction.domain.delivery.dto.ShipRequest;
+import com.suho149.liveauction.domain.delivery.dto.TrackingInfo;
 import com.suho149.liveauction.domain.delivery.service.DeliveryService;
 import com.suho149.liveauction.global.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -25,5 +26,10 @@ public class DeliveryController {
     public ResponseEntity<Void> shipProduct(@PathVariable Long deliveryId, @RequestBody ShipRequest request, @AuthenticationPrincipal UserPrincipal principal) {
         deliveryService.shipProduct(deliveryId, request, principal);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/deliveries/track/{trackingNumber}")
+    public ResponseEntity<TrackingInfo> getTrackingInfo(@PathVariable String trackingNumber) {
+        return ResponseEntity.ok(deliveryService.getTrackingInfo(trackingNumber));
     }
 }
