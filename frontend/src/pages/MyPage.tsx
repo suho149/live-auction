@@ -2,7 +2,7 @@ import React, {useState, useEffect, useCallback} from 'react';
 import Header from '../components/Header';
 import useAuthStore from '../hooks/useAuthStore';
 import { API_BASE_URL } from '../api/axiosInstance';
-import { Link } from 'react-router-dom';
+import {Link, useSearchParams} from 'react-router-dom';
 import StarRating from '../components/StarRating';
 import {fetchMyReviews, fetchMyWrittenReviews, Review} from '../api/reviewApi';
 import DeliveryModal from '../components/DeliveryModal';
@@ -17,6 +17,8 @@ import { XCircleIcon } from '@heroicons/react/24/solid';
 import ReviewModal from '../components/ReviewModal';
 import TrackingModal from "../components/TrackingModal";
 import { confirmPurchase } from '../api/deliveryApi';
+import { DeliveryInfo as Address } from '../api/deliveryApi';
+import { updateDefaultAddress } from '../api/userApi';
 
 // 구매 내역을 표시할 컴포넌트
 const PurchaseHistoryList = () => {
@@ -90,7 +92,7 @@ const PurchaseHistoryList = () => {
         <>
             <ul className="divide-y divide-gray-200">
                 {history.map(item => (
-                    <li key={item.paymentId} className="p-4"> {/* ★★★ key를 paymentId로 변경 ★★★ */}
+                    <li key={item.paymentId} className="p-4">
                         <div className="flex justify-between items-center">
                             <Link to={`/products/${item.productId}`} className="flex items-center space-x-4 flex-grow">
                                 <img
@@ -416,12 +418,154 @@ const MyWrittenReviewsList = () => {
     );
 };
 
+// 기본 배송지 관리 컴포넌트
+const DefaultAddressManager = () => {
+    const { userInfo, fetchUserInfo } = useAuthStore();
+
+    // 1. useState의 초기값을 userInfo.defaultAddress에서 직접 가져오도록 수정
+    //    컴포넌트가 처음 렌더링될 때, 스토어에 이미 주소 정보가 있다면 바로 폼을 채움
+    const [address, setAddress] = useState<Address>(
+        userInfo?.defaultAddress || {
+            recipientName: '',
+            recipientPhone: '',
+            postalCode: '',
+            mainAddress: '',
+            detailAddress: ''
+        }
+    );
+    const [isSaving, setIsSaving] = useState(false);
+
+    // 2. useEffect는 스토어의 userInfo가 변경될 때마다(예: fetchUserInfo 호출 후)
+    //    컴포넌트 내부의 address 상태를 동기화하는 역할을 담당
+    useEffect(() => {
+        if (userInfo?.defaultAddress) {
+            setAddress(userInfo.defaultAddress);
+        } else {
+            // 사용자가 기본 주소를 삭제한 경우(기능 추가 시)를 대비해 폼을 비워줌
+            setAddress({
+                recipientName: '', recipientPhone: '', postalCode: '',
+                mainAddress: '', detailAddress: ''
+            });
+        }
+    }, [userInfo]); // 의존성 배열은 userInfo 객체 그대로 유지
+
+    // 3. input 변경 핸들러 (변경 없음)
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setAddress({ ...address, [e.target.name]: e.target.value });
+    };
+
+    // 4. 카카오 주소 검색 로직 (변경 없음)
+    const handleAddressSearch = () => {
+        new window.daum.Postcode({
+            oncomplete: function(data: any) {
+                setAddress(prev => ({
+                    ...prev,
+                    postalCode: data.zonecode,
+                    mainAddress: data.address,
+                }));
+            }
+        }).open();
+    };
+
+    // 5. 저장 핸들러 (await fetchUserInfo() 추가)
+    const handleSave = async () => {
+        // 간단한 유효성 검사
+        if (Object.values(address).some(value => !value)) {
+            alert("모든 필드를 입력해주세요.");
+            return;
+        }
+        setIsSaving(true);
+        try {
+            await updateDefaultAddress(address);
+            alert("기본 배송지가 저장되었습니다.");
+
+            // ★ await를 사용하여 스토어 업데이트가 완료될 때까지 기다림
+            await fetchUserInfo();
+        } catch (error) {
+            alert("저장에 실패했습니다.");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <div className="space-y-4">
+            <p className="text-gray-600 mb-6">상품 구매 시 자동으로 입력될 기본 배송지 정보입니다.</p>
+
+            {/* 받는 사람 */}
+            <div>
+                <label htmlFor="default-recipientName" className="block text-sm font-medium text-gray-700">받는 사람</label>
+                <input type="text" id="default-recipientName" name="recipientName" value={address.recipientName} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"/>
+            </div>
+
+            {/* 연락처 */}
+            <div>
+                <label htmlFor="default-recipientPhone" className="block text-sm font-medium text-gray-700">연락처</label>
+                <input type="text" id="default-recipientPhone" name="recipientPhone" value={address.recipientPhone} onChange={handleChange} placeholder="'-' 없이 숫자만 입력" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"/>
+            </div>
+
+            {/* 우편번호 */}
+            <div>
+                <label htmlFor="default-postalCode" className="block text-sm font-medium text-gray-700">우편번호</label>
+                <div className="mt-1 flex rounded-md shadow-sm">
+                    <input
+                        type="text"
+                        name="postalCode"
+                        id="default-postalCode"
+                        value={address.postalCode}
+                        onChange={handleChange}
+                        readOnly
+                        className="block w-full flex-1 rounded-none rounded-l-md bg-gray-100 px-3 py-2 border-gray-300"
+                        placeholder="주소 검색"
+                    />
+                    <button
+                        type="button"
+                        onClick={handleAddressSearch}
+                        className="relative -ml-px inline-flex items-center space-x-2 rounded-r-md border border-gray-300 bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                    >
+                        주소 검색
+                    </button>
+                </div>
+            </div>
+
+            {/* 기본 주소 */}
+            <div>
+                <label htmlFor="default-mainAddress" className="block text-sm font-medium text-gray-700">기본 주소</label>
+                <input type="text" id="default-mainAddress" name="mainAddress" value={address.mainAddress} onChange={handleChange} readOnly className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"/>
+            </div>
+
+            {/* 상세 주소 */}
+            <div>
+                <label htmlFor="default-detailAddress" className="block text-sm font-medium text-gray-700">상세 주소</label>
+                <input type="text" id="default-detailAddress" name="detailAddress" value={address.detailAddress} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"/>
+            </div>
+
+            {/* 저장 버튼 */}
+            <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="w-full flex justify-center mt-6 py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
+            >
+                {isSaving ? "저장 중..." : "기본 배송지로 저장"}
+            </button>
+        </div>
+    );
+};
+
 // 메인 MyPage 컴포넌트
 const MyPage = () => {
     const { userInfo } = useAuthStore();
-    const [activeTab, setActiveTab] = useState<'purchase' | 'sales' | 'settlement' | 'writtenReviews' | 'reviews' | 'keywords'>('purchase');
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    const initialTab = searchParams.get('tab') || 'purchase';
+    const [activeTab, setActiveTab] = useState(initialTab);
 
     if (!userInfo) return <div>로딩 중...</div>;
+
+    const handleTabClick = (tabKey: string) => {
+        setActiveTab(tabKey);
+        setSearchParams({ tab: tabKey });
+    };
 
     const tabs = {
         purchase: { name: '구매 내역', component: <PurchaseHistoryList /> },
@@ -430,13 +574,19 @@ const MyPage = () => {
         writtenReviews: { name: '내가 쓴 리뷰', component: <MyWrittenReviewsList /> },
         reviews: { name: '내가 받은 리뷰', component: <MyReviewsList /> },
         keywords: { name: '키워드 알림', component: <KeywordManager /> },
+        address: { name: '기본 배송지', component: <DefaultAddressManager /> },
     };
+
+    // 현재 활성화된 탭에 해당하는 컴포넌트를 변수에 할당
+    const ActiveTabComponent = tabs[activeTab as keyof typeof tabs]?.component || <PurchaseHistoryList />;
+    const activeTabName = tabs[activeTab as keyof typeof tabs]?.name || '구매 내역';
 
     return (
         <div className="bg-gray-50 min-h-screen">
             <Header />
             <main className="container mx-auto p-8 max-w-4xl">
-                <div className="flex items-center space-x-6 mb-12">
+                {/* 프로필 정보 */}
+                <div className="flex items-center space-x-6">
                     <img src={userInfo.picture.startsWith('http') ? userInfo.picture : `${API_BASE_URL}${userInfo.picture}`} alt="프로필" className="w-24 h-24 rounded-full shadow-lg"/>
                     <div>
                         <h1 className="text-4xl font-bold">{userInfo.name}</h1>
@@ -445,17 +595,17 @@ const MyPage = () => {
                 </div>
 
                 {/* 탭 네비게이션 */}
-                <div className="border-b border-gray-200 mb-6">
-                    <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                <div className="border-b border-gray-200">
+                    <nav className="-mb-px flex space-x-8 overflow-x-auto">
                         {Object.entries(tabs).map(([key, tab]) => (
                             <button
                                 key={key}
-                                onClick={() => setActiveTab(key as any)}
-                                className={`${
+                                onClick={() => handleTabClick(key)}
+                                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-base ${
                                     activeTab === key
                                         ? 'border-blue-500 text-blue-600'
                                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg`}
+                                }`}
                             >
                                 {tab.name}
                             </button>
@@ -465,8 +615,8 @@ const MyPage = () => {
 
                 {/* 선택된 탭의 컨텐츠 렌더링 */}
                 <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h2 className="text-2xl font-bold mb-4">{tabs[activeTab].name}</h2>
-                    {tabs[activeTab].component}
+                    <h2 className="text-2xl font-bold mb-6">{activeTabName}</h2>
+                    {ActiveTabComponent}
                 </div>
             </main>
         </div>
