@@ -54,7 +54,7 @@ public class DeliveryScheduler {
                     delivery.getPayment().getBuyer(),
                     NotificationType.DELIVERY,
                     content,
-                    "/my-auctions" // 나의 경매 페이지로 링크
+                    "/mypage" // 나의 경매 페이지로 링크
             );
         }
         log.info("일일 배송 일괄 처리 완료.");

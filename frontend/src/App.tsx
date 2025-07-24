@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {BrowserRouter as Router, Route, Routes} from 'react-router-dom';
 import MainPage from './pages/MainPage';
 import AuthCallbackPage from './pages/AuthCallbackPage';
@@ -15,8 +15,20 @@ import {Toaster} from "react-hot-toast";
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentFailPage from './pages/PaymentFailPage';
 import MyAuctionsPage from "./pages/MyAuctionsPage";
+import useAuthStore from "./hooks/useAuthStore";
 
 function App() {
+
+    // 스토어에서 로그인 상태와 사용자 정보 로딩 함수를 가져옴
+    const { isLoggedIn, fetchUserInfo } = useAuthStore();
+
+    // 앱이 처음 로드될 때 로그인 상태를 확인하고 사용자 정보를 가져오는 useEffect 추가
+    useEffect(() => {
+        // 로그인 상태일 때만 사용자 정보를 가져옴
+        if (isLoggedIn) {
+            fetchUserInfo();
+        }
+    }, [isLoggedIn, fetchUserInfo]); // isLoggedIn 상태가 변경될 때마다 실행
 
     return (
         <Router>
