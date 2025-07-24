@@ -1,5 +1,6 @@
 package com.suho149.liveauction.domain.user.dto;
 
+import com.suho149.liveauction.domain.delivery.entity.Address;
 import com.suho149.liveauction.domain.user.entity.User;
 import lombok.Builder;
 import lombok.Getter;
@@ -10,13 +11,15 @@ public class UserResponse {
     private final String name;
     private final String email;
     private final String picture;
+    private final Address defaultAddress;
 
     @Builder
-    private UserResponse(Long id, String name, String email, String picture) {
+    private UserResponse(Long id, String name, String email, String picture, Address defaultAddress) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.picture = picture;
+        this.defaultAddress = defaultAddress;
     }
 
     public static UserResponse from(User user) {
@@ -25,6 +28,7 @@ public class UserResponse {
                 .name(user.getName())
                 .email(user.getEmail())
                 .picture(user.getPicture())
+                .defaultAddress(user.getDefaultAddress())
                 .build();
     }
 }
