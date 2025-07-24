@@ -171,72 +171,80 @@ public class AuctionService {
     }
 
     private void processAutoBids(Product product) {
-        log.info("상품 ID {} 자동 입찰 프로세스 시작... 현재가: {}, 최고 입찰자: {}",
-                product.getId(), product.getCurrentPrice(), product.getHighestBidder() != null ? product.getHighestBidder().getName() : "없음");
-
+        log.info("상품 ID {} 자동 입찰 프로세스 시작...", product.getId());
         long minBidIncrement = 1000;
 
         while (true) {
+            // 1. 자동 입찰 목록 조회
             List<AutoBid> autoBids = autoBidRepository.findByProduct_IdOrderByMaxAmountDesc(product.getId());
+            User currentHighestBidder = product.getHighestBidder();
+            long currentPrice = product.getCurrentPrice();
+
+            // 2. [종료 조건 1] 자동 입찰자가 없으면 할 일 없음
             if (autoBids.isEmpty()) {
                 log.info("자동 입찰 설정 없음. 종료.");
                 break;
             }
 
-            AutoBid potentialWinnerSetting = autoBids.get(0);
-            User potentialWinner = potentialWinnerSetting.getUser();
-            long winnerMaxAmount = potentialWinnerSetting.getMaxAmount();
+            // 3. 최고 자동 입찰자(A) 정보
+            AutoBid topAutoBidderSetting = autoBids.get(0);
+            User topAutoBidder = topAutoBidderSetting.getUser();
+            long topMaxAmount = topAutoBidderSetting.getMaxAmount();
 
-            if (product.getHighestBidder() != null && product.getHighestBidder().getId().equals(potentialWinner.getId())) {
-                if (autoBids.size() > 1) {
-                    AutoBid secondBidderSetting = autoBids.get(1);
-                    long secondMaxAmount = secondBidderSetting.getMaxAmount();
-                    long requiredBid = secondMaxAmount + minBidIncrement;
-
-                    if (product.getCurrentPrice() < requiredBid && winnerMaxAmount >= requiredBid) {
-                        log.info("자동 입찰 경쟁 발생. {}가 {}원으로 재입찰합니다.", potentialWinner.getName(), requiredBid);
-
-                        User previousBidder = product.getHighestBidder();
-                        updateAndNotifyBid(product, potentialWinner, requiredBid); // 웹소켓 전송
-                        sendBidNotifications(product, potentialWinner, previousBidder, requiredBid); // SSE 알림 전송
-
-                        continue;
-                    }
-                }
-                log.info("현재 최고 입찰자가 최고 자동 입찰자이며, 추가 경쟁 없음. 종료.");
+            // 4. [종료 조건 2] 최고 자동 입찰자의 한도가 현재가보다 낮으면 더 이상 입찰 불가
+            if (topMaxAmount <= currentPrice) {
+                log.info("최고 자동 입찰자({})의 한도({})가 현재가({})보다 낮거나 같음. 종료.",
+                        topAutoBidder.getName(), topMaxAmount, currentPrice);
                 break;
             }
 
+            // 5. [종료 조건 3] 최고 자동 입찰자가 이미 최고 입찰자이고, 2순위 경쟁자가 없는 경우
+            if (currentHighestBidder != null && currentHighestBidder.getId().equals(topAutoBidder.getId())) {
+                // 2순위 자동 입찰자가 없거나, 2순위의 한도가 이미 현재가보다 낮으면 경쟁 끝
+                if (autoBids.size() < 2 || autoBids.get(1).getMaxAmount() <= currentPrice) {
+                    log.info("최고 자동 입찰자가 이미 선두이며 추가 경쟁자 없음. 종료.");
+                    break;
+                }
+            }
+
+            // --- 입찰 실행 ---
             long nextBidAmount;
-            if (autoBids.size() > 1 && product.getHighestBidder() != null && autoBids.get(1).getUser().getId() != product.getHighestBidder().getId()) {
-                nextBidAmount = autoBids.get(1).getMaxAmount() + minBidIncrement;
+            User nextHighestBidder;
+
+            // 6. 현재 최고 입찰자가 없는 경우 (경매 시작 후 첫 입찰)
+            if (currentHighestBidder == null) {
+                nextHighestBidder = topAutoBidder;
+                nextBidAmount = Math.min(topMaxAmount, product.getStartPrice() + minBidIncrement);
             } else {
-                nextBidAmount = product.getCurrentPrice() + minBidIncrement;
-            }
-
-            if (nextBidAmount > winnerMaxAmount) {
-                if (product.getCurrentPrice() < winnerMaxAmount) {
-                    log.info("최고 자동 입찰자 한도({}) 도달. {}원으로 최종 입찰.", winnerMaxAmount, winnerMaxAmount);
-
-                    User previousBidder = product.getHighestBidder();
-                    updateAndNotifyBid(product, potentialWinner, winnerMaxAmount); // 웹소켓 전송
-                    sendBidNotifications(product, potentialWinner, previousBidder, winnerMaxAmount); // SSE 알림 전송
+                // 7. 2순위 경쟁자(B)가 있는 경우
+                if (autoBids.size() > 1) {
+                    AutoBid secondAutoBidderSetting = autoBids.get(1);
+                    // 최고 입찰자가 1순위(A)냐 2순위(B)냐 아니면 제3자(C)냐에 따라 경쟁 구도가 달라짐
+                    if(currentHighestBidder.getId().equals(topAutoBidder.getId())) {
+                        // 현재 A가 1등. B의 한계까지 가격을 올려야 함.
+                        nextHighestBidder = topAutoBidder;
+                        nextBidAmount = Math.min(topMaxAmount, secondAutoBidderSetting.getMaxAmount() + minBidIncrement);
+                    } else {
+                        // B 또는 C가 1등. A가 이들을 이기기 위해 입찰.
+                        nextHighestBidder = topAutoBidder;
+                        nextBidAmount = Math.min(topMaxAmount, currentPrice + minBidIncrement);
+                    }
+                } else { // 2순위 경쟁자가 없는 경우 (일반 입찰자 vs 1순위 자동 입찰자)
+                    nextHighestBidder = topAutoBidder;
+                    nextBidAmount = Math.min(topMaxAmount, currentPrice + minBidIncrement);
                 }
-                log.info("경쟁 종료.");
+            }
+
+            // 8. [무한루프 방지] 계산된 입찰액이 현재가 이하면 종료
+            if (nextBidAmount <= currentPrice) {
+                log.info("계산된 다음 입찰가({})가 현재가({})보다 낮거나 같아 종료.", nextBidAmount, currentPrice);
                 break;
             }
 
-            log.info("자동 입찰 실행: {}가 {}원에 입찰.", potentialWinner.getName(), nextBidAmount);
-
+            // 9. 입찰 실행 및 알림
             User previousBidder = product.getHighestBidder();
-            updateAndNotifyBid(product, potentialWinner, nextBidAmount); // 웹소켓 전송
-            sendBidNotifications(product, potentialWinner, previousBidder, nextBidAmount); // SSE 알림 전송
-
-            // 최고 입찰자가 바뀌지 않았다면 경쟁이 끝난 것이므로 루프 종료
-            if (product.getHighestBidder().getId().equals(potentialWinner.getId())) {
-                log.info("최고 자동 입찰자가 최고 입찰자가 되어 경쟁 종료.");
-                break;
-            }
+            updateAndNotifyBid(product, nextHighestBidder, nextBidAmount);
+            sendBidNotifications(product, nextHighestBidder, previousBidder, nextBidAmount);
         }
     }
 
