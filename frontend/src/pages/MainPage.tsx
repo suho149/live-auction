@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import axiosInstance, { API_BASE_URL } from '../api/axiosInstance'; // API_BASE_URL import
 import Header from '../components/Header';
 import {Link, useSearchParams} from 'react-router-dom';
 import ProductCard, { ProductCardProps } from '../components/ProductCard';
+import ProductFilterModal from '../components/ProductFilterModal';
 
 type ProductStatus = 'ON_SALE' | 'AUCTION_ENDED' | 'SOLD_OUT' | 'EXPIRED' | 'FAILED';
 
@@ -25,41 +26,86 @@ const categoryKoreanNames: { [key: string]: string } = {
 
 const MainPage = () => {
     const [products, setProducts] = useState<ProductCardProps[]>([]);
-    const [searchParams, setSearchParams] = useSearchParams(); // ★ URL 쿼리 파라미터 관리 훅
+    const [searchParams, setSearchParams] = useSearchParams();
 
-    // URL에서 검색 조건들을 읽어옴
+    // --- 필터 상태 관리 (URL 쿼리 파라미터와 동기화) ---
     const [keyword, setKeyword] = useState(searchParams.get('keyword') || '');
-    const activeCategory = searchParams.get('category') || 'ALL';
-    const sortBy = searchParams.get('sort') || 'latest';
+    const [activeCategory, setActiveCategory] = useState(searchParams.get('category') || 'ALL');
+    const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'latest');
+    const [minPrice, setMinPrice] = useState<number | ''>(Number(searchParams.get('minPrice')) || '');
+    const [maxPrice, setMaxPrice] = useState<number | ''>(Number(searchParams.get('maxPrice')) || '');
+    // statuses는 배열이므로 URL에서 파싱하고 다시 문자열 배열로 변환
+    const [statuses, setStatuses] = useState<string[]>(searchParams.getAll('statuses') || []);
+
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false); // ★ 필터 모달 열림/닫힘 상태
+
+    // ★ API 호출 함수 ( useCallback으로 감싸서 최적화 )
+    const fetchProducts = useCallback(async () => {
+        try {
+            // searchParams 객체를 그대로 API 요청 파라미터로 사용
+            const response = await axiosInstance.get(`/api/v1/products?${searchParams.toString()}`);
+            setProducts(response.data.content);
+        } catch (error) {
+            console.error("상품 목록 로딩 실패:", error);
+        }
+    }, [searchParams]); // searchParams가 변경될 때마다 재호출
 
     useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                // 현재 URL의 쿼리 파라미터를 그대로 API 요청에 사용
-                const response = await axiosInstance.get(`/api/v1/products?${searchParams.toString()}`);
-                setProducts(response.data.content);
-            } catch (error) {
-                console.error("상품 목록을 불러오는 데 실패했습니다.", error);
-            }
-        };
         fetchProducts();
-    }, [searchParams]); // ★ searchParams가 변경될 때마다 상품 목록을 다시 불러옴
+    }, [fetchProducts]); // fetchProducts가 변경될 때마다 (실제로는 searchParams 변경 시)
+
 
     // 검색 폼 제출 핸들러
+    // 검색 폼 제출 핸들러 (변경 없음)
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        // keyword를 포함하여 새로운 쿼리 파라미터로 URL 업데이트
-        setSearchParams({ keyword, category: activeCategory, sort: sortBy });
+        // 모든 현재 필터 상태를 searchParams에 반영하여 URL 업데이트
+        updateSearchParams(keyword, activeCategory, sortBy, minPrice, maxPrice, statuses);
     };
 
-    // 카테고리 변경 핸들러
+    // 카테고리 변경 핸들러 (변경된 카테고리만 적용)
     const handleCategoryChange = (category: string) => {
-        setSearchParams({ keyword, category, sort: sortBy });
+        setActiveCategory(category);
+        updateSearchParams(keyword, category, sortBy, minPrice, maxPrice, statuses);
     };
 
-    // 정렬 기준 변경 핸들러
+    // 정렬 기준 변경 핸들러 (변경된 정렬만 적용)
     const handleSortChange = (sort: string) => {
-        setSearchParams({ keyword, category: activeCategory, sort });
+        setSortBy(sort);
+        updateSearchParams(keyword, activeCategory, sort, minPrice, maxPrice, statuses);
+    };
+
+    // ★★★ 상세 필터 적용 핸들러 ★★★
+    const handleApplyFilters = (filters: {
+        category: string;
+        minPrice: number | '';
+        maxPrice: number | '';
+        statuses: string[];
+    }) => {
+        setActiveCategory(filters.category);
+        setMinPrice(filters.minPrice);
+        setMaxPrice(filters.maxPrice);
+        setStatuses(filters.statuses);
+        updateSearchParams(keyword, filters.category, sortBy, filters.minPrice, filters.maxPrice, filters.statuses);
+    };
+
+    // ★★★ searchParams 업데이트 공통 함수 ★★★
+    const updateSearchParams = (
+        keyword: string,
+        category: string,
+        sort: string,
+        minPrice: number | '',
+        maxPrice: number | '',
+        statuses: string[]
+    ) => {
+        const newSearchParams = new URLSearchParams();
+        if (keyword) newSearchParams.set('keyword', keyword);
+        if (category && category !== 'ALL') newSearchParams.set('category', category);
+        if (sort) newSearchParams.set('sort', sort);
+        if (minPrice) newSearchParams.set('minPrice', String(minPrice));
+        if (maxPrice) newSearchParams.set('maxPrice', String(maxPrice));
+        statuses.forEach(status => newSearchParams.append('statuses', status)); // 배열은 append로 추가
+        setSearchParams(newSearchParams);
     };
 
     return (
@@ -86,21 +132,33 @@ const MainPage = () => {
                     </form>
                 </div>
 
-                {/* 카테고리 및 정렬 필터 */}
+                {/* ★★★ 카테고리 및 정렬 필터 영역 (수정됨) ★★★ */}
                 <div className="bg-white p-4 rounded-lg shadow-sm mb-8">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                        <div className="flex flex-wrap gap-2">
+                        {/* 카테고리 버튼 그룹 */}
+                        <div className="flex flex-wrap gap-2 mb-4 md:mb-0">
                             {categories.map(cat => (
                                 <button key={cat} onClick={() => handleCategoryChange(cat)} className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${activeCategory === cat ? 'bg-blue-600 text-white shadow' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
                                     {categoryKoreanNames[cat]}
                                 </button>
                             ))}
                         </div>
-                        <select value={sortBy} onChange={(e) => handleSortChange(e.target.value)} className="mt-4 md:mt-0 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
-                            <option value="latest">최신순</option>
-                            <option value="priceAsc">낮은 가격순</option>
-                            <option value="priceDesc">높은 가격순</option>
-                        </select>
+
+                        <div className="flex items-center space-x-2">
+                            {/* 정렬 드롭다운 */}
+                            <select value={sortBy} onChange={(e) => handleSortChange(e.target.value)} className="p-2 border border-gray-300 rounded-md">
+                                <option value="latest">최신순</option>
+                                <option value="priceAsc">낮은 가격순</option>
+                                <option value="priceDesc">높은 가격순</option>
+                            </select>
+                            {/* ★ 상세 필터 버튼 */}
+                            <button
+                                onClick={() => setIsFilterModalOpen(true)}
+                                className="bg-gray-100 px-4 py-2 rounded-md hover:bg-gray-200 font-semibold"
+                            >
+                                상세 필터
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -115,6 +173,14 @@ const MainPage = () => {
                     )}
                 </div>
             </main>
+
+            {/* ★★★ 상세 필터 모달 렌더링 ★★★ */}
+            <ProductFilterModal
+                isOpen={isFilterModalOpen}
+                onClose={() => setIsFilterModalOpen(false)}
+                currentFilters={{ category: activeCategory, minPrice, maxPrice, statuses }}
+                onApplyFilters={handleApplyFilters}
+            />
         </div>
     );
 };

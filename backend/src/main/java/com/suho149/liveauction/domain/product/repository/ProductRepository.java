@@ -16,7 +16,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-public interface ProductRepository extends JpaRepository<Product, Long> {
+public interface ProductRepository extends JpaRepository<Product, Long>, ProductRepositoryCustom {
 
 
     // 이 아래의 모든 목록 조회 쿼리들은 ToMany 관계인 'images'에 대한 Fetch Join이 없습니다. ★★★

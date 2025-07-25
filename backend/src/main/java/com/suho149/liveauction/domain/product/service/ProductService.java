@@ -4,10 +4,7 @@ import com.suho149.liveauction.domain.auction.repository.AutoBidRepository;
 import com.suho149.liveauction.domain.auction.repository.BidRepository;
 import com.suho149.liveauction.domain.keyword.repository.KeywordRepository;
 import com.suho149.liveauction.domain.notification.entity.NotificationType;
-import com.suho149.liveauction.domain.product.dto.ProductCreateRequest;
-import com.suho149.liveauction.domain.product.dto.ProductDetailResponse;
-import com.suho149.liveauction.domain.product.dto.ProductResponse;
-import com.suho149.liveauction.domain.product.dto.ProductUpdateRequest;
+import com.suho149.liveauction.domain.product.dto.*;
 import com.suho149.liveauction.domain.product.entity.Category;
 import com.suho149.liveauction.domain.product.entity.Product;
 import com.suho149.liveauction.domain.product.entity.ProductImage;
@@ -83,36 +80,12 @@ public class ProductService {
         return savedProduct;
     }
 
-    public Page<ProductResponse> getProducts(Category category, String keyword, String sortBy, Pageable pageable) {
-        Sort sort = Sort.by(Sort.Direction.DESC, "id");
-        if ("priceAsc".equals(sortBy)) {
-            sort = Sort.by(Sort.Direction.ASC, "currentPrice");
-        } else if ("priceDesc".equals(sortBy)) {
-            sort = Sort.by(Sort.Direction.DESC, "currentPrice");
+    public Page<ProductResponse> getProducts(ProductSearchCondition condition, Pageable pageable) {
+        // 기본적으로 ON_SALE 상태만 보여주도록 설정
+        if (condition.getStatuses() == null || condition.getStatuses().isEmpty()) {
+            condition.setStatuses(List.of(ProductStatus.ON_SALE));
         }
-
-        Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
-
-        Page<Product> products;
-        boolean hasKeyword = StringUtils.hasText(keyword); // 검색어가 있는지 확인
-
-        if (category != null && category != Category.ALL) {
-            // 카테고리 필터가 있을 때
-            if (hasKeyword) {
-                products = productRepository.findByCategoryAndKeywordWithSeller(category, keyword, sortedPageable);
-            } else {
-                products = productRepository.findByCategoryWithSeller(category, sortedPageable);
-            }
-        } else {
-            // 카테고리 필터가 없을 때 ('ALL' 또는 null)
-            if (hasKeyword) {
-                products = productRepository.findByKeywordWithSeller(keyword, sortedPageable);
-            } else {
-                products = productRepository.findAllWithSeller(sortedPageable);
-            }
-        }
-
-        return products.map(ProductResponse::from);
+        return productRepository.search(condition, pageable).map(ProductResponse::from);
     }
 
     public ProductDetailResponse getProductDetail(Long productId, UserPrincipal userPrincipal) {

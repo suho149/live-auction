@@ -5,10 +5,7 @@ import com.suho149.liveauction.domain.auction.dto.BuyNowRequest;
 import com.suho149.liveauction.domain.auction.service.AuctionService;
 import com.suho149.liveauction.domain.payment.dto.PaymentInfoResponse;
 import com.suho149.liveauction.domain.payment.service.PaymentService;
-import com.suho149.liveauction.domain.product.dto.ProductCreateRequest;
-import com.suho149.liveauction.domain.product.dto.ProductDetailResponse;
-import com.suho149.liveauction.domain.product.dto.ProductResponse;
-import com.suho149.liveauction.domain.product.dto.ProductUpdateRequest;
+import com.suho149.liveauction.domain.product.dto.*;
 import com.suho149.liveauction.domain.product.entity.Category;
 import com.suho149.liveauction.domain.product.entity.Product;
 import com.suho149.liveauction.domain.product.service.ProductService;
@@ -41,11 +38,9 @@ public class ProductController {
 
     @GetMapping
     public ResponseEntity<Page<ProductResponse>> getProducts(
-            @RequestParam(required = false) Category category,
-            @RequestParam(required = false) String keyword, // 검색어 파라미터 추가
-            @RequestParam(defaultValue = "latest") String sort,
-            @PageableDefault(size = 12) Pageable pageable) {
-        return ResponseEntity.ok(productService.getProducts(category, keyword, sort, pageable));
+            @ModelAttribute ProductSearchCondition condition, // 여러 파라미터를 DTO로 받음
+            Pageable pageable) {
+        return ResponseEntity.ok(productService.getProducts(condition, pageable));
     }
 
     @GetMapping("/{productId}")
