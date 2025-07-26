@@ -78,6 +78,9 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
     @Query("SELECT p FROM Product p WHERE p.id = :productId")
     Optional<Product> findByIdWithPessimisticLock(@Param("productId") Long productId);
 
-    // 판매자 ID와 여러 상태값으로 상품 목록을 조회 (판매 완료 제외)
+    // 페이징을 지원하지 않는 메소드 (MyAuctionsPage용)
     List<Product> findBySellerIdAndStatusInOrderByIdDesc(Long sellerId, Collection<ProductStatus> statuses);
+
+    // 판매자 ID와 여러 상태값으로 상품 목록을 조회 (판매 완료 제외)
+    Page<Product> findBySellerIdAndStatusInOrderByIdDesc(Long sellerId, Collection<ProductStatus> statuses, Pageable pageable);
 }

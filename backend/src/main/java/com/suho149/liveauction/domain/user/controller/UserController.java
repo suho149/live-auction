@@ -7,6 +7,9 @@ import com.suho149.liveauction.domain.user.service.SettlementService;
 import com.suho149.liveauction.domain.user.service.UserService;
 import com.suho149.liveauction.global.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -77,8 +80,12 @@ public class UserController {
     }
 
     @GetMapping("/{userId}/profile")
-    public ResponseEntity<UserProfileResponse> getUserProfile(@PathVariable Long userId) {
-        UserProfileResponse userProfile = userService.getUserProfile(userId);
+    public ResponseEntity<UserProfileResponse> getUserProfile(
+            @PathVariable Long userId,
+            // ★ @PageableDefault로 기본 페이징 값 설정 (한 페이지에 6개씩, id 내림차순)
+            @PageableDefault(size = 6, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        UserProfileResponse userProfile = userService.getUserProfile(userId, pageable);
         return ResponseEntity.ok(userProfile);
     }
 }

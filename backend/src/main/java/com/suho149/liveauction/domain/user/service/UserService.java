@@ -14,6 +14,8 @@ import com.suho149.liveauction.domain.user.repository.ReviewRepository;
 import com.suho149.liveauction.domain.user.repository.UserRepository;
 import com.suho149.liveauction.global.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -114,7 +116,7 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserProfileResponse getUserProfile(Long userId) {
+    public UserProfileResponse getUserProfile(Long userId, Pageable pageable) {
         // 1. 기본 사용자 정보 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다. ID: " + userId));
@@ -126,12 +128,12 @@ public class UserService {
                 .collect(Collectors.toList());
 
         // 3. 사용자가 현재 판매 중인 상품 목록 조회
-        List<ProductResponse> sellingProducts = productRepository.findBySellerIdAndStatusInOrderByIdDesc(
-                        userId, List.of(ProductStatus.ON_SALE)
+        Page<ProductResponse> sellingProductsPage = productRepository.findBySellerIdAndStatusInOrderByIdDesc(
+                        userId,
+                        List.of(ProductStatus.ON_SALE),
+                        pageable // ★ Pageable 객체 전달
                 )
-                .stream()
-                .map(ProductResponse::from)
-                .collect(Collectors.toList());
+                .map(ProductResponse::from);
 
         // 4. 모든 정보를 종합하여 DTO 생성
         return UserProfileResponse.builder()
@@ -142,7 +144,7 @@ public class UserService {
                 .reviewCount(user.getReviewCount())
                 .salesCount(user.getSalesCount())
                 .reviews(receivedReviews)
-                .sellingProducts(sellingProducts)
+                .sellingProductsPage(sellingProductsPage)
                 .build();
     }
 }

@@ -3,6 +3,7 @@ package com.suho149.liveauction.domain.user.dto;
 import com.suho149.liveauction.domain.product.dto.ProductResponse;
 import lombok.Builder;
 import lombok.Getter;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -16,5 +17,5 @@ public class UserProfileResponse {
     private final int reviewCount;
     private final int salesCount;
     private final List<ReviewResponse> reviews; // 받은 리뷰 목록
-    private final List<ProductResponse> sellingProducts; // 현재 판매 중인 상품 목록
+    private final Page<ProductResponse> sellingProductsPage; // 현재 판매 중인 상품 목록
 }
