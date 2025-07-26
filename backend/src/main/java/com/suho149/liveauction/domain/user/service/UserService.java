@@ -8,9 +8,7 @@ import com.suho149.liveauction.domain.product.dto.ProductResponse;
 import com.suho149.liveauction.domain.product.entity.Product;
 import com.suho149.liveauction.domain.product.entity.ProductStatus;
 import com.suho149.liveauction.domain.product.repository.ProductRepository;
-import com.suho149.liveauction.domain.user.dto.PurchaseHistoryResponse;
-import com.suho149.liveauction.domain.user.dto.SaleHistoryResponse;
-import com.suho149.liveauction.domain.user.dto.UserResponse;
+import com.suho149.liveauction.domain.user.dto.*;
 import com.suho149.liveauction.domain.user.entity.User;
 import com.suho149.liveauction.domain.user.repository.ReviewRepository;
 import com.suho149.liveauction.domain.user.repository.UserRepository;
@@ -113,5 +111,38 @@ public class UserService {
         User user = userRepository.findById(principal.getId())
                 .orElseThrow(() -> new UsernameNotFoundException("기본 배송지를 업데이트할 사용자를 찾을 수 없습니다. ID: " + principal.getId()));
         user.updateDefaultAddress(address);
+    }
+
+    @Transactional(readOnly = true)
+    public UserProfileResponse getUserProfile(Long userId) {
+        // 1. 기본 사용자 정보 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다. ID: " + userId));
+
+        // 2. 사용자가 받은 리뷰 목록 조회
+        List<ReviewResponse> receivedReviews = reviewRepository.findByRevieweeIdOrderByIdDesc(userId)
+                .stream()
+                .map(ReviewResponse::new)
+                .collect(Collectors.toList());
+
+        // 3. 사용자가 현재 판매 중인 상품 목록 조회
+        List<ProductResponse> sellingProducts = productRepository.findBySellerIdAndStatusInOrderByIdDesc(
+                        userId, List.of(ProductStatus.ON_SALE)
+                )
+                .stream()
+                .map(ProductResponse::from)
+                .collect(Collectors.toList());
+
+        // 4. 모든 정보를 종합하여 DTO 생성
+        return UserProfileResponse.builder()
+                .userId(user.getId())
+                .name(user.getName())
+                .profileImageUrl(user.getPicture())
+                .ratingScore(user.getRatingScore())
+                .reviewCount(user.getReviewCount())
+                .salesCount(user.getSalesCount())
+                .reviews(receivedReviews)
+                .sellingProducts(sellingProducts)
+                .build();
     }
 }

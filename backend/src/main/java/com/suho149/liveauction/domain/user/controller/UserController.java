@@ -75,4 +75,10 @@ public class UserController {
         userService.updateDefaultAddress(principal, address);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/{userId}/profile")
+    public ResponseEntity<UserProfileResponse> getUserProfile(@PathVariable Long userId) {
+        UserProfileResponse userProfile = userService.getUserProfile(userId);
+        return ResponseEntity.ok(userProfile);
+    }
 }

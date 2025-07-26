@@ -16,6 +16,7 @@ import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentFailPage from './pages/PaymentFailPage';
 import MyAuctionsPage from "./pages/MyAuctionsPage";
 import useAuthStore from "./hooks/useAuthStore";
+import UserProfilePage from "./pages/UserProfilePage";
 
 function App() {
 
@@ -49,6 +50,8 @@ function App() {
                 {/*  결제 성공/실패 경로 추가 */}
                 <Route path="/payment/success" element={<PaymentSuccessPage />} />
                 <Route path="/payment/fail" element={<PaymentFailPage />} />
+
+                <Route path="/users/:userId/profile" element={<UserProfilePage />} />
             </Routes>
         </Router>
     );

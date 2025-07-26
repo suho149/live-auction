@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import axiosInstance, { API_BASE_URL } from '../api/axiosInstance'; // API_BASE_URL import
 import Header from '../components/Header';
 import { Client } from '@stomp/stompjs';
@@ -592,7 +592,9 @@ const ProductDetailPage = () => {
                                         className="w-12 h-12 rounded-full object-cover mr-4 border" // mr-4로 오른쪽 여백 추가
                                     />
                                     <div className="flex-grow">
-                                        <p className="font-semibold text-gray-800">{product.sellerName}</p>
+                                        <Link to={`/users/${product.sellerId}/profile`} className="font-semibold text-gray-800 hover:underline">
+                                            {product.sellerName}
+                                        </Link>
                                         <div className="flex items-center space-x-3 text-sm text-gray-500 mt-1">
                                             {/* 평점 표시 */}
                                             <div className="flex items-center">
