@@ -83,7 +83,8 @@ public class ProductService {
     public Page<ProductResponse> getProducts(ProductSearchCondition condition, Pageable pageable) {
         // 기본적으로 ON_SALE 상태만 보여주도록 설정
         if (condition.getStatuses() == null || condition.getStatuses().isEmpty()) {
-            condition.setStatuses(List.of(ProductStatus.ON_SALE));
+            //condition.setStatuses(List.of(ProductStatus.ON_SALE)); // 판매 중인 상품만 표시
+            condition.setStatuses(List.of(ProductStatus.ON_SALE, ProductStatus.SOLD_OUT));
         }
         return productRepository.search(condition, pageable).map(ProductResponse::from);
     }
