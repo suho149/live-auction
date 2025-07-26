@@ -28,10 +28,16 @@ const MainPage = () => {
     const [products, setProducts] = useState<ProductCardProps[]>([]);
     const [searchParams, setSearchParams] = useSearchParams();
 
+    const getSortAliasFromParams = (sortParam: string | null) => {
+        if (sortParam === 'currentPrice,asc') return 'priceAsc';
+        if (sortParam === 'currentPrice,desc') return 'priceDesc';
+        return 'latest'; // 기본값 또는 'id,desc'
+    };
+
     // --- 필터 상태 관리 (URL 쿼리 파라미터와 동기화) ---
     const [keyword, setKeyword] = useState(searchParams.get('keyword') || '');
     const [activeCategory, setActiveCategory] = useState(searchParams.get('category') || 'ALL');
-    const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'latest');
+    const [sortBy, setSortBy] = useState(getSortAliasFromParams(searchParams.get('sort')));
     const [minPrice, setMinPrice] = useState<number | ''>(Number(searchParams.get('minPrice')) || '');
     const [maxPrice, setMaxPrice] = useState<number | ''>(Number(searchParams.get('maxPrice')) || '');
     // statuses는 배열이므로 URL에서 파싱하고 다시 문자열 배열로 변환
@@ -39,7 +45,7 @@ const MainPage = () => {
 
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false); // ★ 필터 모달 열림/닫힘 상태
 
-    // ★ API 호출 함수 ( useCallback으로 감싸서 최적화 )
+    // API 호출 함수 ( useCallback으로 감싸서 최적화 )
     const fetchProducts = useCallback(async () => {
         try {
             // searchParams 객체를 그대로 API 요청 파라미터로 사용
@@ -70,12 +76,26 @@ const MainPage = () => {
     };
 
     // 정렬 기준 변경 핸들러 (변경된 정렬만 적용)
-    const handleSortChange = (sort: string) => {
-        setSortBy(sort);
-        updateSearchParams(keyword, activeCategory, sort, minPrice, maxPrice, statuses);
+    const handleSortChange = (sortAlias: string) => {
+        setSortBy(sortAlias);
+        // 별칭을 백엔드가 이해하는 "{property},{direction}" 형식으로 변환
+        const sortValue = {
+            'latest': 'id,desc', // 'latest' -> 'id,desc'
+            'priceAsc': 'currentPrice,asc',
+            'priceDesc': 'currentPrice,desc'
+        }[sortAlias];
+
+        // searchParams를 직접 업데이트
+        const newSearchParams = new URLSearchParams(searchParams);
+        if (sortValue) {
+            newSearchParams.set('sort', sortValue);
+        } else {
+            newSearchParams.delete('sort');
+        }
+        setSearchParams(newSearchParams);
     };
 
-    // ★★★ 상세 필터 적용 핸들러 ★★★
+    // 상세 필터 적용 핸들러
     const handleApplyFilters = (filters: {
         category: string;
         minPrice: number | '';
@@ -89,22 +109,40 @@ const MainPage = () => {
         updateSearchParams(keyword, filters.category, sortBy, filters.minPrice, filters.maxPrice, filters.statuses);
     };
 
-    // ★★★ searchParams 업데이트 공통 함수 ★★★
+    // searchParams 업데이트 공통 함수
     const updateSearchParams = (
         keyword: string,
         category: string,
-        sort: string,
+        // 파라미터 이름을 sortAlias로 변경하여 의도를 명확하게 함
+        sortAlias: string,
         minPrice: number | '',
         maxPrice: number | '',
         statuses: string[]
     ) => {
         const newSearchParams = new URLSearchParams();
+
+        // 1. 다른 파라미터들은 기존과 동일하게 추가
         if (keyword) newSearchParams.set('keyword', keyword);
         if (category && category !== 'ALL') newSearchParams.set('category', category);
-        if (sort) newSearchParams.set('sort', sort);
         if (minPrice) newSearchParams.set('minPrice', String(minPrice));
         if (maxPrice) newSearchParams.set('maxPrice', String(maxPrice));
-        statuses.forEach(status => newSearchParams.append('statuses', status)); // 배열은 append로 추가
+        statuses.forEach(status => newSearchParams.append('statuses', status));
+
+        // sortAlias를 백엔드용 sortValue로 변환하는 로직
+        const sortValue = {
+            'latest': 'id,desc',        // '최신순' -> 'id' 필드, '내림차순'
+            'priceAsc': 'currentPrice,asc', // '낮은 가격순' -> 'currentPrice' 필드, '오름차순'
+            'priceDesc': 'currentPrice,desc' // '높은 가격순' -> 'currentPrice' 필드, '내림차순'
+        }[sortAlias]; // sortAlias가 'latest'면, sortValue는 'id,desc'가 됨
+
+        // 3. 변환된 sortValue가 존재할 경우에만 URL 파라미터에 추가
+        if (sortValue) {
+            newSearchParams.set('sort', sortValue);
+        }
+        // 만약 sortValue가 없다면(예: 기본값이 latest이고, latest일 때 파라미터를 보내고 싶지 않다면),
+        // sort 파라미터 자체가 URL에 추가되지 않음.
+
+        // 4. 최종적으로 URL을 업데이트
         setSearchParams(newSearchParams);
     };
 
@@ -151,7 +189,7 @@ const MainPage = () => {
                                 <option value="priceAsc">낮은 가격순</option>
                                 <option value="priceDesc">높은 가격순</option>
                             </select>
-                            {/* ★ 상세 필터 버튼 */}
+                            {/* 상세 필터 버튼 */}
                             <button
                                 onClick={() => setIsFilterModalOpen(true)}
                                 className="bg-gray-100 px-4 py-2 rounded-md hover:bg-gray-200 font-semibold"
@@ -174,7 +212,7 @@ const MainPage = () => {
                 </div>
             </main>
 
-            {/* ★★★ 상세 필터 모달 렌더링 ★★★ */}
+            {/* 상세 필터 모달 렌더링 */}
             <ProductFilterModal
                 isOpen={isFilterModalOpen}
                 onClose={() => setIsFilterModalOpen(false)}

@@ -1,6 +1,10 @@
 package com.suho149.liveauction.domain.product.repository;
 
+import com.querydsl.core.types.Order;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.PathBuilder;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.suho149.liveauction.domain.product.dto.ProductSearchCondition;
 import com.suho149.liveauction.domain.product.entity.Category;
@@ -10,6 +14,7 @@ import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
 
@@ -25,9 +30,11 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
 
     @Override
     public Page<Product> search(ProductSearchCondition condition, Pageable pageable) {
-        List<Product> content = queryFactory
+
+        // 데이터 목록을 가져오는 쿼리
+        JPAQuery<Product> query = queryFactory
                 .selectFrom(product)
-                .join(product.seller).fetchJoin() // N+1 방지
+                .join(product.seller).fetchJoin()
                 .where(
                         keywordContains(condition.getKeyword()),
                         categoryEq(condition.getCategory()),
@@ -36,28 +43,36 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                         statusIn(condition.getStatuses())
                 )
                 .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .orderBy(product.id.desc()) // 정렬 조건도 동적으로 변경 가능
-                .fetch();
+                .limit(pageable.getPageSize());
 
-        // 전체 카운트 쿼리
-        Long total = queryFactory
+        // 동적 정렬 조건 추가 (핵심 수정)
+        for (Sort.Order o : pageable.getSort()) {
+            PathBuilder pathBuilder = new PathBuilder(product.getType(), product.getMetadata());
+            query.orderBy(new OrderSpecifier(o.isAscending() ? Order.ASC : Order.DESC,
+                    pathBuilder.get(o.getProperty())));
+        }
+
+        // 기본 정렬 조건 추가 (정렬 조건이 없을 경우 대비)
+        query.orderBy(product.id.desc());
+
+        List<Product> content = query.fetch();
+
+        // 전체 카운트를 계산하는 쿼리
+        JPAQuery<Long> countQuery = queryFactory
                 .select(product.count())
                 .from(product)
-                // content 쿼리와 동일한 where 조건을 모두 적용
                 .where(
                         keywordContains(condition.getKeyword()),
                         categoryEq(condition.getCategory()),
                         priceGoe(condition.getMinPrice()),
                         priceLoe(condition.getMaxPrice()),
                         statusIn(condition.getStatuses())
-                )
-                .fetchOne();
+                );
 
-        // fetchOne()의 결과는 null일 수 있으므로, null 체크 추가
+        Long total = countQuery.fetchOne();
         long totalCount = total == null ? 0 : total;
 
-        return new PageImpl<>(content, pageable, total);
+        return new PageImpl<>(content, pageable, totalCount);
     }
 
     // --- 동적 where절을 위한 private 메소드들 ---
