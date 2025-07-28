@@ -49,7 +49,13 @@ const Header = () => {
             <nav className="flex items-center space-x-6"> {/* space-x-4 -> space-x-6로 간격 조정 */}
                 {isLoggedIn && userInfo ? (
                     <>
-                        {/* ★ 알림 아이콘 버튼 */}
+                        {/* 관리자일 경우 관리자 페이지 링크 표시 */}
+                        {userInfo.role === 'ADMIN' && (
+                            <Link to="/admin/settlements" className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors text-sm font-semibold">
+                                👑 관리자 페이지
+                            </Link>
+                        )}
+                        {/* 알림 아이콘 버튼 */}
                         <Link to="/notifications" className="relative text-gray-500 hover:text-blue-600">
                             <BellIcon className="w-7 h-7" />
                             {unreadCount > 0 && (

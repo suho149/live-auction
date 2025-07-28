@@ -44,4 +44,11 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
      * @return Settlement 목록
      */
     List<Settlement> findBySellerIdAndStatus(Long sellerId, SettlementStatus status);
+
+    /**
+     * 특정 상태를 가진 모든 정산 내역을 조회합니다. (관리자용)
+     * @param status 조회할 정산 상태
+     * @return Settlement 목록
+     */
+    List<Settlement> findByStatus(SettlementStatus status);
 }

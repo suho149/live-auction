@@ -9,6 +9,7 @@ interface UserInfo {
     email: string;
     picture: string;
     defaultAddress: Address | null;
+    role: string;
 }
 
 // 스토어 상태 타입 (actions를 제거하고 함수들을 직접 포함)

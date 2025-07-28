@@ -1,5 +1,5 @@
 import React, {useEffect} from 'react';
-import {BrowserRouter as Router, Route, Routes} from 'react-router-dom';
+import {BrowserRouter as Router, Navigate, Route, Routes} from 'react-router-dom';
 import MainPage from './pages/MainPage';
 import AuthCallbackPage from './pages/AuthCallbackPage';
 import MyPage from './pages/MyPage';
@@ -17,6 +17,9 @@ import PaymentFailPage from './pages/PaymentFailPage';
 import MyAuctionsPage from "./pages/MyAuctionsPage";
 import useAuthStore from "./hooks/useAuthStore";
 import UserProfilePage from "./pages/UserProfilePage";
+import AdminRoute from './components/AdminRoute';
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminSettlementPage from './pages/admin/AdminSettlementPage';
 
 function App() {
 
@@ -52,6 +55,18 @@ function App() {
                 <Route path="/payment/fail" element={<PaymentFailPage />} />
 
                 <Route path="/users/:userId/profile" element={<UserProfilePage />} />
+
+                {/* --- 관리자 경로 --- */}
+                <Route path="/admin" element={
+                    <AdminRoute>
+                        <AdminLayout />
+                    </AdminRoute>
+                }>
+                    {/* AdminLayout의 Outlet에 렌더링될 자식 경로들 */}
+                    <Route index element={<Navigate to="settlements" replace />} /> {/* /admin 접속 시 /admin/settlements로 리다이렉트 */}
+                    <Route path="settlements" element={<AdminSettlementPage />} />
+                    {/* <Route path="users" element={<AdminUserPage />} /> */}
+                </Route>
             </Routes>
         </Router>
     );
