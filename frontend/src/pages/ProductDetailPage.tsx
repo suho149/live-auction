@@ -193,14 +193,22 @@ const QnaSection = memo(({ productId, isSeller }: { productId: number, isSeller:
                             </div>
 
                             {/* 답변 */}
-                            {q.answer && q.canBeViewed && (
+                            {q.answer && (
                                 <div className="flex space-x-3 mt-4 ml-6 p-4 bg-gray-100 rounded-md">
                                     <span className="font-semibold text-green-600">A.</span>
                                     <div className="flex-1">
+                                        {/*
+                                            q.answer에는 실제 답변 또는 "판매자가 답변을 완료했습니다." 메시지가 들어있습니다.
+                                            어떤 경우든 그대로 표시하면 됩니다.
+                                        */}
                                         <p className="text-gray-800 whitespace-pre-wrap">{q.answer}</p>
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            판매자 답변 | {new Date(q.answeredAt!).toLocaleString()}
-                                        </p>
+
+                                        {/* 답변 시간은 실제 답변이 있을 때만 표시 (선택적) */}
+                                        {q.answeredAt && (
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                판매자 답변 | {new Date(q.answeredAt).toLocaleString()}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             )}
