@@ -10,6 +10,7 @@ import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import {ChatBubbleLeftRightIcon, EllipsisVerticalIcon} from "@heroicons/react/16/solid";
 import AlertModal from "../components/AlertModal";
 import useAuthStore from '../hooks/useAuthStore';
+import { fetchQuestions, createQuestion, createAnswer, QuestionResponse } from '../api/qnaApi';
 
 type ProductStatus = 'ON_SALE' | 'AUCTION_ENDED' | 'SOLD_OUT' | 'EXPIRED' | 'FAILED';
 
@@ -478,6 +479,151 @@ const ProductDetailPage = () => {
         }
     };
 
+    const QnaSection = ({ productId, isSeller }: { productId: number, isSeller: boolean }) => {
+        const { isLoggedIn } = useAuthStore();
+        const [questions, setQuestions] = useState<QuestionResponse[]>([]);
+        const [newQuestionContent, setNewQuestionContent] = useState('');
+        const [isPrivate, setIsPrivate] = useState(false);
+        const [answerForms, setAnswerForms] = useState<{ [key: number]: string }>({}); // 답변 폼 내용을 관리할 state
+
+        const loadQuestions = async () => {
+            try {
+                const data = await fetchQuestions(productId);
+                setQuestions(data);
+            } catch (error) {
+                console.error("Q&A 목록 로딩 실패:", error);
+            }
+        };
+
+        useEffect(() => {
+            loadQuestions();
+        }, [productId]);
+
+        const handleQuestionSubmit = async (e: React.FormEvent) => {
+            e.preventDefault();
+            if (!newQuestionContent.trim()) {
+                alert("문의 내용을 입력해주세요.");
+                return;
+            }
+            try {
+                await createQuestion(productId, { content: newQuestionContent, isPrivate });
+                setNewQuestionContent('');
+                setIsPrivate(false);
+                loadQuestions(); // 목록 새로고침
+            } catch (error) {
+                alert("문의 등록에 실패했습니다.");
+            }
+        };
+
+        const handleAnswerSubmit = async (questionId: number) => {
+            const answerContent = answerForms[questionId];
+            if (!answerContent || !answerContent.trim()) {
+                alert("답변 내용을 입력해주세요.");
+                return;
+            }
+            try {
+                await createAnswer(productId, questionId, { answer: answerContent });
+                loadQuestions(); // 목록 새로고침
+            } catch (error) {
+                alert("답변 등록에 실패했습니다.");
+            }
+        };
+
+        const handleAnswerChange = (questionId: number, value: string) => {
+            setAnswerForms(prev => ({ ...prev, [questionId]: value }));
+        };
+
+        return (
+            <div className="bg-white p-6 rounded-lg shadow-lg mt-8">
+                <h3 className="text-2xl font-bold border-b pb-4 mb-6">상품 문의</h3>
+
+                {/* 질문 작성 폼 (로그인 사용자만) */}
+                {isLoggedIn && !isSeller && (
+                    <form onSubmit={handleQuestionSubmit} className="mb-8 p-4 bg-gray-50 rounded-md">
+                    <textarea
+                        value={newQuestionContent}
+                        onChange={(e) => setNewQuestionContent(e.target.value)}
+                        rows={3}
+                        className="w-full p-2 border rounded-md"
+                        placeholder="상품에 대해 궁금한 점을 문의해주세요."
+                    />
+                        <div className="flex justify-between items-center mt-2">
+                            <label className="flex items-center space-x-2 text-sm text-gray-600">
+                                <input
+                                    type="checkbox"
+                                    checked={isPrivate}
+                                    onChange={(e) => setIsPrivate(e.target.checked)}
+                                    className="rounded"
+                                />
+                                <span>비밀글로 문의하기 (판매자와 나만 볼 수 있습니다)</span>
+                            </label>
+                            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md">문의 등록</button>
+                        </div>
+                    </form>
+                )}
+
+                {/* 질문 목록 */}
+                <div className="space-y-6">
+                    {questions.length > 0 ? (
+                        questions.map(q => (
+                            <div key={q.questionId} className="border-t pt-4">
+                                {/* 질문 */}
+                                <div className="flex space-x-3">
+                                    <span className="font-semibold text-blue-600">Q.</span>
+                                    <div className="flex-1">
+                                        <p className={`text-gray-800 ${!q.canBeViewed && 'italic text-gray-400'}`}>
+                                            {q.isPrivate && <span className="mr-2">🔒</span>}
+                                            {q.content}
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            작성자: {q.canBeViewed ? q.authorName : '비공개'} | {new Date(q.createdAt).toLocaleString()}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* 답변 */}
+                                {q.answer && q.canBeViewed && (
+                                    <div className="flex space-x-3 mt-4 ml-6 p-4 bg-gray-100 rounded-md">
+                                        <span className="font-semibold text-green-600">A.</span>
+                                        <div className="flex-1">
+                                            <p className="text-gray-800 whitespace-pre-wrap">{q.answer}</p>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                판매자 답변 | {new Date(q.answeredAt!).toLocaleString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 판매자 답변 폼 */}
+                                {isSeller && !q.answer && (
+                                    <div className="mt-4 ml-6">
+                                    <textarea
+                                        value={answerForms[q.questionId] || ''}
+                                        onChange={(e) => handleAnswerChange(q.questionId, e.target.value)}
+                                        rows={2}
+                                        className="w-full p-2 border rounded-md"
+                                        placeholder="답변을 입력하세요."
+                                    />
+                                        <div className="text-right mt-2">
+                                            <button
+                                                onClick={() => handleAnswerSubmit(q.questionId)}
+                                                className="bg-green-600 text-white px-4 py-1 rounded-md text-sm"
+                                            >
+                                                답변 등록
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-center text-gray-500">등록된 문의가 없습니다.</p>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
     // 1. product가 null이면 로딩 화면을 먼저 렌더링
     if (!product) {
         return (
@@ -491,7 +637,7 @@ const ProductDetailPage = () => {
     }
 
     // isSoldOut 변수를 선언하여 가독성 높임
-    const isSoldOut = product.status === 'SOLD_OUT';
+    // const isSoldOut = product.status === 'SOLD_OUT';
 
     // 5. 렌더링 시점마다 현재 사용자가 판매자인지 실시간으로 계산
     const isCurrentUserTheSeller = userInfo?.id === product.sellerId;
@@ -539,7 +685,7 @@ const ProductDetailPage = () => {
                                 {/* 오른쪽 버튼 그룹 (찜하기, 채팅, 더보기) */}
                                 <div className="flex items-center space-x-2 flex-shrink-0">
                                     {/* 판매 완료가 아닐 때만 버튼들을 보여줌 */}
-                                    {!isSoldOut && (
+                                    {product.status !== 'SOLD_OUT' && (
                                         <>
                                             <button onClick={handleLikeClick} className="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50">
                                                 {product.likedByCurrentUser ? <HeartIconSolid className="w-7 h-7 text-red-500"/> : <HeartIconOutline className="w-7 h-7"/>}
@@ -749,6 +895,8 @@ const ProductDetailPage = () => {
                         </div>
                     </div>
                 </div>
+
+                <QnaSection productId={Number(productId)} isSeller={isCurrentUserTheSeller} />
             </main>
 
             {/* 결제 모달 UI */}
