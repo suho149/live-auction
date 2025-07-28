@@ -1,11 +1,13 @@
 package com.suho149.liveauction.domain.product.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.suho149.liveauction.domain.product.dto.AnswerRequest;
 import com.suho149.liveauction.domain.product.dto.QuestionRequest;
 import com.suho149.liveauction.domain.product.dto.QuestionResponse;
 import com.suho149.liveauction.domain.product.service.QnaService;
 import com.suho149.liveauction.global.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -13,11 +15,14 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/products/{productId}/qna")
 @RequiredArgsConstructor
 public class QnaController {
     private final QnaService qnaService;
+    private final ObjectMapper objectMapper; // JSON 로깅을 위해 주입 (선택사항)
+
 
     @GetMapping
     public ResponseEntity<List<QuestionResponse>> getQuestions(@PathVariable Long productId, @AuthenticationPrincipal UserPrincipal currentUser) {

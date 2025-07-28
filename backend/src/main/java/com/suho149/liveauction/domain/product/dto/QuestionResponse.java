@@ -3,9 +3,11 @@ package com.suho149.liveauction.domain.product.dto;
 import com.suho149.liveauction.domain.product.entity.Question;
 import com.suho149.liveauction.domain.user.entity.User;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Getter
 public class QuestionResponse {
     private final Long questionId;
@@ -24,12 +26,21 @@ public class QuestionResponse {
         this.createdAt = question.getCreatedAt();
         this.answeredAt = question.getAnsweredAt();
 
-        // 비밀글 조회 권한 확인
-        this.canBeViewed = !question.isPrivate() || // 공개글이거나
-                (currentUser != null && ( // 로그인했고
-                        currentUser.getId().equals(question.getAuthor().getId()) || // 내가 작성자이거나
-                                currentUser.getId().equals(question.getProduct().getSeller().getId()) // 내가 판매자인 경우
-                ));
+        boolean isPublic = !question.isPrivate();
+        boolean isUserLoggedIn = currentUser != null;
+        boolean isAuthor = false;
+        boolean isSeller = false;
+
+        if (isUserLoggedIn) {
+
+            isAuthor = currentUser.getId().equals(question.getAuthor().getId());
+            isSeller = currentUser.getId().equals(question.getProduct().getSeller().getId());
+        } else {
+            log.info("현재 사용자는 로그인하지 않았습니다.");
+        }
+
+        // 최종 권한 계산
+        this.canBeViewed = isPublic || (isUserLoggedIn && (isAuthor || isSeller));
 
         // 볼 수 있는 경우에만 내용과 답변을 채움
         if (this.canBeViewed) {

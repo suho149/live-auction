@@ -30,11 +30,15 @@ public class QnaService {
 
     // 질문 목록 조회
     @Transactional(readOnly = true)
-    public List<QuestionResponse> getQuestions(Long productId, UserPrincipal currentUser) {
-        User user = (currentUser != null) ? userRepository.findById(currentUser.getId()).orElse(null) : null;
-        return questionRepository.findByProductIdOrderByIdDesc(productId)
-                .stream()
-                .map(question -> new QuestionResponse(question, user))
+    public List<QuestionResponse> getQuestions(Long productId, UserPrincipal currentUserPrincipal) {
+        User currentUser = (currentUserPrincipal != null) ?
+                userRepository.findById(currentUserPrincipal.getId()).orElse(null) :
+                null;
+
+        List<Question> questions = questionRepository.findByProductIdWithDetails(productId);
+
+        return questions.stream()
+                .map(question -> new QuestionResponse(question, currentUser))
                 .collect(Collectors.toList());
     }
 
@@ -51,7 +55,8 @@ public class QnaService {
 
         Question question = Question.builder()
                 .product(product).author(author)
-                .content(request.getContent()).isPrivate(request.isPrivate())
+                .content(request.getContent())
+                .isPrivate(request.isPrivate())
                 .build();
         questionRepository.save(question);
 

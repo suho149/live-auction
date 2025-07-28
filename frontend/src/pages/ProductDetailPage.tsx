@@ -109,7 +109,13 @@ const QnaSection = memo(({ productId, isSeller }: { productId: number, isSeller:
             return;
         }
         try {
-            await createQuestion(productId, { content: newQuestionContent, isPrivate });
+            // API 호출 시 isPrivate state를 함께 전달
+            await createQuestion(productId, {
+                content: newQuestionContent,
+                isPrivate: isPrivate // isPrivate 상태 값을 포함
+            });
+
+            // 성공 후 state 초기화
             setNewQuestionContent('');
             setIsPrivate(false);
             loadQuestions(); // 목록 새로고침
@@ -175,11 +181,13 @@ const QnaSection = memo(({ productId, isSeller }: { productId: number, isSeller:
                                 <span className="font-semibold text-blue-600">Q.</span>
                                 <div className="flex-1">
                                     <p className={`text-gray-800 ${!q.canBeViewed && 'italic text-gray-400'}`}>
-                                        {q.isPrivate && <span className="mr-2">🔒</span>}
-                                        {q.content}
+                                        {q.isPrivate && <span className="mr-2" title="비밀글">🔒</span>}
+                                        {/* canBeViewed가 true일 때만 실제 내용을 보여줍니다. */}
+                                        {q.canBeViewed ? q.content : "비밀글입니다."}
                                     </p>
                                     <p className="text-xs text-gray-500 mt-1">
-                                        작성자: {q.canBeViewed ? q.authorName : '비공개'} | {new Date(q.createdAt).toLocaleString()}
+                                        {/* canBeViewed가 true일 때만 실제 작성자 이름을 보여줍니다. */}
+                                        작성자: {q.canBeViewed ? q.authorName : "비공개"} | {new Date(q.createdAt).toLocaleString()}
                                     </p>
                                 </div>
                             </div>
