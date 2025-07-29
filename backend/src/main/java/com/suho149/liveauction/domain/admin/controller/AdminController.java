@@ -1,8 +1,11 @@
 package com.suho149.liveauction.domain.admin.controller;
 
 import com.suho149.liveauction.domain.admin.dto.SettlementResponse;
+import com.suho149.liveauction.domain.admin.dto.UserSummaryResponse;
 import com.suho149.liveauction.domain.admin.service.AdminService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,6 +25,29 @@ public class AdminController {
     @PostMapping("/settlements/{settlementId}/complete")
     public ResponseEntity<Void> completeSettlement(@PathVariable Long settlementId) {
         adminService.completeSettlement(settlementId);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/users")
+    public ResponseEntity<Page<UserSummaryResponse>> getAllUsers(Pageable pageable) {
+        return ResponseEntity.ok(adminService.getAllUsers(pageable));
+    }
+
+    @DeleteMapping("/products/{productId}")
+    public ResponseEntity<Void> forceDeleteProduct(@PathVariable Long productId) {
+        adminService.forceDeleteProduct(productId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/users/{userId}/grant-admin")
+    public ResponseEntity<Void> grantAdminRole(@PathVariable Long userId) {
+        adminService.grantAdminRole(userId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/users/{userId}/revoke-admin")
+    public ResponseEntity<Void> revokeAdminRole(@PathVariable Long userId) {
+        adminService.revokeAdminRole(userId);
         return ResponseEntity.ok().build();
     }
 }

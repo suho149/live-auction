@@ -1,6 +1,7 @@
 // src/api/adminApi.ts
 
 import axiosInstance from './axiosInstance';
+import { Page } from './userApi';
 
 // 정산 요청 목록 응답 타입
 export interface SettlementResponse {
@@ -19,4 +20,27 @@ export const fetchPendingSettlements = async (): Promise<SettlementResponse[]> =
 /** 특정 정산 요청을 '완료' 처리하는 API */
 export const completeSettlement = async (settlementId: number): Promise<void> => {
     await axiosInstance.post(`/api/v1/admin/settlements/${settlementId}/complete`);
+};
+
+export interface UserSummary {
+    userId: number; email: string; name: string;
+    role: 'USER' | 'ADMIN'; salesCount: number;
+}
+
+// 사용자 목록 조회 API
+export const fetchAllUsers = async (page: number = 0, size: number = 10): Promise<Page<UserSummary>> => {
+    const response = await axiosInstance.get(`/api/v1/admin/users?page=${page}&size=${size}`);
+    return response.data;
+};
+
+// 상품 강제 삭제 API
+export const forceDeleteProduct = async (productId: number): Promise<void> => {
+    await axiosInstance.delete(`/api/v1/admin/products/${productId}`);
+};
+
+export const grantAdminRole = async (userId: number): Promise<void> => {
+    await axiosInstance.post(`/api/v1/admin/users/${userId}/grant-admin`);
+};
+export const revokeAdminRole = async (userId: number): Promise<void> => {
+    await axiosInstance.post(`/api/v1/admin/users/${userId}/revoke-admin`);
 };

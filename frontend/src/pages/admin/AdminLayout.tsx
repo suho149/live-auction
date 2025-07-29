@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, Outlet } from 'react-router-dom';
+import {Link, NavLink, Outlet} from 'react-router-dom';
 import Header from "../../components/Header";
 
 const AdminLayout = () => {
@@ -16,11 +16,30 @@ const AdminLayout = () => {
                     <nav>
                         <ul>
                             <li>
-                                <Link to="/admin/settlements" className="block py-2 px-4 rounded hover:bg-gray-100 text-gray-600 font-medium">
+                                <NavLink
+                                    to="/admin/settlements"
+                                    className={({ isActive }) =>
+                                        `block py-2 px-4 rounded transition-colors ${
+                                            isActive ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                                        }`
+                                    }
+                                >
                                     정산 관리
-                                </Link>
+                                </NavLink>
                             </li>
                             {/* ... 다른 관리자 메뉴 추가 ... */}
+                            <li>
+                                <NavLink
+                                    to="/admin/users"
+                                    className={({ isActive }) =>
+                                        `block py-2 px-4 rounded transition-colors ${
+                                            isActive ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                                        }`
+                                    }
+                                >
+                                    사용자 관리
+                                </NavLink>
+                            </li>
                         </ul>
                     </nav>
                 </aside>
