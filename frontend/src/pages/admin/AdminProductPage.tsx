@@ -50,32 +50,37 @@ const AdminProductPage = () => {
             <h2 className="text-3xl font-bold mb-6">상품 관리</h2>
             {/* TODO: 관리자용 검색/필터 UI 추가 */}
 
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="bg-white rounded-lg shadow-md overflow-x-auto"> {/* 모바일 화면을 위해 overflow-x-auto 추가 */}
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                     <tr>
-                        <th>ID</th><th>상품명</th><th>판매자</th><th>현재가</th><th>상태</th><th className="text-right">작업</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-16">ID</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-2/5">상품명</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">판매자</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">현재가</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">작업</th>
                     </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                     {loading ? (
                         <tr><td colSpan={6} className="text-center py-4">로딩 중...</td></tr>
                     ) : productsPage?.content.map(product => (
-                        <tr key={product.id}>
-                            <td className="px-6 py-4">{product.id}</td>
-                            <td className="px-6 py-4 font-medium">{product.name}</td>
-                            <td className="px-6 py-4">{product.sellerName}</td>
-                            <td className="px-6 py-4">{product.currentPrice.toLocaleString()}원</td>
-                            <td className="px-6 py-4">
-                                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-800">
+                        <tr key={product.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.id}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 truncate max-w-xs" title={product.name}>{product.name}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.sellerName}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.currentPrice.toLocaleString()}원</td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
                                         {product.status}
                                     </span>
                             </td>
-                            <td className="px-6 py-4 text-right space-x-2">
-                                <Link to={`/products/${product.id}`} target="_blank" className="text-blue-600 hover:underline text-sm">상세보기</Link>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
+                                <Link to={`/products/${product.id}`} target="_blank" className="text-indigo-600 hover:text-indigo-900">상세보기</Link>
                                 <button
                                     onClick={() => handleDelete(product.id)}
-                                    className="text-red-600 hover:underline text-sm font-semibold"
+                                    className="text-red-600 hover:text-red-900"
                                 >
                                     강제 삭제
                                 </button>
