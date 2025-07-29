@@ -11,6 +11,7 @@ import {ChatBubbleLeftRightIcon, EllipsisVerticalIcon} from "@heroicons/react/16
 import AlertModal from "../components/AlertModal";
 import useAuthStore from '../hooks/useAuthStore';
 import { fetchQuestions, createQuestion, createAnswer, QuestionResponse } from '../api/qnaApi';
+import * as adminApi from '../api/adminApi';
 
 type ProductStatus = 'ON_SALE' | 'AUCTION_ENDED' | 'SOLD_OUT' | 'EXPIRED' | 'FAILED';
 
@@ -661,6 +662,24 @@ const ProductDetailPage = () => {
     // 5. 렌더링 시점마다 현재 사용자가 판매자인지 실시간으로 계산
     const isCurrentUserTheSeller = userInfo?.id === product.sellerId;
 
+    // 관리자 여부를 확인하는 변수 추가
+    const isCurrentUserAdmin = userInfo?.role === 'ADMIN';
+
+    // 관리자용 강제 삭제 핸들러 추가
+    const handleAdminForceDelete = async () => {
+        if (window.confirm("[관리자] 정말로 이 상품을 강제 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
+            try {
+                // adminApi.ts에 forceDeleteProduct 함수가 있다고 가정
+                await adminApi.forceDeleteProduct(product!.id);
+                alert("관리자 권한으로 상품이 삭제되었습니다.");
+                navigate('/');
+            } catch (error) {
+                alert("상품 삭제에 실패했습니다.");
+            }
+        }
+    };
+
+
     return (
         <div className="bg-gray-50 min-h-screen">
             <Header />
@@ -801,6 +820,21 @@ const ProductDetailPage = () => {
                                     }[product.status] || '상태 확인 중...'
                                 }
                             </p>
+
+                            {/* 관리자 전용 액션 바 추가 */}
+                            {isCurrentUserAdmin && (
+                                <div className="mt-4 p-4 bg-purple-100 border border-purple-300 rounded-lg">
+                                    <h4 className="font-bold text-purple-800">관리자 도구</h4>
+                                    <div className="mt-2">
+                                        <button
+                                            onClick={handleAdminForceDelete}
+                                            className="bg-red-600 text-white text-sm font-semibold px-4 py-2 rounded-md hover:bg-red-700"
+                                        >
+                                            상품 강제 삭제
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{product.description}</p>
                         </div>
