@@ -51,14 +51,16 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // ★ 상품 조회 관련 GET 요청은 모두 허용
-                        .requestMatchers(HttpMethod.GET,
-                                "/api/v1/products",
-                                "/api/v1/products/**",
-                                "/images/**"  // 이미지 파일은 누구나 볼 수 있어야 함
-                        ).permitAll()
-
+                        // 1. 누구나 접근 가능한 경로
                         .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/products",          // 상품 목록 조회
+                                "/api/v1/products/{productId}", // 상품 상세 조회
+                                "/api/v1/products/{productId}/qna", // Q&A 목록 조회
+                                "/api/v1/users/{userId}/profile"  // 사용자 프로필 조회
+                        ).permitAll()
+                        .requestMatchers(
+                                "/images/**",
                                 "/",
                                 "/oauth2/**",
                                 "/login/oauth2/code/google",
@@ -66,10 +68,39 @@ public class SecurityConfig {
                                 "/ws-stomp/**"
                         ).permitAll()
 
-                        .requestMatchers("/api/v1/keywords/**", "/api/v1/notifications/**", "/api/v1/payments/**").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/products", "/api/v1/images/upload").hasAnyRole("USER", "ADMIN")
-
+                        // 2. 관리자(ADMIN)만 접근 가능한 경로
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+
+                        // 3. 일반 사용자(USER)와 관리자(ADMIN) 모두 접근 가능한 경로
+                        .requestMatchers(
+                                "/api/v1/keywords/**",
+                                "/api/v1/notifications/**",
+                                "/api/v1/payments/**",
+                                "/api/v1/chat/**",
+                                "/api/v1/users/me/**",
+                                "/api/v1/deliveries/**" // 배송 관련 API
+                        ).hasAnyRole("USER", "ADMIN")
+
+                        // ★★★ 이 부분을 수정합니다 ★★★
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/products",                      // 상품 등록
+                                "/api/v1/images/upload",                 // 이미지 업로드
+                                "/api/v1/products/{productId}/like",       // 좋아요
+                                "/api/v1/products/{productId}/buy-now/payment-info", // 즉시구매
+                                "/api/v1/products/{productId}/qna",        // 질문 작성
+                                "/api/v1/products/{productId}/qna/{questionId}/answer", // 답변 작성
+                                "/api/v1/products/{productId}/end-auction" // 조기 종료
+                        ).hasAnyRole("USER", "ADMIN")
+
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/v1/products/{productId}/payment" // 결제 취소
+                        ).hasAnyRole("USER", "ADMIN")
+
+                        // 4. 위에서 정의한 경로 외의 모든 GET 요청은 인증만 되면 접근 가능
+                        // (예: /api/v1/users/{userId}/profile)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/**").authenticated()
 
                         .anyRequest().authenticated()
                 )
