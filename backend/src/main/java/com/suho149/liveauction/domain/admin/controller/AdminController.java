@@ -33,8 +33,11 @@ public class AdminController {
     }
 
     @GetMapping("/users")
-    public ResponseEntity<Page<UserSummaryResponse>> getAllUsers(Pageable pageable) {
-        return ResponseEntity.ok(adminService.getAllUsers(pageable));
+    public ResponseEntity<Page<UserSummaryResponse>> getAllUsers(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String email,
+            Pageable pageable) {
+        return ResponseEntity.ok(adminService.getAllUsers(name, email, pageable));
     }
 
     @DeleteMapping("/products/{productId}")

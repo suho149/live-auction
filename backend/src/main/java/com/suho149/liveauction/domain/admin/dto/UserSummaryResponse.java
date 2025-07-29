@@ -19,4 +19,8 @@ public class UserSummaryResponse {
         this.role = user.getRole();
         this.salesCount = user.getSalesCount();
     }
+
+    public static UserSummaryResponse from(User user) {
+        return new UserSummaryResponse(user);
+    }
 }

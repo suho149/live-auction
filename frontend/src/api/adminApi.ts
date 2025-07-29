@@ -29,8 +29,17 @@ export interface UserSummary {
 }
 
 // 사용자 목록 조회 API
-export const fetchAllUsers = async (page: number = 0, size: number = 10): Promise<Page<UserSummary>> => {
-    const response = await axiosInstance.get(`/api/v1/admin/users?page=${page}&size=${size}`);
+export const fetchAllUsers = async (page: number, name?: string | null, email?: string | null): Promise<Page<UserSummary>> => {
+    const params = new URLSearchParams({
+        page: String(page),
+        // size: '10' // 페이지 크기를 고정하고 싶다면 추가
+    });
+
+    // 값이 존재할 때만 파라미터에 추가
+    if (name) params.append('name', name);
+    if (email) params.append('email', email);
+
+    const response = await axiosInstance.get(`/api/v1/admin/users`, { params });
     return response.data;
 };
 

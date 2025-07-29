@@ -71,9 +71,9 @@ public class AdminService {
 
     // 모든 사용자 목록 페이징 조회
     @Transactional(readOnly = true)
-    public Page<UserSummaryResponse> getAllUsers(Pageable pageable) {
-        return userRepository.findAll(pageable)
-                .map(UserSummaryResponse::new);
+    public Page<UserSummaryResponse> getAllUsers(String name, String email, Pageable pageable) {
+        Page<User> userPage = userRepository.searchUsers(name, email, pageable);
+        return userPage.map(UserSummaryResponse::from);
     }
 
     // 부적절한 상품 강제 삭제
