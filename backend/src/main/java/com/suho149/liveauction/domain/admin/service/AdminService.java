@@ -4,6 +4,8 @@ import com.suho149.liveauction.domain.admin.dto.SettlementResponse;
 import com.suho149.liveauction.domain.admin.dto.UserSummaryResponse;
 import com.suho149.liveauction.domain.notification.entity.NotificationType;
 import com.suho149.liveauction.domain.notification.service.NotificationService;
+import com.suho149.liveauction.domain.product.dto.ProductResponse;
+import com.suho149.liveauction.domain.product.dto.ProductSearchCondition;
 import com.suho149.liveauction.domain.product.repository.ProductRepository;
 import com.suho149.liveauction.domain.user.entity.Role;
 import com.suho149.liveauction.domain.user.entity.Settlement;
@@ -92,5 +94,15 @@ public class AdminService {
         User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
         // 본인 계정의 권한을 해제하는 것을 방지하는 로직을 추가하면 더 안전합니다.
         user.updateRole(Role.USER);
+    }
+
+    // 관리자용 상품 목록 조회 메소드 추가
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> getAllProducts(ProductSearchCondition condition, Pageable pageable) {
+        // 관리자는 기본적으로 모든 상태의 상품을 조회.
+        // 만약 condition에 특정 status가 있으면 그것을 따름.
+        // 이 로직은 ProductService와 동일하게 유지하거나, 관리자 특화 로직을 추가할 수 있음.
+        return productRepository.search(condition, pageable)
+                .map(ProductResponse::from);
     }
 }

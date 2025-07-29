@@ -2,6 +2,7 @@
 
 import axiosInstance from './axiosInstance';
 import { Page } from './userApi';
+import { ProductCardProps } from '../components/ProductCard';
 
 // 정산 요청 목록 응답 타입
 export interface SettlementResponse {
@@ -43,4 +44,10 @@ export const grantAdminRole = async (userId: number): Promise<void> => {
 };
 export const revokeAdminRole = async (userId: number): Promise<void> => {
     await axiosInstance.post(`/api/v1/admin/users/${userId}/revoke-admin`);
+};
+
+/** [관리자] 모든 상품 목록을 페이징하여 조회 */
+export const fetchAllProducts = async (params: URLSearchParams): Promise<Page<ProductCardProps>> => {
+    const response = await axiosInstance.get(`/api/v1/admin/products?${params.toString()}`);
+    return response.data;
 };

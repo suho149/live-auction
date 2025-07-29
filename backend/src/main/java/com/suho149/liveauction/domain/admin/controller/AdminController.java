@@ -3,9 +3,13 @@ package com.suho149.liveauction.domain.admin.controller;
 import com.suho149.liveauction.domain.admin.dto.SettlementResponse;
 import com.suho149.liveauction.domain.admin.dto.UserSummaryResponse;
 import com.suho149.liveauction.domain.admin.service.AdminService;
+import com.suho149.liveauction.domain.product.dto.ProductResponse;
+import com.suho149.liveauction.domain.product.dto.ProductSearchCondition;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -49,5 +53,14 @@ public class AdminController {
     public ResponseEntity<Void> revokeAdminRole(@PathVariable Long userId) {
         adminService.revokeAdminRole(userId);
         return ResponseEntity.ok().build();
+    }
+
+    // 상품 목록 조회 엔드포인트 추가
+    @GetMapping("/products")
+    public ResponseEntity<Page<ProductResponse>> getAllProducts(
+            @ModelAttribute ProductSearchCondition condition,
+            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(adminService.getAllProducts(condition, pageable));
     }
 }

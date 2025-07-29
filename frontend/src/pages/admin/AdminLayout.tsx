@@ -11,33 +11,51 @@ const AdminLayout = () => {
             {/* 2. 메인 컨텐츠 영역을 flex로 감싸기 */}
             <div className="flex">
                 {/* 사이드바 */}
-                <aside className="w-64 bg-white shadow-md p-4 hidden md:block"> {/* 모바일에서는 숨김 */}
-                    <h2 className="text-xl font-bold mb-6 text-gray-700">관리 메뉴</h2>
+                <aside className="w-64 bg-gray-800 text-white p-4 hidden md:block">
+                    <h2 className="text-xl font-bold mb-6 text-gray-300">관리 메뉴</h2>
                     <nav>
-                        <ul>
+                        <ul className="space-y-2">
                             <li>
                                 <NavLink
                                     to="/admin/settlements"
                                     className={({ isActive }) =>
                                         `block py-2 px-4 rounded transition-colors ${
-                                            isActive ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                                            isActive
+                                                ? 'bg-blue-600 text-white font-semibold' // 활성화 상태
+                                                : 'text-gray-400 hover:bg-gray-700 hover:text-white' // 비활성화 상태
                                         }`
                                     }
                                 >
                                     정산 관리
                                 </NavLink>
                             </li>
-                            {/* ... 다른 관리자 메뉴 추가 ... */}
                             <li>
                                 <NavLink
                                     to="/admin/users"
                                     className={({ isActive }) =>
                                         `block py-2 px-4 rounded transition-colors ${
-                                            isActive ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                                            isActive
+                                                ? 'bg-blue-600 text-white font-semibold'
+                                                : 'text-gray-400 hover:bg-gray-700 hover:text-white'
                                         }`
                                     }
                                 >
                                     사용자 관리
+                                </NavLink>
+                            </li>
+                            {/* '상품 관리' NavLink */}
+                            <li>
+                                <NavLink
+                                    to="/admin/products"
+                                    className={({ isActive }) =>
+                                        `block py-2 px-4 rounded transition-colors ${
+                                            isActive
+                                                ? 'bg-blue-600 text-white font-semibold' // 활성 탭: 파란 배경, 흰 글씨
+                                                : 'text-gray-400 hover:bg-gray-700 hover:text-white' // 비활성 탭: 연한 회색 글씨, 호버 시 배경/글씨 변경
+                                        }`
+                                    }
+                                >
+                                    상품 관리
                                 </NavLink>
                             </li>
                         </ul>
