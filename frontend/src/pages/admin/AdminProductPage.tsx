@@ -11,9 +11,18 @@ const AdminProductPage = () => {
     const [loading, setLoading] = useState(true);
     const [searchParams, setSearchParams] = useSearchParams();
 
+    // 1. 관리자용 검색어 상태 관리 (AdminUserPage와 동일)
+    const [searchTerm, setSearchTerm] = useState({
+        productName: searchParams.get('productName') || '',
+        sellerName: searchParams.get('sellerName') || ''
+    });
+
+    // 2. API 호출 함수 수정 (AdminUserPage와 동일)
     const loadProducts = useCallback(async () => {
         setLoading(true);
         try {
+            // searchParams를 fetchAllProducts에 그대로 전달합니다.
+            // searchParams 자체가 URLSearchParams 타입이므로, 타입이 일치합니다.
             const data = await fetchAllProducts(searchParams);
             setProductsPage(data);
         } catch (error) {
@@ -21,22 +30,25 @@ const AdminProductPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [searchParams]);
+    }, [searchParams]); // ★ 의존성에 searchParams를 추가합니다.
 
+    // useEffect는 이제 loadProducts만 의존
     useEffect(() => {
         loadProducts();
     }, [loadProducts]);
 
-    const handleDelete = async (productId: number) => {
-        if (window.confirm(`상품 ID: ${productId}\n정말로 이 상품을 강제 삭제하시겠습니까?`)) {
-            try {
-                await forceDeleteProduct(productId);
-                alert("상품이 삭제되었습니다.");
-                loadProducts(); // 목록 새로고침
-            } catch (error) {
-                alert("상품 삭제에 실패했습니다.");
-            }
-        }
+    // 4. 핸들러 함수들 추가 (AdminUserPage와 동일)
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm({ ...searchTerm, [e.target.name]: e.target.value });
+    };
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        // 검색 시 productName과 sellerName이 빈 문자열일 경우 URL에서 제외
+        const params: { [key: string]: string } = { page: '0' };
+        if (searchTerm.productName) params.productName = searchTerm.productName;
+        if (searchTerm.sellerName) params.sellerName = searchTerm.sellerName;
+        setSearchParams(params);
     };
 
     const handlePageChange = (page: number) => {
@@ -45,10 +57,46 @@ const AdminProductPage = () => {
         setSearchParams(newSearchParams);
     };
 
+    const handleDelete = async (productId: number) => {
+        if (window.confirm(`상품 ID: ${productId}\n정말로 이 상품을 강제 삭제하시겠습니까?`)) {
+            try {
+                await forceDeleteProduct(productId);
+                alert("상품이 삭제되었습니다.");
+
+                // ★★★ 이 부분을 수정합니다 ★★★
+                // loadProducts는 이제 인자 없이 호출합니다.
+                // searchParams가 이미 최신 상태이므로, loadProducts는 그 값을 사용하여 API를 호출합니다.
+                loadProducts();
+            } catch (error) {
+                alert("상품 삭제에 실패했습니다.");
+            }
+        }
+    };
+
     return (
         <div>
             <h2 className="text-3xl font-bold mb-6">상품 관리</h2>
             {/* TODO: 관리자용 검색/필터 UI 추가 */}
+            {/* 검색 폼 UI 추가 */}
+            <form onSubmit={handleSearch} className="mb-6 p-4 bg-gray-50 rounded-lg flex items-center space-x-4">
+                <input
+                    type="text"
+                    name="productName"
+                    value={searchTerm.productName}
+                    onChange={handleInputChange}
+                    placeholder="상품명으로 검색"
+                    className="border px-3 py-2 rounded-md flex-1"
+                />
+                <input
+                    type="text"
+                    name="sellerName"
+                    value={searchTerm.sellerName}
+                    onChange={handleInputChange}
+                    placeholder="판매자명으로 검색"
+                    className="border px-3 py-2 rounded-md flex-1"
+                />
+                <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md">검색</button>
+            </form>
 
             <div className="bg-white rounded-lg shadow-md overflow-x-auto"> {/* 모바일 화면을 위해 overflow-x-auto 추가 */}
                 <table className="min-w-full divide-y divide-gray-200">

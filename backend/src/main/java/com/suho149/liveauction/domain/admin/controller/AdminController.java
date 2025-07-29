@@ -1,5 +1,6 @@
 package com.suho149.liveauction.domain.admin.controller;
 
+import com.suho149.liveauction.domain.admin.dto.ProductSummaryResponse;
 import com.suho149.liveauction.domain.admin.dto.SettlementResponse;
 import com.suho149.liveauction.domain.admin.dto.UserSummaryResponse;
 import com.suho149.liveauction.domain.admin.service.AdminService;
@@ -60,10 +61,12 @@ public class AdminController {
 
     // 상품 목록 조회 엔드포인트 추가
     @GetMapping("/products")
-    public ResponseEntity<Page<ProductResponse>> getAllProducts(
-            @ModelAttribute ProductSearchCondition condition,
+    public ResponseEntity<Page<ProductSummaryResponse>> getAllProducts(
+            // @RequestParam으로 개별 파라미터를 받음
+            @RequestParam(required = false) String productName,
+            @RequestParam(required = false) String sellerName,
             @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ResponseEntity.ok(adminService.getAllProducts(condition, pageable));
+        return ResponseEntity.ok(adminService.getAllProducts(productName, sellerName, pageable));
     }
 }

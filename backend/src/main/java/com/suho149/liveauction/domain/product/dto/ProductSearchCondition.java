@@ -9,6 +9,7 @@ import java.util.List;
 @Data // Getter, Setter, ToString 등을 모두 포함
 public class ProductSearchCondition {
     private String keyword;
+    private String sellerName;
     private Category category;
     private Long minPrice;
     private Long maxPrice;

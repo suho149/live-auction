@@ -1,11 +1,13 @@
 package com.suho149.liveauction.domain.admin.service;
 
+import com.suho149.liveauction.domain.admin.dto.ProductSummaryResponse;
 import com.suho149.liveauction.domain.admin.dto.SettlementResponse;
 import com.suho149.liveauction.domain.admin.dto.UserSummaryResponse;
 import com.suho149.liveauction.domain.notification.entity.NotificationType;
 import com.suho149.liveauction.domain.notification.service.NotificationService;
 import com.suho149.liveauction.domain.product.dto.ProductResponse;
 import com.suho149.liveauction.domain.product.dto.ProductSearchCondition;
+import com.suho149.liveauction.domain.product.entity.Product;
 import com.suho149.liveauction.domain.product.repository.ProductRepository;
 import com.suho149.liveauction.domain.user.entity.Role;
 import com.suho149.liveauction.domain.user.entity.Settlement;
@@ -98,11 +100,16 @@ public class AdminService {
 
     // 관리자용 상품 목록 조회 메소드 추가
     @Transactional(readOnly = true)
-    public Page<ProductResponse> getAllProducts(ProductSearchCondition condition, Pageable pageable) {
-        // 관리자는 기본적으로 모든 상태의 상품을 조회.
-        // 만약 condition에 특정 status가 있으면 그것을 따름.
-        // 이 로직은 ProductService와 동일하게 유지하거나, 관리자 특화 로직을 추가할 수 있음.
-        return productRepository.search(condition, pageable)
-                .map(ProductResponse::from);
+    public Page<ProductSummaryResponse> getAllProducts(String productName, String sellerName, Pageable pageable) {
+        // 1. 검색 조건을 ProductSearchCondition DTO에 담습니다.
+        ProductSearchCondition condition = new ProductSearchCondition();
+        condition.setKeyword(productName);
+        condition.setSellerName(sellerName);
+
+        // 2. productRepository.search()를 호출합니다.
+        Page<Product> productPage = productRepository.search(condition, pageable);
+
+        // 3. Page<Product>를 Page<ProductSummaryResponse>로 변환하여 반환합니다.
+        return productPage.map(ProductSummaryResponse::from);
     }
 }
