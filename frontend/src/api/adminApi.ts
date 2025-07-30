@@ -3,6 +3,7 @@
 import axiosInstance from './axiosInstance';
 import { Page } from './userApi';
 import { ProductCardProps } from '../components/ProductCard';
+import { ReportReason } from './reportApi';
 
 // 정산 요청 목록 응답 타입
 export interface SettlementResponse {
@@ -109,4 +110,21 @@ export const fetchDailySales = async (): Promise<DailyStats[]> => {
         console.error("일일 거래액 통계 로딩 실패:", error);
         return []; // 에러 발생 시 빈 배열을 반환
     }
+};
+
+export interface Report {
+    reportId: number; productId: number; productName: string;
+    reporterId: number; reporterName: string; sellerId: number;
+    sellerName: string; reason: ReportReason; detail: string; createdAt: string;
+}
+
+/** 처리 대기 중인 신고 목록 조회 */
+export const fetchPendingReports = async (): Promise<Report[]> => {
+    const response = await axiosInstance.get('/api/v1/admin/reports/pending');
+    return response.data;
+};
+
+/** 신고 처리 (승인/기각) */
+export const processReport = async (reportId: number, isAccepted: boolean): Promise<void> => {
+    await axiosInstance.post(`/api/v1/admin/reports/${reportId}/process`, { isAccepted });
 };

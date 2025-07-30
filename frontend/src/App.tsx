@@ -23,6 +23,7 @@ import AdminSettlementPage from './pages/admin/AdminSettlementPage';
 import AdminUserPage from "./pages/admin/AdminUserPage";
 import AdminProductPage from "./pages/admin/AdminProductPage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
+import AdminReportPage from "./pages/admin/AdminReportPage";
 
 function App() {
 
@@ -70,6 +71,7 @@ function App() {
                     <Route path="settlements" element={<AdminSettlementPage />} />
                     <Route path="users" element={<AdminUserPage />} /> {/* 사용자 관리 경로 추가 */}
                     <Route path="products" element={<AdminProductPage />} /> {/* 상품 관리 경로 추가 */}
+                    <Route path="reports" element={<AdminReportPage />} />
                 </Route>
             </Routes>
         </Router>

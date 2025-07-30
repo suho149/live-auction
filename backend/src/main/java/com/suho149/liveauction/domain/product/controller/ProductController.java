@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -132,5 +133,23 @@ public class ProductController {
     ) {
         paymentService.cancelPendingPayment(productId, userPrincipal);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 특정 상품을 신고합니다.
+     * @param productId 신고할 상품의 ID
+     * @param request 신고 사유와 상세 내용
+     * @param principal 신고하는 사용자
+     * @return ResponseEntity<Void>
+     */
+    @PostMapping("/{productId}/report")
+    public ResponseEntity<Void> reportProduct(
+            @PathVariable Long productId,
+            @RequestBody ReportRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        productService.reportProduct(productId, request, principal);
+        // 성공적으로 생성되었음을 의미하는 201 Created 상태 코드를 반환
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 }

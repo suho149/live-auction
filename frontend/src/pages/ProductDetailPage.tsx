@@ -7,11 +7,12 @@ import SockJS from 'sockjs-client';
 import { Carousel } from 'react-responsive-carousel';
 import { HeartIcon as HeartIconOutline } from '@heroicons/react/24/outline'; // 찜 아이콘
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
-import {ChatBubbleLeftRightIcon, EllipsisVerticalIcon} from "@heroicons/react/16/solid";
+import {ChatBubbleLeftRightIcon, EllipsisVerticalIcon, ShieldExclamationIcon} from "@heroicons/react/16/solid";
 import AlertModal from "../components/AlertModal";
 import useAuthStore from '../hooks/useAuthStore';
 import { fetchQuestions, createQuestion, createAnswer, QuestionResponse } from '../api/qnaApi';
 import * as adminApi from '../api/adminApi';
+import ReportModal from "../components/ReportModal";
 
 type ProductStatus = 'ON_SALE' | 'AUCTION_ENDED' | 'SOLD_OUT' | 'EXPIRED' | 'FAILED';
 
@@ -269,6 +270,8 @@ const ProductDetailPage = () => {
 
     const [isAutoBidModalOpen, setIsAutoBidModalOpen] = useState(false);
     const [autoBidAmount, setAutoBidAmount] = useState<number>(0);
+
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
     // 1. product 상태를 항상 최신으로 참조하기 위한 ref 생성
     const productRef = useRef<ProductDetail | null>(product);
@@ -730,6 +733,17 @@ const ProductDetailPage = () => {
                                                 <span className="font-semibold text-lg">{product.likeCount}</span>
                                             </button>
 
+                                            {/* ★★★ 2. 신고하기 버튼 (여기에 추가) ★★★ */}
+                                            {isLoggedIn && !isCurrentUserTheSeller && (
+                                                <button
+                                                    onClick={() => setIsReportModalOpen(true)}
+                                                    title="이 상품 신고하기"
+                                                    className="p-2 rounded-full text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                                                >
+                                                    <ShieldExclamationIcon className="w-7 h-7" />
+                                                </button>
+                                            )}
+
                                             {/* 구매 희망자에게 보이는 채팅하기 버튼 */}
                                             {isLoggedIn && !isCurrentUserTheSeller && (
                                                 <button onClick={handleChatClick} className="bg-green-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-green-600 transition-colors flex items-center justify-center gap-2 text-sm">
@@ -1001,6 +1015,19 @@ const ProductDetailPage = () => {
                             <div>
                                 <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700">상품 설명</label>
                                 <textarea id="edit-description" rows={4} value={editFormData.description} onChange={(e) => setEditFormData({...editFormData, description: e.target.value})} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"/>
+                                {/* 상품 설명 아래에 신고 버튼 추가 */}
+                                <p className="text-gray-700 ...">{product.description}</p>
+
+                                {isLoggedIn && !isCurrentUserTheSeller && (
+                                    <div className="text-right mt-4">
+                                        <button
+                                            onClick={() => setIsReportModalOpen(true)}
+                                            className="text-xs text-gray-400 hover:text-red-500 hover:underline"
+                                        >
+                                            이 상품 신고하기
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <label htmlFor="edit-category" className="block text-sm font-medium text-gray-700">카테고리</label>
@@ -1070,6 +1097,12 @@ const ProductDetailPage = () => {
                 }}
                 title={alertInfo.title}
                 message={alertInfo.message}
+            />
+            <ReportModal
+                isOpen={isReportModalOpen}
+                onClose={() => setIsReportModalOpen(false)}
+                productId={product.id}
+                productName={product.name}
             />
         </div>
     );

@@ -82,4 +82,24 @@ public class AdminController {
     public ResponseEntity<List<DailyStatsDto>> getDailySales() {
         return ResponseEntity.ok(adminService.getDailySales());
     }
+
+    /**
+     * 처리 대기 중인 모든 신고 목록을 조회합니다.
+     */
+    @GetMapping("/reports/pending")
+    public ResponseEntity<List<ReportResponse>> getPendingReports() {
+        return ResponseEntity.ok(adminService.getPendingReports());
+    }
+
+    /**
+     * 특정 신고 건을 처리합니다 (승인/기각).
+     */
+    @PostMapping("/reports/{reportId}/process")
+    public ResponseEntity<Void> processReport(
+            @PathVariable Long reportId,
+            @RequestBody ProcessReportRequest request // 요청 본문을 받을 DTO
+    ) {
+        adminService.processReport(reportId, request.isAccepted());
+        return ResponseEntity.ok().build();
+    }
 }

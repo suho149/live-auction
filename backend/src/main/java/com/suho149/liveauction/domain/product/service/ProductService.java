@@ -5,17 +5,17 @@ import com.suho149.liveauction.domain.auction.repository.BidRepository;
 import com.suho149.liveauction.domain.keyword.repository.KeywordRepository;
 import com.suho149.liveauction.domain.notification.entity.NotificationType;
 import com.suho149.liveauction.domain.product.dto.*;
-import com.suho149.liveauction.domain.product.entity.Category;
-import com.suho149.liveauction.domain.product.entity.Product;
-import com.suho149.liveauction.domain.product.entity.ProductImage;
-import com.suho149.liveauction.domain.product.entity.ProductStatus;
+import com.suho149.liveauction.domain.product.entity.*;
 import com.suho149.liveauction.domain.product.repository.ProductRepository;
+import com.suho149.liveauction.domain.product.repository.ReportRepository;
+import com.suho149.liveauction.domain.user.entity.Role;
 import com.suho149.liveauction.domain.user.entity.User;
 import com.suho149.liveauction.domain.user.repository.LikeRepository;
 import com.suho149.liveauction.domain.user.repository.UserRepository;
 import com.suho149.liveauction.domain.notification.service.NotificationService;
 import com.suho149.liveauction.global.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ProductService {
@@ -40,6 +41,7 @@ public class ProductService {
     private final KeywordRepository keywordRepository;
     private final AutoBidRepository autoBidRepository;
     private final BidRepository bidRepository;
+    private final ReportRepository reportRepository;
 
     @Transactional
     public Product createProduct(ProductCreateRequest request, UserPrincipal userPrincipal) {
@@ -168,6 +170,40 @@ public class ProductService {
             String sellerContent = "요청에 따라 '" + product.getName() + "' 상품의 경매를 조기 종료했습니다. (유찰)";
             notificationService.send(product.getSeller(), NotificationType.BID, sellerContent, url);
         }
+    }
+
+    @Transactional
+    public void reportProduct(Long productId, ReportRequest request, UserPrincipal userPrincipal) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("신고할 상품을 찾을 수 없습니다. ID: " + productId));
+        User reporter = userRepository.findById(userPrincipal.getId())
+                .orElseThrow(() -> new UsernameNotFoundException("신고 사용자 정보를 찾을 수 없습니다. ID: " + userPrincipal.getId()));
+
+        // 본인 상품 신고 방지
+        if (product.getSeller().getId().equals(reporter.getId())) {
+            throw new IllegalStateException("자신이 등록한 상품은 신고할 수 없습니다.");
+        }
+
+        Report report = Report.builder()
+                .product(product)
+                .reporter(reporter)
+                .reason(request.getReason())
+                .detail(request.getDetail())
+                .build();
+        reportRepository.save(report);
+
+        // 관리자에게 신고 접수 알림 발송
+        // 1. 모든 ADMIN 역할의 사용자를 조회
+        List<User> admins = userRepository.findByRole(Role.ADMIN);
+
+        // 2. 각 관리자에게 알림을 보냄
+        String content = "새로운 상품 신고가 접수되었습니다: '" + product.getName() + "'";
+        String url = "/admin/reports"; // 관리자 신고 관리 페이지 경로 (가정)
+
+        admins.forEach(admin -> {
+            notificationService.send(admin, NotificationType.DELIVERY, content, url); // DELIVERY 또는 ADMIN 타입 등 활용
+        });
+        log.info("상품 ID {}에 대한 신고 접수 완료. 신고자: {}", productId, reporter.getName());
     }
 
 }

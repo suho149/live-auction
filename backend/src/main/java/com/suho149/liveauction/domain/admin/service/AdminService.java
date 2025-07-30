@@ -8,7 +8,10 @@ import com.suho149.liveauction.domain.product.dto.ProductResponse;
 import com.suho149.liveauction.domain.product.dto.ProductSearchCondition;
 import com.suho149.liveauction.domain.product.entity.Product;
 import com.suho149.liveauction.domain.product.entity.ProductStatus;
+import com.suho149.liveauction.domain.product.entity.Report;
+import com.suho149.liveauction.domain.product.entity.ReportStatus;
 import com.suho149.liveauction.domain.product.repository.ProductRepository;
+import com.suho149.liveauction.domain.product.repository.ReportRepository;
 import com.suho149.liveauction.domain.user.entity.Role;
 import com.suho149.liveauction.domain.user.entity.Settlement;
 import com.suho149.liveauction.domain.user.entity.SettlementStatus;
@@ -38,6 +41,7 @@ public class AdminService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final PaymentRepository paymentRepository;
+    private final ReportRepository reportRepository;
 
     @Transactional(readOnly = true)
     public List<SettlementResponse> getPendingSettlements() {
@@ -169,5 +173,50 @@ public class AdminService {
                         row[1] != null ? ((Number) row[1]).longValue() : 0L // SUM 결과는 null일 수 있음
                 ))
                 .collect(Collectors.toList());
+    }
+
+    // ★★★ 1. getPendingReports 메소드 추가/완성 ★★★
+    @Transactional(readOnly = true)
+    public List<ReportResponse> getPendingReports() {
+        return reportRepository.findByStatusOrderByIdDesc(ReportStatus.PENDING)
+                .stream()
+                .map(ReportResponse::new)
+                .collect(Collectors.toList());
+    }
+
+    // ★★★ 2. processReport 메소드 추가/완성 ★★★
+    @Transactional
+    public void processReport(Long reportId, boolean isAccepted) {
+        Report report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new IllegalArgumentException("처리할 신고 내역을 찾을 수 없습니다. ID: " + reportId));
+
+        if (report.getStatus() != ReportStatus.PENDING) {
+            throw new IllegalStateException("이미 처리된 신고입니다.");
+        }
+
+        Product reportedProduct = report.getProduct();
+        User reporter = report.getReporter();
+        User seller = reportedProduct.getSeller();
+        String url = "/products/" + reportedProduct.getId();
+
+        if (isAccepted) {
+            report.accept();
+            forceDeleteProduct(reportedProduct.getId());
+
+            String reporterContent = "요청하신 '" + reportedProduct.getName() + "' 상품에 대한 신고가 처리되었습니다.";
+            notificationService.send(reporter, NotificationType.DELIVERY, reporterContent, url);
+
+            String sellerContent = "회원님의 상품 '" + reportedProduct.getName() + "'이(가) 신고 접수로 인해 삭제 처리되었습니다.";
+            notificationService.send(seller, NotificationType.DELIVERY, sellerContent, url);
+
+            log.info("신고 ID {} 승인 처리 완료. 상품 ID {} 삭제됨.", reportId, reportedProduct.getId());
+        } else {
+            report.reject();
+
+            String reporterContent = "요청하신 '" + reportedProduct.getName() + "' 상품에 대한 신고가 검토 후 기각되었습니다.";
+            notificationService.send(reporter, NotificationType.DELIVERY, reporterContent, url);
+
+            log.info("신고 ID {} 기각 처리 완료.", reportId);
+        }
     }
 }

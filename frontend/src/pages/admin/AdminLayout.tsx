@@ -41,6 +41,11 @@ const AdminLayout = () => {
                                     상품 관리
                                 </NavLink>
                             </li>
+                            <li>
+                                <NavLink to="/admin/reports" className={linkClasses}>
+                                    신고 관리
+                                </NavLink>
+                            </li>
                         </ul>
                     </nav>
                 </aside>
