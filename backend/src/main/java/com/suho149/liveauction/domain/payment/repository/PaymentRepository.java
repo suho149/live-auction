@@ -1,5 +1,6 @@
 package com.suho149.liveauction.domain.payment.repository;
 
+import com.suho149.liveauction.domain.admin.dto.DailyStatsDto;
 import com.suho149.liveauction.domain.payment.entity.Payment;
 import com.suho149.liveauction.domain.payment.entity.PaymentStatus;
 import io.lettuce.core.dynamic.annotation.Param;
@@ -42,4 +43,10 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     // 전체 총 거래액
     @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.status = 'COMPLETED'")
     long sumTotalCompletedAmount();
+
+    @Query(value = "SELECT CAST(p.paid_at AS DATE), SUM(p.amount) " +
+            "FROM payment p WHERE p.status = 'COMPLETED' AND p.paid_at >= :startDate " +
+            "GROUP BY CAST(p.paid_at AS DATE) ORDER BY CAST(p.paid_at AS DATE) ASC",
+            nativeQuery = true)
+    List<Object[]> findDailySales(@Param("startDate") LocalDateTime startDate);
 }

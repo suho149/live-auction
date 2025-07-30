@@ -75,3 +75,38 @@ export const fetchDashboardSummary = async (): Promise<DashboardSummary> => {
     const response = await axiosInstance.get('/api/v1/admin/dashboard/summary');
     return response.data;
 };
+
+/**
+ * 일자별 통계 데이터 타입을 정의합니다.
+ * 백엔드의 DailyStatsDto와 일치합니다.
+ */
+export interface DailyStats {
+    date: string;  // "YYYY-MM-DD" 형식의 문자열
+    value: number; // 집계된 값 (가입자 수 또는 거래액)
+}
+
+/**
+ * 최근 7일간의 일자별 가입자 수 통계를 조회하는 API
+ */
+export const fetchDailySignups = async (): Promise<DailyStats[]> => {
+    try {
+        const response = await axiosInstance.get('/api/v1/admin/dashboard/daily-signups');
+        return response.data;
+    } catch (error) {
+        console.error("일일 가입자 수 통계 로딩 실패:", error);
+        return []; // 에러 발생 시 빈 배열을 반환하여 차트가 깨지지 않도록 함
+    }
+};
+
+/**
+ * 최근 7일간의 일자별 거래액 통계를 조회하는 API
+ */
+export const fetchDailySales = async (): Promise<DailyStats[]> => {
+    try {
+        const response = await axiosInstance.get('/api/v1/admin/dashboard/daily-sales');
+        return response.data;
+    } catch (error) {
+        console.error("일일 거래액 통계 로딩 실패:", error);
+        return []; // 에러 발생 시 빈 배열을 반환
+    }
+};

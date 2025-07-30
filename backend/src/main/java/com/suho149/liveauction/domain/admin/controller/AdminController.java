@@ -1,9 +1,6 @@
 package com.suho149.liveauction.domain.admin.controller;
 
-import com.suho149.liveauction.domain.admin.dto.DashboardSummaryResponse;
-import com.suho149.liveauction.domain.admin.dto.ProductSummaryResponse;
-import com.suho149.liveauction.domain.admin.dto.SettlementResponse;
-import com.suho149.liveauction.domain.admin.dto.UserSummaryResponse;
+import com.suho149.liveauction.domain.admin.dto.*;
 import com.suho149.liveauction.domain.admin.service.AdminService;
 import com.suho149.liveauction.domain.product.dto.ProductResponse;
 import com.suho149.liveauction.domain.product.dto.ProductSearchCondition;
@@ -74,5 +71,15 @@ public class AdminController {
     @GetMapping("/dashboard/summary")
     public ResponseEntity<DashboardSummaryResponse> getDashboardSummary() {
         return ResponseEntity.ok(adminService.getDashboardSummary());
+    }
+
+    @GetMapping("/dashboard/daily-signups")
+    public ResponseEntity<List<DailyStatsDto>> getDailyUserSignups() {
+        return ResponseEntity.ok(adminService.getDailyUserSignups());
+    }
+
+    @GetMapping("/dashboard/daily-sales")
+    public ResponseEntity<List<DailyStatsDto>> getDailySales() {
+        return ResponseEntity.ok(adminService.getDailySales());
     }
 }

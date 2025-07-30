@@ -1,9 +1,6 @@
 package com.suho149.liveauction.domain.admin.service;
 
-import com.suho149.liveauction.domain.admin.dto.DashboardSummaryResponse;
-import com.suho149.liveauction.domain.admin.dto.ProductSummaryResponse;
-import com.suho149.liveauction.domain.admin.dto.SettlementResponse;
-import com.suho149.liveauction.domain.admin.dto.UserSummaryResponse;
+import com.suho149.liveauction.domain.admin.dto.*;
 import com.suho149.liveauction.domain.notification.entity.NotificationType;
 import com.suho149.liveauction.domain.notification.service.NotificationService;
 import com.suho149.liveauction.domain.payment.repository.PaymentRepository;
@@ -25,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -145,5 +143,31 @@ public class AdminService {
                 .salesAmountToday(salesAmountToday)
                 .pendingSettlementsCount(pendingSettlementsCount)
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<DailyStatsDto> getDailyUserSignups() {
+        LocalDateTime oneWeekAgo = LocalDate.now().minusDays(6).atStartOfDay();
+        List<Object[]> results = userRepository.findDailyUserSignups(oneWeekAgo);
+
+        return results.stream()
+                .map(row -> new DailyStatsDto(
+                        ((Date) row[0]).toLocalDate(), // java.sql.Date -> LocalDate
+                        ((Number) row[1]).longValue()      // BigInteger or Long -> long
+                ))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<DailyStatsDto> getDailySales() {
+        LocalDateTime oneWeekAgo = LocalDate.now().minusDays(6).atStartOfDay();
+        List<Object[]> results = paymentRepository.findDailySales(oneWeekAgo);
+
+        return results.stream()
+                .map(row -> new DailyStatsDto(
+                        ((Date) row[0]).toLocalDate(),
+                        row[1] != null ? ((Number) row[1]).longValue() : 0L // SUM 결과는 null일 수 있음
+                ))
+                .collect(Collectors.toList());
     }
 }
