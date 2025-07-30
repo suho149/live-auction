@@ -1,5 +1,6 @@
 package com.suho149.liveauction.domain.admin.controller;
 
+import com.suho149.liveauction.domain.admin.dto.DashboardSummaryResponse;
 import com.suho149.liveauction.domain.admin.dto.ProductSummaryResponse;
 import com.suho149.liveauction.domain.admin.dto.SettlementResponse;
 import com.suho149.liveauction.domain.admin.dto.UserSummaryResponse;
@@ -68,5 +69,10 @@ public class AdminController {
             @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ResponseEntity.ok(adminService.getAllProducts(productName, sellerName, pageable));
+    }
+
+    @GetMapping("/dashboard/summary")
+    public ResponseEntity<DashboardSummaryResponse> getDashboardSummary() {
+        return ResponseEntity.ok(adminService.getDashboardSummary());
     }
 }

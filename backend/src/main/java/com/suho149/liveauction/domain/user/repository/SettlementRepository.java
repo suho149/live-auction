@@ -51,4 +51,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
      * @return Settlement 목록
      */
     List<Settlement> findByStatus(SettlementStatus status);
+
+    // 특정 상태의 정산 요청 건수
+    long countByStatus(SettlementStatus status);
 }

@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
 
 @Getter
 @NoArgsConstructor
@@ -37,6 +40,10 @@ public class User {
 
     @Embedded // 기본 배송지 정보를 User 테이블에 포함
     private Address defaultAddress;
+
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     @Builder
     public User(String name, String email, String picture, Role role) {

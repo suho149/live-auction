@@ -22,6 +22,7 @@ import AdminLayout from './pages/admin/AdminLayout';
 import AdminSettlementPage from './pages/admin/AdminSettlementPage';
 import AdminUserPage from "./pages/admin/AdminUserPage";
 import AdminProductPage from "./pages/admin/AdminProductPage";
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 
 function App() {
 
@@ -64,8 +65,8 @@ function App() {
                         <AdminLayout />
                     </AdminRoute>
                 }>
-                    {/* AdminLayout의 Outlet에 렌더링될 자식 경로들 */}
-                    <Route index element={<Navigate to="settlements" replace />} /> {/* /admin 접속 시 /admin/settlements로 리다이렉트 */}
+                    <Route index element={<Navigate to="dashboard" replace />} />
+                    <Route path="dashboard" element={<AdminDashboardPage />} />
                     <Route path="settlements" element={<AdminSettlementPage />} />
                     <Route path="users" element={<AdminUserPage />} /> {/* 사용자 관리 경로 추가 */}
                     <Route path="products" element={<AdminProductPage />} /> {/* 상품 관리 경로 추가 */}

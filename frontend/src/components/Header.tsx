@@ -51,7 +51,7 @@ const Header = () => {
                     <>
                         {/* 관리자일 경우 관리자 페이지 링크 표시 */}
                         {userInfo.role === 'ADMIN' && (
-                            <Link to="/admin/settlements" className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors text-sm font-semibold">
+                            <Link to="/admin/dashboard" className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors text-sm font-semibold">
                                 👑 관리자 페이지
                             </Link>
                         )}

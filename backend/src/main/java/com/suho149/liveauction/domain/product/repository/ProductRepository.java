@@ -83,4 +83,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
 
     // 판매자 ID와 여러 상태값으로 상품 목록을 조회 (판매 완료 제외)
     Page<Product> findBySellerIdAndStatusInOrderByIdDesc(Long sellerId, Collection<ProductStatus> statuses, Pageable pageable);
+
+    // 특정 상태의 상품 수
+    long countByStatus(ProductStatus status);
 }

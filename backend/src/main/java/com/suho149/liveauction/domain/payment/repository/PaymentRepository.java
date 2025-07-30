@@ -34,4 +34,12 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     // 스케줄러용 메소드 추가
     List<Payment> findByStatusAndCreatedAtBefore(PaymentStatus status, LocalDateTime dateTime);
+
+    // 오늘 발생한 총 거래액
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.status = 'COMPLETED' AND p.paidAt > :dateTime")
+    long sumCompletedAmountAfter(@Param("dateTime") LocalDateTime dateTime);
+
+    // 전체 총 거래액
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.status = 'COMPLETED'")
+    long sumTotalCompletedAmount();
 }

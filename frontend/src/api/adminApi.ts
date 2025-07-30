@@ -60,3 +60,18 @@ export const fetchAllProducts = async (params: URLSearchParams): Promise<Page<Pr
     const response = await axiosInstance.get(`/api/v1/admin/products?${params.toString()}`);
     return response.data;
 };
+
+export interface DashboardSummary {
+    totalUsers: number;
+    newUsersToday: number;
+    totalProducts: number;
+    onSaleProducts: number;
+    totalSalesAmount: number;
+    salesAmountToday: number;
+    pendingSettlementsCount: number;
+}
+
+export const fetchDashboardSummary = async (): Promise<DashboardSummary> => {
+    const response = await axiosInstance.get('/api/v1/admin/dashboard/summary');
+    return response.data;
+};

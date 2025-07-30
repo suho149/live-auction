@@ -1,13 +1,16 @@
 package com.suho149.liveauction.domain.admin.service;
 
+import com.suho149.liveauction.domain.admin.dto.DashboardSummaryResponse;
 import com.suho149.liveauction.domain.admin.dto.ProductSummaryResponse;
 import com.suho149.liveauction.domain.admin.dto.SettlementResponse;
 import com.suho149.liveauction.domain.admin.dto.UserSummaryResponse;
 import com.suho149.liveauction.domain.notification.entity.NotificationType;
 import com.suho149.liveauction.domain.notification.service.NotificationService;
+import com.suho149.liveauction.domain.payment.repository.PaymentRepository;
 import com.suho149.liveauction.domain.product.dto.ProductResponse;
 import com.suho149.liveauction.domain.product.dto.ProductSearchCondition;
 import com.suho149.liveauction.domain.product.entity.Product;
+import com.suho149.liveauction.domain.product.entity.ProductStatus;
 import com.suho149.liveauction.domain.product.repository.ProductRepository;
 import com.suho149.liveauction.domain.user.entity.Role;
 import com.suho149.liveauction.domain.user.entity.Settlement;
@@ -22,6 +25,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,6 +39,7 @@ public class AdminService {
     private final NotificationService notificationService;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final PaymentRepository paymentRepository;
 
     @Transactional(readOnly = true)
     public List<SettlementResponse> getPendingSettlements() {
@@ -111,5 +117,33 @@ public class AdminService {
 
         // 3. Page<Product>를 Page<ProductSummaryResponse>로 변환하여 반환합니다.
         return productPage.map(ProductSummaryResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public DashboardSummaryResponse getDashboardSummary() {
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay(); // 오늘 0시 0분
+
+        // 각 Repository에서 데이터 집계
+        long totalUsers = userRepository.count();
+        long newUsersToday = userRepository.countByCreatedAtAfter(todayStart);
+
+        long totalProducts = productRepository.count();
+        long onSaleProducts = productRepository.countByStatus(ProductStatus.ON_SALE);
+
+        long totalSalesAmount = paymentRepository.sumTotalCompletedAmount();
+        long salesAmountToday = paymentRepository.sumCompletedAmountAfter(todayStart);
+
+        long pendingSettlementsCount = settlementRepository.countByStatus(SettlementStatus.REQUESTED);
+
+        // DTO로 조립하여 반환
+        return DashboardSummaryResponse.builder()
+                .totalUsers(totalUsers)
+                .newUsersToday(newUsersToday)
+                .totalProducts(totalProducts)
+                .onSaleProducts(onSaleProducts)
+                .totalSalesAmount(totalSalesAmount)
+                .salesAmountToday(salesAmountToday)
+                .pendingSettlementsCount(pendingSettlementsCount)
+                .build();
     }
 }
