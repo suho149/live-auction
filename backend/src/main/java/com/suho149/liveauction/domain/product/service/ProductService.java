@@ -4,6 +4,7 @@ import com.suho149.liveauction.domain.auction.repository.AutoBidRepository;
 import com.suho149.liveauction.domain.auction.repository.BidRepository;
 import com.suho149.liveauction.domain.keyword.repository.KeywordRepository;
 import com.suho149.liveauction.domain.notification.entity.NotificationType;
+import com.suho149.liveauction.domain.notification.event.NotificationEvent;
 import com.suho149.liveauction.domain.product.dto.*;
 import com.suho149.liveauction.domain.product.entity.*;
 import com.suho149.liveauction.domain.product.repository.ProductRepository;
@@ -16,6 +17,7 @@ import com.suho149.liveauction.domain.notification.service.NotificationService;
 import com.suho149.liveauction.global.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -42,6 +44,7 @@ public class ProductService {
     private final AutoBidRepository autoBidRepository;
     private final BidRepository bidRepository;
     private final ReportRepository reportRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public Product createProduct(ProductCreateRequest request, UserPrincipal userPrincipal) {
@@ -201,7 +204,7 @@ public class ProductService {
         String url = "/admin/reports"; // 관리자 신고 관리 페이지 경로 (가정)
 
         admins.forEach(admin -> {
-            notificationService.send(admin, NotificationType.DELIVERY, content, url); // DELIVERY 또는 ADMIN 타입 등 활용
+            eventPublisher.publishEvent(new NotificationEvent(admin.getId(), NotificationType.SYSTEM, content, url));
         });
         log.info("상품 ID {}에 대한 신고 접수 완료. 신고자: {}", productId, reporter.getName());
     }

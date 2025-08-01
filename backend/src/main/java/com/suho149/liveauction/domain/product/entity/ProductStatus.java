@@ -5,5 +5,6 @@ public enum ProductStatus {
     AUCTION_ENDED,  // 경매 종료 (결제 대기)
     SOLD_OUT,       // 판매 완료 (결제 완료)
     EXPIRED,        // 결제 기한 만료
-    FAILED          // 유찰 (최고 입찰자 없음)
+    FAILED,          // 유찰 (최고 입찰자 없음)
+    DELETED         // 관리자에 의해 삭제됨 (Soft Delete)
 }

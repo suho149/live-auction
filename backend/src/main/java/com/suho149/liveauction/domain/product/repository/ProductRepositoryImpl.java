@@ -40,7 +40,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                         categoryEq(condition.getCategory()),
                         priceGoe(condition.getMinPrice()),
                         priceLoe(condition.getMaxPrice()),
-                        statusIn(condition.getStatuses())
+                        statusIn(condition.getStatuses(), condition.isIncludeDeleted())
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize());
@@ -66,7 +66,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                         categoryEq(condition.getCategory()),
                         priceGoe(condition.getMinPrice()),
                         priceLoe(condition.getMaxPrice()),
-                        statusIn(condition.getStatuses())
+                        statusIn(condition.getStatuses(), condition.isIncludeDeleted())
                 );
 
         Long total = countQuery.fetchOne();
@@ -98,7 +98,15 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         return maxPrice != null ? product.currentPrice.loe(maxPrice) : null;
     }
 
-    private BooleanExpression statusIn(List<ProductStatus> statuses) {
-        return statuses != null && !statuses.isEmpty() ? product.status.in(statuses) : null;
+    private BooleanExpression statusIn(List<ProductStatus> statuses, boolean includeDeleted) {
+        if (statuses != null && !statuses.isEmpty()) {
+            return product.status.in(statuses);
+        }
+        // 관리자가 삭제 포함 조회를 하지 않고, statuses 조건도 없다면, DELETED를 제외
+        if (!includeDeleted) {
+            return product.status.ne(ProductStatus.DELETED);
+        }
+        // 관리자가 삭제 포함 조회를 했거나, statuses 조건이 없는 경우는 모든 상태를 조회
+        return null;
     }
 }

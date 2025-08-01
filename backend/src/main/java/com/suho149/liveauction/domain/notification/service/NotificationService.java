@@ -3,15 +3,21 @@ package com.suho149.liveauction.domain.notification.service;
 import com.suho149.liveauction.domain.notification.dto.NotificationResponse;
 import com.suho149.liveauction.domain.notification.entity.Notification;
 import com.suho149.liveauction.domain.notification.entity.NotificationType;
+import com.suho149.liveauction.domain.notification.event.NotificationEvent;
 import com.suho149.liveauction.domain.notification.repository.NotificationRepository;
 import com.suho149.liveauction.domain.product.entity.Product;
 import com.suho149.liveauction.domain.user.entity.User;
 import com.suho149.liveauction.domain.keyword.repository.KeywordRepository;
+import com.suho149.liveauction.domain.user.repository.UserRepository;
 import com.suho149.liveauction.global.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
@@ -29,6 +35,8 @@ public class NotificationService {
     private final Map<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
     private final KeywordRepository keywordRepository;
     private final NotificationRepository notificationRepository;
+    private final ApplicationEventPublisher eventPublisher;
+    private final UserRepository userRepository;
 
     // 1. SSE 연결
     public SseEmitter subscribe(Long userId) {
@@ -44,22 +52,49 @@ public class NotificationService {
         return emitter;
     }
 
-    // 알림 생성 및 발송을 위한 통합 메소드
-    @Transactional
     public void send(User user, NotificationType type, String content, String url) {
+        // User 엔티티 대신 userId를 이벤트에 담아 발행합니다.
+        eventPublisher.publishEvent(new NotificationEvent(user.getId(), type, content, url));
+    }
+
+    /**
+     * [새로 추가된 이벤트 리스너 메서드]
+     * 다른 서비스의 트랜잭션이 성공적으로 '커밋된 후'에만 이 메서드가 실행됩니다.
+     * 이 메서드는 항상 새로운 트랜잭션에서 동작합니다.
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void handleNotificationEvent(NotificationEvent event) {
+        // 이벤트에서 userId를 가져와 DB에서 User 엔티티를 다시 조회합니다.
+        User user = userRepository.findById(event.getUserId()).orElse(null);
+
+        if (user == null) {
+            log.warn("알림을 보낼 사용자를 찾을 수 없습니다. userId: {}", event.getUserId());
+            return;
+        }
+
+        NotificationType type = event.getType();
+        String content = event.getContent();
+        String url = event.getUrl();
+
+        // 채팅 알림 그룹핑 로직
         if (type == NotificationType.CHAT) {
             Optional<Notification> existingOpt = notificationRepository.findFirstByUserAndUrlAndIsReadFalse(user, url);
-
             if (existingOpt.isPresent()) {
                 Notification existing = existingOpt.get();
-                existing.updateForChatNotification(); // 엔티티의 업데이트 메소드 호출
+                existing.updateForChatNotification();
+                notificationRepository.save(existing);
                 sendToClient(user.getId(), "notificationUpdate", new NotificationResponse(existing));
                 return;
             }
         }
 
-        Notification notification = Notification.builder().user(user).type(type).content(content).url(url).build();
+        // 새로운 알림 생성 및 저장
+        Notification notification = Notification.builder()
+                .user(user).type(type).content(content).url(url).build();
         notificationRepository.save(notification);
+
+        // 클라이언트에게 SSE 이벤트 전송
         sendToClient(user.getId(), "notification", new NotificationResponse(notification));
     }
 

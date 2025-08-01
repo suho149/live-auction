@@ -7,6 +7,8 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.annotations.Where;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -17,6 +19,7 @@ import java.util.Set;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@SQLRestriction("status <> 'DELETED'")
 public class Product {
 
     @Id
@@ -68,6 +71,8 @@ public class Product {
     private LocalDateTime paymentDueDate;
 
     private Long buyNowPrice; // 즉시 구매가 (null일 수 있음)
+
+    private LocalDateTime deletedAt;
 
     @Builder
     public Product(String name, String description, Long startPrice, Category category, LocalDateTime auctionEndTime, User seller, Long buyNowPrice) {
@@ -129,5 +134,9 @@ public class Product {
 
     public void extendAuctionEndTime(LocalDateTime newEndTime) {
         this.auctionEndTime = newEndTime;
+    }
+
+    public void softDelete() {
+        this.status = ProductStatus.DELETED;
     }
 }
