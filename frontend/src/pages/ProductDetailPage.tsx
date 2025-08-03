@@ -13,6 +13,7 @@ import useAuthStore from '../hooks/useAuthStore';
 import { fetchQuestions, createQuestion, createAnswer, QuestionResponse } from '../api/qnaApi';
 import * as adminApi from '../api/adminApi';
 import ReportModal from "../components/ReportModal";
+import {AxiosError} from "axios";
 
 type ProductStatus = 'ON_SALE' | 'AUCTION_ENDED' | 'SOLD_OUT' | 'EXPIRED' | 'FAILED';
 
@@ -272,6 +273,7 @@ const ProductDetailPage = () => {
     const [autoBidAmount, setAutoBidAmount] = useState<number>(0);
 
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     // 1. product 상태를 항상 최신으로 참조하기 위한 ref 생성
     const productRef = useRef<ProductDetail | null>(product);
@@ -297,8 +299,16 @@ const ProductDetailPage = () => {
             });
         } catch (error) {
             console.error("상품 정보 로딩 실패:", error);
-            showAlert("오류", "상품 정보를 불러올 수 없습니다.");
-            navigate('/');
+
+            const axiosError = error as AxiosError<any>;
+            if (axiosError.response) {
+                // 백엔드에서 보낸 에러 메시지가 있으면 그것을 사용
+                // GlobalExceptionHandler에서 보낸 형식: { code: 'NOT_FOUND', message: '삭제된 상품입니다.' }
+                setError(axiosError.response.data.message || '상품 정보를 불러올 수 없습니다.');
+            } else {
+                // 네트워크 에러 등 응답 자체가 없는 경우
+                setError('서버와 통신하는 데 실패했습니다.');
+            }
         }
     };
 
@@ -652,8 +662,19 @@ const ProductDetailPage = () => {
         return (
             <div className="bg-gray-50 min-h-screen">
                 <Header />
-                <div className="flex justify-center items-center h-[50vh]">
-                    <p>상품 정보를 불러오는 중...</p>
+                <div className="flex justify-center items-center h-[50vh] text-center">
+                    {error ? (
+                        <div>
+                            <h2 className="text-2xl font-bold text-red-500">오류</h2>
+                            <p className="mt-2 text-gray-600">{error}</p>
+                            {/* ★ 잘못된 닫는 태그를 올바르게 수정 */}
+                            <Link to="/" className="mt-6 inline-block bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600">
+                                메인으로 돌아가기
+                            </Link>
+                        </div>
+                    ) : (
+                        <p>상품 정보를 불러오는 중...</p>
+                    )}
                 </div>
             </div>
         );
