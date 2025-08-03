@@ -14,7 +14,5 @@ public class ProductSearchCondition {
     private Long minPrice;
     private Long maxPrice;
     private List<ProductStatus> statuses;
-    // 관리자가 삭제된 상품을 포함하여 조회할지 여부를 나타내는 플래그
-    private boolean includeDeleted = false;
     // 정렬 조건 등 추가 가능
 }

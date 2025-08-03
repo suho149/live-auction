@@ -113,9 +113,17 @@ export const fetchDailySales = async (): Promise<DailyStats[]> => {
 };
 
 export interface Report {
-    reportId: number; productId: number; productName: string;
-    reporterId: number; reporterName: string; sellerId: number;
-    sellerName: string; reason: ReportReason; detail: string; createdAt: string;
+    reportId: number;
+    productId: number;
+    productName: string;
+    reporterId: number;
+    reporterName: string;
+    sellerId: number;
+    sellerName: string;
+    reason: ReportReason;
+    detail: string;
+    createdAt: string;
+    status: 'PENDING' | 'ACCEPTED' | 'REJECTED'; // ★ status 필드 추가
 }
 
 /** 처리 대기 중인 신고 목록 조회 */
@@ -123,6 +131,13 @@ export const fetchPendingReports = async (): Promise<Report[]> => {
     const response = await axiosInstance.get('/api/v1/admin/reports/pending');
     return response.data;
 };
+
+/** 처리 완료된 신고 목록 조회 API 함수 추가 */
+export const fetchCompletedReports = async (): Promise<Report[]> => {
+    const response = await axiosInstance.get('/api/v1/admin/reports/completed');
+    return response.data;
+};
+
 
 /** 신고 처리 (승인/기각) */
 export const processReport = async (reportId: number, isAccepted: boolean): Promise<void> => {

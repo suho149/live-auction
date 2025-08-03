@@ -91,6 +91,11 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getPendingReports());
     }
 
+    @GetMapping("/reports/completed")
+    public ResponseEntity<List<ReportResponse>> getCompletedReports() {
+        return ResponseEntity.ok(adminService.getCompletedReports());
+    }
+
     /**
      * 특정 신고 건을 처리합니다 (승인/기각).
      */

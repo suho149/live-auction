@@ -19,7 +19,6 @@ import java.util.Set;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLRestriction("status <> 'DELETED'")
 public class Product {
 
     @Id

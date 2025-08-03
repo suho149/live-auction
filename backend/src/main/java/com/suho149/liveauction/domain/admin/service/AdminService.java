@@ -116,12 +116,12 @@ public class AdminService {
         ProductSearchCondition condition = new ProductSearchCondition();
         condition.setKeyword(productName);
         condition.setSellerName(sellerName);
-        condition.setIncludeDeleted(true);
+        condition.setStatuses(List.of(
+                ProductStatus.ON_SALE, ProductStatus.AUCTION_ENDED, ProductStatus.SOLD_OUT,
+                ProductStatus.EXPIRED, ProductStatus.FAILED, ProductStatus.DELETED
+        ));
 
-        // 2. productRepository.search()를 호출합니다.
         Page<Product> productPage = productRepository.search(condition, pageable);
-
-        // 3. Page<Product>를 Page<ProductSummaryResponse>로 변환하여 반환합니다.
         return productPage.map(ProductSummaryResponse::from);
     }
 
@@ -179,10 +179,18 @@ public class AdminService {
                 .collect(Collectors.toList());
     }
 
-    // ★★★ 1. getPendingReports 메소드 추가/완성 ★★★
     @Transactional(readOnly = true)
     public List<ReportResponse> getPendingReports() {
         return reportRepository.findByStatusOrderByIdDesc(ReportStatus.PENDING)
+                .stream()
+                .map(ReportResponse::new)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReportResponse> getCompletedReports() {
+        List<ReportStatus> completedStatuses = List.of(ReportStatus.ACCEPTED, ReportStatus.REJECTED);
+        return reportRepository.findByStatusInOrderByIdDesc(completedStatuses)
                 .stream()
                 .map(ReportResponse::new)
                 .collect(Collectors.toList());
