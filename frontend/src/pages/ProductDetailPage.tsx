@@ -275,6 +275,9 @@ const ProductDetailPage = () => {
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // 가격 업데이트 효과를 위한 상태 추가
+    const [isPriceUpdated, setIsPriceUpdated] = useState(false);
+
     // 1. product 상태를 항상 최신으로 참조하기 위한 ref 생성
     const productRef = useRef<ProductDetail | null>(product);
     useEffect(() => {
@@ -378,6 +381,9 @@ const ProductDetailPage = () => {
                         highestBidderName: bidResponse.bidderName,
                         auctionEndTime: bidResponse.auctionEndTime
                     } : null);
+
+                    // 가격 업데이트 시, 효과 상태를 true로 변경
+                    setIsPriceUpdated(true);
                 });
                 client.subscribe('/user/queue/errors', (message) => showAlert('입찰 실패', message.body));
             },
@@ -393,6 +399,19 @@ const ProductDetailPage = () => {
         };
     }, [isLoggedIn, productId, product?.status]);
 
+    // isPriceUpdated 상태를 다시 false로 되돌리는 useEffect 추가
+    useEffect(() => {
+        // isPriceUpdated가 true일 때만 실행
+        if (isPriceUpdated) {
+            // 800ms (CSS 애니메이션 시간) 후에 상태를 false로 변경
+            const timer = setTimeout(() => {
+                setIsPriceUpdated(false);
+            }, 800);
+
+            // 컴포넌트가 언마운트되거나, isPriceUpdated가 다시 변경될 때 타이머를 정리
+            return () => clearTimeout(timer);
+        }
+    }, [isPriceUpdated]);
 
     // --- 핸들러 함수들 (handleBidSubmit 수정) ---
     const handleBidSubmit = () => {
@@ -879,7 +898,9 @@ const ProductDetailPage = () => {
                             <div className="bg-gray-100 p-4 rounded-lg">
                                 <div className="flex justify-between items-center">
                                     <span className="text-gray-600 text-lg">현재 최고가</span>
-                                    <span className="text-3xl font-bold text-red-500">{product.currentPrice.toLocaleString()}원</span>
+                                    <span className={`text-3xl font-bold text-red-500 transition-colors duration-300 ${isPriceUpdated ? 'price-flash' : ''}`}>
+                                        {product.currentPrice.toLocaleString()}원
+                                    </span>
                                 </div>
                                 <div className="text-right mt-1 text-sm text-gray-600">
                                     <span>입찰자: {product.highestBidderName}</span>
