@@ -98,6 +98,16 @@ public class ProductService {
         Product product = productRepository.findByIdWithDetails(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
 
+        // 조회된 상품이 DELETED 상태인지 확인
+        if (product.getStatus() == ProductStatus.DELETED) {
+            // 관리자가 아닌 경우 접근을 막습니다.
+            // (userPrincipal이 null이거나, role이 ADMIN이 아닌 경우)
+            if (userPrincipal == null || userPrincipal.getAuthorities().stream()
+                    .noneMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"))) {
+                throw new IllegalArgumentException("삭제된 상품입니다.");
+            }
+        }
+
         boolean likedByCurrentUser = false;
         boolean isSeller = false;
         Long myAutoBidMaxAmount = null; // 기본값은 null

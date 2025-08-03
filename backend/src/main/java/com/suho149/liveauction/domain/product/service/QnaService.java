@@ -6,6 +6,7 @@ import com.suho149.liveauction.domain.product.dto.AnswerRequest;
 import com.suho149.liveauction.domain.product.dto.QuestionRequest;
 import com.suho149.liveauction.domain.product.dto.QuestionResponse;
 import com.suho149.liveauction.domain.product.entity.Product;
+import com.suho149.liveauction.domain.product.entity.ProductStatus;
 import com.suho149.liveauction.domain.product.entity.Question;
 import com.suho149.liveauction.domain.product.repository.ProductRepository;
 import com.suho149.liveauction.domain.product.repository.QuestionRepository;
@@ -52,6 +53,12 @@ public class QnaService {
         // --- 2. 상품 조회 ---
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("질문 작성 실패: 상품을 찾을 수 없습니다. ID: " + productId));
+
+        // 삭제되었거나 판매가 끝난 상품에는 문의를 남길 수 없음
+        if (product.getStatus() != ProductStatus.ON_SALE) {
+            throw new IllegalStateException("현재 판매 중인 상품에만 문의를 등록할 수 있습니다.");
+        }
+
 
         Question question = Question.builder()
                 .product(product).author(author)
