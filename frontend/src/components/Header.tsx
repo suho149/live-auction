@@ -44,7 +44,7 @@ const Header = () => {
         <header className="bg-white shadow-md p-4 flex justify-between items-center sticky top-0 z-50">
             <Link to="/" className="text-2xl font-bold text-blue-600 flex items-center gap-2">
                 <span role="img" aria-label="rocket">🚀</span>
-                <span>Real-Time Auction</span>
+                <span>UPBID</span>
             </Link>
             <nav className="flex items-center space-x-6"> {/* space-x-4 -> space-x-6로 간격 조정 */}
                 {isLoggedIn && userInfo ? (
