@@ -51,6 +51,13 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// (선택, 통합 테스트용) H2 인메모리 데이터베이스
+	testRuntimeOnly 'com.h2database:h2'
+
+	// (선택, 통합 테스트용) Testcontainers: Docker 컨테이너를 이용한 테스트 환경 구축
+	testImplementation 'org.testcontainers:junit-jupiter:1.19.0'
+	testImplementation 'org.testcontainers:mariadb:1.19.0'
 }
 
 tasks.named('test') {
