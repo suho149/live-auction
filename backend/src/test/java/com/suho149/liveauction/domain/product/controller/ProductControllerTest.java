@@ -49,20 +49,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class ProductControllerTest {
 
-    // 1. Redis 의존성을 가진 JwtTokenProvider를 Mocking하여 연쇄적인 Bean 생성 오류를 차단합니다.
     @MockitoBean
     private JwtTokenProvider jwtTokenProvider;
 
-    // 2. 상품 등록 시 알림 이벤트를 발행하므로, ApplicationEventPublisher도 Mocking하여
-    //    실제 이벤트 리스너가 동작하지 않도록 합니다. 이렇게 하면 테스트가 더 빨라지고 격리됩니다.
     @MockitoBean
     private ApplicationEventPublisher eventPublisher;
 
-    // MockMvc: HTTP 요청을 시뮬레이션하는 객체
     @Autowired
     private MockMvc mockMvc;
 
-    // ObjectMapper: Java 객체를 JSON 문자열로 변환하기 위해 사용
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -82,7 +77,6 @@ class ProductControllerTest {
 
     @BeforeEach
     void setUp() {
-        // 상품을 등록할 테스트용 사용자를 미리 DB에 저장
         testUser = User.builder()
                 .name("testUser")
                 .email("testuser@example.com")
