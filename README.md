@@ -65,37 +65,9 @@
 ## 🏛️ 시스템 아키텍처 (System Architecture)
 
 <p align="center">
-  <img src="https" width="800" alt="System Architecture Diagram">
   <!-- TODO: 아키텍처 다이어그램 이미지를 추가하세요. -->
+  <img width="3840" height="3090" alt="Image" src="https://github.com/user-attachments/assets/b1d91c12-a0ce-4274-bd48-461f576e997c" />
 </p>
-
-```
-graph TD
-    subgraph "User's Browser"
-        A[React Application]
-    end
-
-    subgraph "Web Server (Docker Container)"
-        B[Nginx Reverse Proxy]
-    end
-
-    subgraph "Application Server (Docker Container)"
-        C[Spring Boot Backend]
-    end
-    
-    subgraph "Data Layer (Docker Containers)"
-        D[MariaDB Database]
-        E[Redis Cache & Store]
-    end
-
-    A -- "HTTP/HTTPS (Port 3000)" --> B;
-    B -- "/api, /images (Proxy Pass)" --> C;
-    B -- "/ws-stomp (WebSocket Proxy)" --> C;
-    C -- "Real-time Bids/Chats" <--> A;
-    C -- "Real-time Notifications (SSE)" --> A;
-    C -- "JPA / QueryDSL" --> D;
-    C -- "Cache / Refresh Token" --> E;
-```
 
 1.  **사용자**: 웹 브라우저를 통해 프론트엔드 서버(Nginx)에 접속합니다.
 2.  **Frontend (Nginx + React)**: Nginx는 빌드된 React 정적 파일을 서빙합니다.
