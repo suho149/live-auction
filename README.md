@@ -69,6 +69,34 @@
   <!-- TODO: 아키텍처 다이어그램 이미지를 추가하세요. -->
 </p>
 
+```
+graph TD
+    subgraph "User's Browser"
+        A[React Application]
+    end
+
+    subgraph "Web Server (Docker Container)"
+        B[Nginx Reverse Proxy]
+    end
+
+    subgraph "Application Server (Docker Container)"
+        C[Spring Boot Backend]
+    end
+    
+    subgraph "Data Layer (Docker Containers)"
+        D[MariaDB Database]
+        E[Redis Cache & Store]
+    end
+
+    A -- "HTTP/HTTPS (Port 3000)" --> B;
+    B -- "/api, /images (Proxy Pass)" --> C;
+    B -- "/ws-stomp (WebSocket Proxy)" --> C;
+    C -- "Real-time Bids/Chats" <--> A;
+    C -- "Real-time Notifications (SSE)" --> A;
+    C -- "JPA / QueryDSL" --> D;
+    C -- "Cache / Refresh Token" --> E;
+```
+
 1.  **사용자**: 웹 브라우저를 통해 프론트엔드 서버(Nginx)에 접속합니다.
 2.  **Frontend (Nginx + React)**: Nginx는 빌드된 React 정적 파일을 서빙합니다.
 3.  **Proxy**: 사용자의 모든 API 요청 (`/api/...`, `/ws-stomp/...`)은 Nginx 리버스 프록시를 통해 백엔드 서버로 전달됩니다.
