@@ -32,6 +32,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 	implementation 'org.springframework.boot:spring-boot-starter-cache'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
 
 	// QueryDSL 추가
 	implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'

@@ -65,7 +65,9 @@ public class SecurityConfig {
                                 "/oauth2/**",
                                 "/login/oauth2/code/google",
                                 "/api/v1/auth/reissue",
-                                "/ws-stomp/**"
+                                "/ws-stomp/**",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**"
                         ).permitAll()
 
                         // 2. 관리자(ADMIN)만 접근 가능한 경로

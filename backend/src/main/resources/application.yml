@@ -61,3 +61,11 @@ file:
 payment:
   toss:
     secret-key: "${TOSS_SECRET_KEY}"
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+  paths-to-match:
+    - /api/v1/**
