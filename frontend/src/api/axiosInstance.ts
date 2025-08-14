@@ -1,10 +1,11 @@
 import axios from 'axios';
 import useAuthStore from '../hooks/useAuthStore'; // zustand 스토어 import
 
-export const API_BASE_URL = 'http://localhost:8080';
+//export const API_BASE_URL = 'http://localhost:8080';
 
 const axiosInstance = axios.create({
-    baseURL: API_BASE_URL,
+    //baseURL: API_BASE_URL,
+    baseURL: '/',
     withCredentials: true,
 });
 
@@ -38,7 +39,7 @@ axiosInstance.interceptors.response.use(
             if (refreshToken) {
                 try {
                     // 토큰 재발급 API 호출
-                    const response = await axios.post(`${API_BASE_URL}/api/v1/auth/reissue`, {
+                    const response = await axiosInstance.post('/api/v1/auth/reissue', {
                         accessToken: useAuthStore.getState().accessToken,
                         refreshToken: refreshToken,
                     });
