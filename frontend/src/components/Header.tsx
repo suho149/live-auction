@@ -93,12 +93,12 @@ const Header = () => {
                         </div>
                     </>
                 ) : (
-                    <a
-                        href={`${API_BASE_URL}/oauth2/authorization/google`}
+                    <button
+                        onClick={() => window.location.href = `${API_BASE_URL}/oauth2/authorization/google`}
                         className="bg-gray-100 px-4 py-2 rounded-md hover:bg-gray-200 font-semibold"
                     >
                         로그인 / 회원가입
-                    </a>
+                    </button>
                 )}
             </nav>
         </header>
