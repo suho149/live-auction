@@ -5,6 +5,7 @@ import com.suho149.liveauction.global.oauth.CustomOAuth2UserService;
 import com.suho149.liveauction.global.oauth.OAuth2AuthenticationSuccessHandler;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -24,6 +25,9 @@ import java.util.Arrays;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+
+    @Value("${cors.allowed-origin}") // ★ 환경변수 주입
+    private String allowedOrigin;
 
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
@@ -131,7 +135,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "https://*.onrender.com")); // 프론트엔드 출처 허용
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigin)); // 주입받은 변수 사용
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);

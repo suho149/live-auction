@@ -48,7 +48,7 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       TOSS_SECRET_KEY: ${TOSS_SECRET_KEY}
     volumes:
-      - ./uploads:/app/uploads # 업로드된 이미지를 호스트와 공유
+      - /home/ubuntu/data/uploads:/app/uploads # 호스트 서버의 절대 경로로 변경
 
   frontend:
     build: ./frontend

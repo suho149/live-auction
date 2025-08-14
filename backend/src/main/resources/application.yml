@@ -69,3 +69,11 @@ springdoc:
     path: /v3/api-docs
   paths-to-match:
     - /api/v1/**
+
+# 프론트엔드 및 백엔드 URL 설정
+cors:
+  allowed-origin: "http://localhost:3000" # 로컬 개발용 기본값
+app:
+  # OAuth2 로그인 성공 후 리다이렉트 될 프론트엔드 URL
+  oauth2:
+    redirect-uri: "/auth/callback"

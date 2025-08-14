@@ -1,0 +1,80 @@
+name: CI/CD with Docker Hub
+
+on:
+  push:
+    branches: [ dev ]
+
+env:
+  DOCKER_HUB_ID: ${{ secrets.DOCKERHUB_USERNAME }}
+  BACKEND_IMAGE_NAME: upbid-backend
+  FRONTEND_IMAGE_NAME: upbid-frontend
+
+jobs:
+  # -------------------- 1. 빌드 및 이미지 푸시 잡 --------------------
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3
+
+      - name: Generate image tag
+        run: echo "IMAGE_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push Backend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ env.DOCKER_HUB_ID }}/${{ env.BACKEND_IMAGE_NAME }}:${{ env.IMAGE_TAG }}, ${{ env.DOCKER_HUB_ID }}/${{ env.BACKEND_IMAGE_NAME }}:latest
+
+      - name: Build and push Frontend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ env.DOCKER_HUB_ID }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ env.IMAGE_TAG }}, ${{ env.DOCKER_HUB_ID }}/${{ env.FRONTEND_IMAGE_NAME }}:latest
+
+  # -------------------- 2. OCI 서버에 배포 잡 --------------------
+  deploy:
+    needs: build-and-push # build-and-push 잡이 성공해야만 실행
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate image tag
+        run: echo "IMAGE_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Deploy to OCI Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.OCI_HOST }}
+          username: ${{ secrets.OCI_USERNAME }}
+          key: ${{ secrets.OCI_SSH_KEY }}
+          script: |
+            # 1. 프로젝트 디렉토리로 이동
+            cd /home/ubuntu/liveauction-project # 3단계에서 클론한 경로
+
+            # 2. 최신 설정 파일(docker-compose.yml 등)을 가져오기 위해 git pull
+            git pull origin dev
+
+            # 3. .env 파일 생성
+            echo "${{ secrets.PROD_ENV_FILE }}" > .env
+
+            # 4. 배포할 이미지 태그를 환경변수로 설정
+            export TAG=${{ env.IMAGE_TAG }}
+            
+            # 5. 최신 이미지를 Docker Hub에서 pull
+            docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull
+
+            # 6. 컨테이너 재시작 (build 없이)
+            docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+            # 7. 오래된 Docker 이미지 정리
+            docker image prune -f

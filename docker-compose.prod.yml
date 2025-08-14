@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  # mariadb와 redis는 Docker Hub 공식 이미지를 사용하므로 그대로 둡니다.
+
+  backend:
+    # 'DockerHub계정명/이미지이름:태그' 형식입니다.
+    # TAG는 CI/CD 스크립트에서 환경변수로 주입할 예정입니다.
+    image: suho1/upbid-backend:${TAG:-latest}
+    restart: unless-stopped
+    ports: [] # 외부 노출 X
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN}
+      APP_OAUTH2_REDIRECT_URI: ${APP_OAUTH2_REDIRECT_URI}
+
+  frontend:
+    image: suho1/upbid-frontend:${TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443" # HTTPS를 위해 미리 추가
