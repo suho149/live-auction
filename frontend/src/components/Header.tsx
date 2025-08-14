@@ -16,6 +16,7 @@ const Header = () => {
     // 스토어에서 상태와 액션을 직접 가져옴
     const { isLoggedIn, userInfo, logout, fetchUserInfo } = useAuthStore();
     const { unreadCount, fetchUnreadCount } = useNotificationStore();
+    const googleLoginUrl = `${API_BASE_URL}/oauth2/authorization/google`;
 
     // 앱이 로드될 때 (isLoggedIn 상태가 true이면) 사용자 정보를 가져옴
     useEffect(() => {
@@ -93,7 +94,7 @@ const Header = () => {
                     </>
                 ) : (
                     <button
-                        onClick={() => window.location.href = 'http://localhost:8080/oauth2/authorization/google'}
+                        onClick={() => window.location.href = `${API_BASE_URL}/oauth2/authorization/google`}
                         className="bg-gray-100 px-4 py-2 rounded-md hover:bg-gray-200 font-semibold"
                     >
                         로그인 / 회원가입
