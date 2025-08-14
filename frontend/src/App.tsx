@@ -1,5 +1,5 @@
 import React, {useEffect} from 'react';
-import {BrowserRouter as Router, Navigate, Route, Routes} from 'react-router-dom';
+import {BrowserRouter as Router, Navigate, Route, Routes, useLocation} from 'react-router-dom';
 import MainPage from './pages/MainPage';
 import AuthCallbackPage from './pages/AuthCallbackPage';
 import MyPage from './pages/MyPage';
@@ -24,6 +24,17 @@ import AdminUserPage from "./pages/admin/AdminUserPage";
 import AdminProductPage from "./pages/admin/AdminProductPage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminReportPage from "./pages/admin/AdminReportPage";
+
+// ★★★★★★★★★★★★★★★★★★★ 로그 추적용 컴포넌트 ★★★★★★★★★★★★★★★★★★★
+const LocationLogger = () => {
+    const location = useLocation();
+    useEffect(() => {
+        // 이 로그는 React Router가 URL을 성공적으로 변경했을 때만 찍힙니다.
+        console.log(`[React Router] Location changed to: ${location.pathname}${location.search}`);
+    }, [location]);
+    return null; // 화면에는 아무것도 그리지 않습니다.
+};
+// ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
 
 function App() {
 

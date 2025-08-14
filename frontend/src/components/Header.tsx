@@ -18,6 +18,15 @@ const Header = () => {
     const { unreadCount, fetchUnreadCount } = useNotificationStore();
     const googleLoginUrl = `${API_BASE_URL}/oauth2/authorization/google`;
 
+    const handleLoginClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+        // ★★★★★★★★★★★★★★★★★★★ 로그 추가 ★★★★★★★★★★★★★★★★★★★
+        console.log('[Header.tsx] Login link clicked!');
+        console.log('[Header.tsx] Target URL:', event.currentTarget.href);
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
+        // event.preventDefault(); // 만약 이 코드가 있다면 주석 처리하거나 삭제해야 합니다.
+    };
+
     // 앱이 로드될 때 (isLoggedIn 상태가 true이면) 사용자 정보를 가져옴
     useEffect(() => {
         if (isLoggedIn && !userInfo) {
@@ -93,12 +102,13 @@ const Header = () => {
                         </div>
                     </>
                 ) : (
-                    <button
-                        onClick={() => window.location.href = `${API_BASE_URL}/oauth2/authorization/google`}
+                    <a
+                        href={`${API_BASE_URL}/oauth2/authorization/google`}
+                        onClick={handleLoginClick} // <--- 여기에 onClick 핸들러 추가
                         className="bg-gray-100 px-4 py-2 rounded-md hover:bg-gray-200 font-semibold"
                     >
                         로그인 / 회원가입
-                    </button>
+                    </a>
                 )}
             </nav>
         </header>
