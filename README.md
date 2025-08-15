@@ -172,6 +172,7 @@
 -   API 키, 서버 접속 정보 등 모든 민감 정보는 GitHub Secrets에 안전하게 저장하여 코드 노출을 방지했습니다.
 
 <br>
+
 ## 📊 ERD (Entity Relationship Diagram)
 
 <img width="3840" height="1369" alt="Image" src="https://github.com/user-attachments/assets/0954fece-fee6-407e-851f-b532f946cf64" />
