@@ -119,6 +119,19 @@
 ## 🏛️ 시스템 아키텍처 (System Architecture)
 
 <p align="center">
+  <img src="https://mermaid.ink/img/pako:e-Nplk9rw-zAMZ_9KaNchQJIk3Qaddlvs0KF26y4lq9AkwZDElGEl_30lYyfZ-iB9SL7nfPskp4yAJr-RkO7Yw1G-YdJgQ-V-7aI5i8t16Q6T20vBGYM7FkC-Y2I1n84_Y9yN5l2L6S3H2t02sQ2l8k3j0z6xQ33c6gHj5Y8Zt9tKk9y_a7iG5w29-gA56K20Z249Ym8O_GZ28-Z58L-R8_P_u5XvG-Vb_B6F22v4K-a3w259p95b-3b36v7-F27uX0-lK0d8t2X0W-v6c_b2n7L_v587y_13_4-WJ48B0_87y29D7d34rA26O8j_b3-L4P523318L3f-f-X9lB5j9J-j9t_L-8-c_z-J6b33-X6Wp2t_gJ3D8L_v9P_1d2X39_b-j-v-n8_lZ3n3n_N_N6963n-n3P_v-f8v38-L1_Z-R5X9v-Z0p-h_b-f-3f-p_j_n8_V3N8L3r_R-1t_j_b-T1Z_v_N9R_N9_X_Z_j-n9_h_f-n8_b-R-F0X-N-R9X9v-n8_V_R-1p_j_v9_h_n-R-Z0n-v9_n-R9Z9v-n8_V-Z0p_j_n-f_n-Z9n-f-v8_n-V-Z0X-N9f_R9X9v-n-V_R9Z0X-N9j_v-f_v-n9_Z-f9Z9v-n-V-Z9Z0p_j_v-f_f-v9_Z-f-v8_n_n_V9Z0n-f-v8_n-V9Z0X-V9f_R-f-v8_n-Z0n_f-V9_R9Z0n_f-V8_n-Z0X_f-V8_n_n_Z0n_n_f-V8_Z-R0p_f-n_f_n_R9Z9v_f-n_R-n9_Z-R0p_n_n_R9Z9v_f-n_Z-n8_Z-R-f_f_n_n9Z9v_n_n_Z_R-f_f_f_n_R_n_R-n_f_Z_n8_f_f_Z_n8_Z_n-n_f_Z_n8_f_f_n_f_R_n_Z-n_f_Z_n8_n_f_Z_n8_f_Z_n-n_f_Z_n8_f_n_R_n_f_f_f_f_f_R_n_f_f_f_Z_n-n_f_f_Z_n-n_f_n_f_f_Z_n-n_f_f_f_f_f_n_f_f_Z_R-n_f_f_f_f_f_Z_n_R_n_f_Z_n-n_f_f_f_Z_n-n_f_f_f_f_Z_n_n_n_n_f_f_Z_n_n_n_f_f_f_f_n_n_n_f_f_Z_n_R_n_n_n_n_f_Z_n_n_f_f_f_Z_n_n_n_n_f_f_f_Z_n_n_n_n_f_f_n_n_n_f_f_n_n_n_f_f_n_n_n_n_n_n_f_Z_n_n_n_n_n_n_n_n_n_n_n_n_n_n_n_n_f_Z_n_n_n_n_n_n_n_n_n_f_n_n_n_f_Z_n_n_n_n_n_n_n_n_n_n_n_n_f_f_n_n_n_n_n_f_Z_n_n_n_n_n_n_n_n_f_f_Z_n_n_n_n_n_f_f_n_n_n_f_f_Z_n_n_n_n_n_f_f_f_f_n_f_Z_n_n_n_n_n_f_f_f_f_f_Z_n_n_n_n_f_f_f_f_n_f_f_f_Z_n_n_n_n_f_f_f_f_f_n_f_Z_n_n_n_n_f_f_f_f_f_f_n_f_Z_n_n_n_f_f_f_f_f_f_f_f_Z_n_n_f_f_f_f_f_f_f_f_f_Z_n_n_f_f_f_f_f_f_f_f_n_f_Z_n_n_f_f_f_f_f_f_f_f_n_f_n_f_n_f_Z_n_n_f_f_f_f_f_f_f_f_n_f_n_f_n_f_n_f_n_f_Z_n_n_f_f_f_f_f_f_f_f_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_Z_n_n_f_f_f_f_f_f_f_f_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_Z_n_f_f_f_f_f_f_f_f_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_Z_f_f_f_f_f_f_f_f_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_Z_f_f_f_f_f_f_f_f_f_f_f_f_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_n_f_Z" alt.svg" alt="Architecture Diagram">
+</p>
+
+1.  **사용자**: 웹 브라우저를 통해 `upbid.duckdns.org` 도메인으로 서비스에 접속합니다.
+2.  **Frontend (Nginx + React)**: OCI 서버의 Nginx 컨테이너가 사용자의 요청을 가장 먼저 받습니다. Nginx는 빌드된 React 정적 파일(HTML, CSS, JS)을 사용자에게 제공하여 화면을 렌더링합니다.
+3.  **Reverse Proxy**: 사용자의 모든 API 요청(예: `/api/v1`, `/oauth2`), WebSocket(`ws-stomp`), SSE(`subscribe`) 요청은 Nginx의 리버스 프록시 설정을 통해 내부 네트워크에 있는 백엔드(Spring Boot) 컨테이너로 안전하게 전달됩니다.
+4.  **Backend (Spring Boot)**: 비즈니스 로직을 처리하고, 필요에 따라 데이터베이스(MariaDB)와 캐시/데이터 저장소(Redis)와 통신합니다. 모든 컨테이너는 Docker의 내부 네트워크를 통해 서비스 이름으로 서로를 찾아 통신합니다.
+5.  **Database (MariaDB)**: 모든 영구 데이터(사용자, 상품, 거래 내역 등)를 저장합니다. 데이터는 호스트 서버의 볼륨에 마운트되어 컨테이너가 재시작되어도 유실되지 않습니다.
+6.  **Cache & Store (Redis)**: 자주 조회되는 사용자 인증 정보 캐싱, Refresh Token 저장 등 빠른 데이터 접근이 필요한 경우에 사용됩니다.
+
+## 🏛️ 시스템 아키텍처 (System Architecture)
+
+<p align="center">
   <!-- TODO: 아키텍처 다이어그램 이미지를 추가하세요. -->
   <img width="3840" height="3090" alt="Image" src="https://github.com/user-attachments/assets/b1d91c12-a0ce-4274-bd48-461f576e997c" />
 </p>
