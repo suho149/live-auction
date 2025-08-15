@@ -120,16 +120,16 @@
 
 <p align="center">
   <!-- TODO: 아키텍처 다이어그램 이미지를 추가하세요. -->
-  <img width="3840" height="3090" alt="Image" src="https://github.com/user-attachments/assets/b1d91c12-a0ce-4274-bd48-461f576e997c" />
+<!--   <img width="3840" height="3090" alt="Image" src="https://github.com/user-attachments/assets/b1d91c12-a0ce-4274-bd48-461f576e997c" /> -->
+  <img width="1724" height="3840" alt="Image" src="https://github.com/user-attachments/assets/b5d81f98-4aff-4c72-8e73-867cd097e28f" />
 </p>
 
-1.  **사용자**: 웹 브라우저를 통해 프론트엔드 서버(Nginx)에 접속합니다.
-2.  **Frontend (Nginx + React)**: Nginx는 빌드된 React 정적 파일을 서빙합니다.
-3.  **Proxy**: 사용자의 모든 API 요청 (`/api/...`, `/ws-stomp/...`)은 Nginx 리버스 프록시를 통해 백엔드 서버로 전달됩니다.
-4.  **Backend (Spring Boot)**: 비즈니스 로직을 처리하고, 필요에 따라 데이터베이스(MariaDB)와 캐시/데이터 저장소(Redis)와 통신합니다.
-5.  **Database (MariaDB)**: 모든 영구 데이터(사용자, 상품, 거래 내역 등)를 저장합니다.
-6.  **Cache & Store (Redis)**: 자주 조회되는 사용자 인증 정보를 캐싱하고, Refresh Token을 저장하여 시스템 성능과 보안을 강화합니다.
-7.  **실시간 통신**: WebSocket과 SSE 연결은 Nginx를 통해 백엔드 서버와 직접 수립됩니다.
+1.  **사용자**: 웹 브라우저를 통해 `upbid.duckdns.org` 도메인으로 서비스에 접속합니다.
+2.  **Frontend (Nginx + React)**: OCI 서버의 Nginx 컨테이너가 사용자의 요청을 가장 먼저 받습니다. Nginx는 빌드된 React 정적 파일(HTML, CSS, JS)을 사용자에게 제공하여 화면을 렌더링합니다.
+3.  **Reverse Proxy**: 사용자의 모든 API 요청(예: `/api/v1`, `/oauth2`), WebSocket(`ws-stomp`), SSE(`subscribe`) 요청은 Nginx의 리버스 프록시 설정을 통해 내부 네트워크에 있는 백엔드(Spring Boot) 컨테이너로 안전하게 전달됩니다.
+4.  **Backend (Spring Boot)**: 비즈니스 로직을 처리하고, 필요에 따라 데이터베이스(MariaDB)와 캐시/데이터 저장소(Redis)와 통신합니다. 모든 컨테이너는 Docker의 내부 네트워크를 통해 서비스 이름으로 서로를 찾아 통신합니다.
+5.  **Database (MariaDB)**: 모든 영구 데이터(사용자, 상품, 거래 내역 등)를 저장합니다. 데이터는 호스트 서버의 볼륨에 마운트되어 컨테이너가 재시작되어도 유실되지 않습니다.
+6.  **Cache & Store (Redis)**: 자주 조회되는 사용자 인증 정보 캐싱, Refresh Token 저장 등 빠른 데이터 접근이 필요한 경우에 사용됩니다.
 
 <br>
 
