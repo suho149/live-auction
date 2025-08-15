@@ -108,9 +108,11 @@
 -   **UI/UX**: `react-hot-toast` (실시간 알림), `react-responsive-carousel`, `react-chartjs-2`
 
 ### Infrastructure & DevOps
+-   **Cloud Provider**: Oracle Cloud Infrastructure (OCI)
 -   **Containerization**: Docker, Docker Compose
--   **Web Server**: Nginx (리버스 프록시 및 React 정적 파일 서빙)
--   **CI/CD**: GitHub Actions (구현 예정)
+-   **Web Server / Proxy**: Nginx (리버스 프록시 및 React 정적 파일 서빙)
+-   **CI/CD**: GitHub Actions
+-   **Image Registry**: Docker Hub
 
 <br>
 
@@ -131,6 +133,45 @@
 
 <br>
 
+## 🚀 배포 및 CI/CD (Deployment & CI/CD)
+
+본 프로젝트는 `git push` 명령 한 번으로 빌드부터 테스트, 운영 서버 배포까지 모든 과정이 자동으로 이루어지는 CI/CD 파이프라인을 구축했습니다. 이를 통해 개발자는 코드 작성에만 집중할 수 있으며, 배포 과정에서의 실수를 원천 차단하고 안정적인 서비스 운영을 보장합니다.
+
+### CI/CD 파이프라인 흐름
+
+1.  **Trigger (GitHub)**: 개발자가 로컬에서 작업한 코드를 `dev` 브랜치에 `push`하면, GitHub Actions 워크플로우가 자동으로 실행됩니다.
+2.  **Build (GitHub Actions)**:
+  -   GitHub Actions의 가상 머신(Ubuntu) 환경에서 소스 코드를 체크아웃합니다.
+  -   `Dockerfile`을 기반으로 **Backend(Spring Boot)**와 **Frontend(React)** 프로젝트를 각각 빌드하여 운영 환경용 Docker 이미지를 생성합니다. 이 과정에서 프론트엔드는 운영용 환경 변수(`.env.production`)를 사용하여 API 주소를 올바르게 설정합니다.
+3.  **Push to Registry (Docker Hub)**:
+  -   성공적으로 빌드된 두 개의 Docker 이미지는 버전 관리를 위해 고유한 Git Commit Hash 태그와 `latest` 태그가 부여되어 Docker Hub 개인 리포지토리에 업로드(push)됩니다.
+4.  **Deploy (GitHub Actions & OCI)**:
+  -   이미지 푸시가 완료되면, GitHub Actions는 SSH를 통해 Oracle Cloud에 배포된 운영 서버에 안전하게 접속합니다.
+  -   서버에서 배포 스크립트를 실행하여 다음 작업을 수행합니다.
+    -   최신 설정 파일(`docker-compose.yml` 등)을 `git pull`로 동기화합니다.
+    -   GitHub Secrets에 저장된 환경 변수로 `.env` 파일을 생성합니다.
+    -   Docker Hub에서 방금 업로드된 최신 버전의 이미지를 다운로드(`docker-compose pull`)합니다.
+    -   `docker-compose up -d` 명령으로 기존 컨테이너를 중단 없이 새로운 버전의 컨테이너로 교체하여 애플리케이션을 재시작합니다.
+    -   구버전의 불필요한 Docker 이미지를 삭제하여 서버 용량을 관리합니다.
+
+### 주요 설정 및 구현 내용
+
+#### 🔹 환경 분리 (Development vs. Production)
+-   **Spring Boot Profile**: `application.yml` (공통), `application-prod.yml` (운영)을 분리하여 환경별 설정을 관리합니다.
+-   **Docker Compose Override**: `docker-compose.yml` (공통/서버), `docker-compose.override.yml` (로컬 전용)을 사용하여, 서버의 절대 경로 볼륨 설정이 로컬 환경에 영향을 주지 않도록 구현했습니다.
+-   **React `.env` 파일**: `.env.local` (로컬)과 `.env.production` (운영) 파일을 통해 API 요청 주소를 환경에 따라 동적으로 설정합니다.
+
+#### 🔹 Nginx 리버스 프록시
+-   `nginx.conf`에 `location` 블록을 상세히 설정하여, 사용자의 모든 요청을 단일 도메인으로 받습니다.
+-   `/api/v1`, `/oauth2`, `/login/oauth2`, `/ws-stomp`, `/images` 등 백엔드로 전달되어야 할 모든 경로를 명시적으로 `proxy_pass` 처리하여, React Router와의 경로 충돌 문제를 해결했습니다.
+-   SSE(Server-Sent Events) 연결의 실시간성을 보장하기 위해 `proxy_buffering off` 등의 헤더를 추가했습니다.
+
+#### 🔹 CI/CD 워크플로우 (`.github/workflows/deploy.yml`)
+-   `build-and-push`와 `deploy` 두 개의 잡(Job)으로 파이프라인을 구성하여 역할을 명확히 분리했습니다.
+-   `appleboy/ssh-action`, `docker/build-push-action` 등 검증된 GitHub Actions 마켓플레이스 액션을 활용하여 파이프라인을 안정적이고 효율적으로 구축했습니다.
+-   API 키, 서버 접속 정보 등 모든 민감 정보는 GitHub Secrets에 안전하게 저장하여 코드 노출을 방지했습니다.
+
+<br>
 ## 📊 ERD (Entity Relationship Diagram)
 
 <img width="3840" height="1369" alt="Image" src="https://github.com/user-attachments/assets/0954fece-fee6-407e-851f-b532f946cf64" />

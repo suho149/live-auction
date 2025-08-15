@@ -12,6 +12,9 @@
 /db-data/
 /redis-data/
 
+# Local docker-compose override
+docker-compose.override.yml
+
 # IDE 설정 파일 (공통)
 .idea/
 .vscode/
