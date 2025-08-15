@@ -2,7 +2,7 @@ name: CI/CD with Docker Hub
 
 on:
   push:
-    branches: [ dev ]
+    branches: [ main ]
 
 env:
   DOCKER_HUB_ID: ${{ secrets.DOCKERHUB_USERNAME }}
