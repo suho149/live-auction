@@ -57,6 +57,10 @@ jobs:
           host: ${{ secrets.OCI_HOST }}
           username: ${{ secrets.OCI_USERNAME }}
           key: ${{ secrets.OCI_SSH_KEY }}
+
+          # 명령어 실행 시간을 최대 10분(600초)까지 기다려줍니다.
+          command_timeout: 10m
+
           script: |
             # 1. 프로젝트 디렉토리로 이동
             cd /home/ubuntu/liveauction-project # 3단계에서 클론한 경로
