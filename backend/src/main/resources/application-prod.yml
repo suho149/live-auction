@@ -1,7 +1,7 @@
 spring:
   jpa:
     hibernate:
-      ddl-auto: none # ★ 운영에서는 절대 create, update를 사용하지 않습니다. 스키마 변경은 DB 마이그레이션 툴(Flyway 등)을 사용하거나 수동으로 관리합니다.
+      ddl-auto: none # 운영에서는 절대 create, update를 사용하지 않습니다. 스키마 변경은 DB 마이그레이션 툴(Flyway 등)을 사용하거나 수동으로 관리합니다.
     show-sql: false # 운영 환경에서는 성능 저하를 막기 위해 false로 설정
     properties:
       hibernate.format_sql: false
