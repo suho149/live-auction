@@ -1,31 +1,17 @@
+# ===================================================================
+# 공통 Application Properties
+# - 이 파일에는 local, prod 등 특정 환경에 종속되지 않는 설정만 남깁니다.
+# ===================================================================
 spring:
-
-  profiles:
-    active: local
-
+  # JPA 공통 설정
   jpa:
-    hibernate:
-      ddl-auto: create-drop # 개발 초기에는 update 또는 create, 운영에서는 none
     show-sql: true
     properties:
       default_batch_fetch_size: 100
       hibernate.show_sql: true
       hibernate.format_sql: true
       hibernate.use_sql_comments: true
-
-  datasource:
-    driver-class-name: org.mariadb.jdbc.Driver
-    # docker-compose.yml의 DB_DATABASE와 동일한 값을 참조
-    url: "jdbc:mariadb://localhost:3306/${DB_DATABASE}"
-    username: "${DB_USER}"
-    password: "${DB_PASSWORD}"
-
-  # data 블록 아래에 redis 설정을 위치시킴
-  data:
-    redis:
-      host: localhost
-      port: 6379
-
+  # Security 공통 설정
   security:
     oauth2:
       client:
@@ -36,27 +22,26 @@ spring:
             scope:
               - profile
               - email
-
+  # Cache 공통 설정
   cache:
-    type: redis # 기본 캐시 타입을 redis로 지정
+    type: redis
     redis:
-      time-to-live: 600000 # 캐시 만료 시간 (10분, 단위: 밀리초)
-      cache-null-values: false # null 값은 캐싱하지 않음
-
+      time-to-live: 600000
+      cache-null-values: false
+  # Servlet 공통 설정
   servlet:
     multipart:
-      max-file-size: 10MB  # 개별 파일 최대 크기
-      max-request-size: 100MB # 전체 요청 최대 크기 (여러 파일 동시 업로드 대비)
+      max-file-size: 10MB
+      max-request-size: 100MB
 
-# JWT 설정
+# 외부 서비스 공통 설정
 jwt:
   secret: "${JWT_SECRET_KEY}"
   access-token-validity-in-seconds: 1800
   refresh-token-validity-in-seconds: 604800
 
-# 파일 업로드 설정
 file:
-  upload-dir: ./uploads/ # 프로젝트 루트 아래에 uploads 폴더를 생성하여 저장
+  upload-dir: ./uploads/
 
 payment:
   toss:
@@ -70,14 +55,10 @@ springdoc:
   paths-to-match:
     - /api/v1/**
 
-# 프론트엔드 및 백엔드 URL 설정
-cors:
-  allowed-origin: "http://localhost:3000" # 로컬 개발용 기본값
-app:
-  # OAuth2 로그인 성공 후 리다이렉트 될 프론트엔드 URL
-  oauth2:
-    redirect-uri: "/auth/callback"
-
-## SweetTracker API 설정
-#sweet-tracker:
-#  api-key: "${SWEET_TRACKER_API_KEY}"
+# --- Logging Configuration (공통) ---
+# 기본 로깅 레벨은 INFO로 설정하고, 디버깅이 필요한 패키지만 DEBUG로 지정합니다.
+logging:
+  level:
+    root: INFO
+    com.suho149.liveauction: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE

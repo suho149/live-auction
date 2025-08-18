@@ -1,35 +1,21 @@
+# ===================================================================
+# 운영(prod) 프로필 전용 설정
+# ===================================================================
 spring:
+  # JPA: 운영에서는 절대로 스키마를 건드리지 않음
   jpa:
     hibernate:
-      ddl-auto: none # 운영에서는 절대 create, update를 사용하지 않습니다. 스키마 변경은 DB 마이그레이션 툴(Flyway 등)을 사용하거나 수동으로 관리합니다.
-    show-sql: false # 운영 환경에서는 성능 저하를 막기 위해 false로 설정
+      ddl-auto: none
+    show-sql: false
     properties:
       hibernate.format_sql: false
       hibernate.use_sql_comments: false
 
-  # 데이터베이스와 Redis 접속 정보는 docker-compose 환경 변수를 그대로 사용합니다.
-  # 따라서 여기에는 명시할 필요가 없습니다.
-
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-          # 클라이언트 ID와 시크릿은 docker-compose를 통해 환경변수로 주입되므로 여기서 정의할 필요 없습니다.
-          # 하지만 리다이렉트 URI는 운영 서버에 맞게 설정해야 할 수 있습니다. (대부분 클라우드 콘솔에서 설정)
-
-# 로깅 레벨 설정 (운영 환경에서는 INFO 레벨만 출력)
+# 로깅 레벨: 운영에서는 우리 코드도 INFO 레벨만 출력
 logging:
   level:
-    root: INFO
     com.suho149.liveauction: INFO
-    org.hibernate.SQL: off
-    org.hibernate.type.descriptor.sql.BasicBinder: off
+    org.hibernate.orm.jdbc.bind: OFF
 
-# 프론트엔드 및 백엔드 URL 설정
-cors:
-  allowed-origin: "http://localhost:3000" # 로컬 개발용 기본값
-app:
-  # OAuth2 로그인 성공 후 리다이렉트 될 프론트엔드 URL
-  oauth2:
-    redirect-uri: "/auth/callback"
+# 프론트엔드 URL 및 앱 설정은 docker-compose.prod.yml에서 환경 변수로 주입되므로,
+# 이 파일에는 정의할 필요가 없습니다. (중복 방지)

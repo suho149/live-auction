@@ -1,22 +1,28 @@
-version: '3.8'
+# 운영 환경 전용 docker-compose 설정
 
 services:
-  # mariadb와 redis는 Docker Hub 공식 이미지를 사용하므로 그대로 둡니다.
-
   backend:
-    # 'DockerHub계정명/이미지이름:태그' 형식입니다.
-    # TAG는 CI/CD 스크립트에서 환경변수로 주입할 예정입니다.
-    image: suho1/upbid-backend:${TAG:-latest}
+    image: suho149/upbid-backend:${TAG:-latest}
     restart: unless-stopped
-    ports: [] # 외부 노출 X
+    ports: []
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      # 운영 Docker 네트워크에서 통신하기 위한 DB/Redis 주소
+      SPRING_DATASOURCE_URL: jdbc:mariadb://mariadb:3306/${DB_DATABASE}
+      SPRING_DATA_REDIS_HOST: redis
+      # GitHub Secret에서 주입될 운영용 프론트엔드 URL
       CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN}
       APP_OAUTH2_REDIRECT_URI: ${APP_OAUTH2_REDIRECT_URI}
 
   frontend:
-    image: suho1/upbid-frontend:${TAG:-latest}
+    image: suho149/upbid-frontend:${TAG:-latest}
     restart: unless-stopped
     ports:
       - "80:80"
-      - "443:443" # HTTPS를 위해 미리 추가
+      - "443:443"
+
+  # 운영 환경에서는 DB/Redis 포트를 외부에 노출하지 않음
+  mariadb:
+    ports: []
+  redis:
+    ports: []
