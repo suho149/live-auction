@@ -17,6 +17,7 @@ export interface PurchaseHistory {
     deliveryStatus: DeliveryStatus;
     trackingNumber: string | null;
     deliveryId: number | null;
+    carrierId: string | null;
 }
 
 // 구매 내역 API 호출 함수
@@ -33,6 +34,8 @@ export interface SaleHistory {
     finalPrice: number;
     soldAt: string;
     buyerName: string;
+    deliveryId: number | null;
+    deliveryStatus: DeliveryStatus | null;
 }
 
 // 판매 내역 API 호출 함수

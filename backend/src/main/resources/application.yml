@@ -5,7 +5,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update # 개발 초기에는 update 또는 create, 운영에서는 none
+      ddl-auto: create-drop # 개발 초기에는 update 또는 create, 운영에서는 none
     show-sql: true
     properties:
       default_batch_fetch_size: 100
@@ -77,3 +77,7 @@ app:
   # OAuth2 로그인 성공 후 리다이렉트 될 프론트엔드 URL
   oauth2:
     redirect-uri: "/auth/callback"
+
+## SweetTracker API 설정
+#sweet-tracker:
+#  api-key: "${SWEET_TRACKER_API_KEY}"

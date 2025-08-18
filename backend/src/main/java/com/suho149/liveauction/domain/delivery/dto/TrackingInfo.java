@@ -10,6 +10,7 @@ import java.util.List;
 @AllArgsConstructor
 public class TrackingInfo {
     private String trackingNumber;
+    private String carrierName;
     private String senderName;
     private String recipientName;
     private String productName;

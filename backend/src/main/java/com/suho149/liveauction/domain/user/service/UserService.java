@@ -65,16 +65,20 @@ public class UserService {
     }
 
     public List<SaleHistoryResponse> getMySaleHistory(UserPrincipal userPrincipal) {
-        // 1. 내가 판매하고, 판매 완료된 상품 목록을 조회
+        // 1. 내가 판매하고, 판매 완료된 상품 목록을 조회합니다.
+        //    (findProductsBySellerIdAndStatus는 ProductRepository에 이미 존재하는 메소드입니다.)
         List<Product> soldProducts = productRepository.findProductsBySellerIdAndStatus(userPrincipal.getId(), ProductStatus.SOLD_OUT);
 
-        // 2. 각 상품에 대한 결제 정보를 찾아 판매 완료 시간을 매핑
+        // 2. 각 상품에 대한 결제 정보를 찾아 DTO로 변환합니다.
         return soldProducts.stream()
                 .map(product -> {
-                    // 해당 상품의 결제 정보를 찾음 (판매 완료되었으므로 반드시 존재)
+                    // 3. 해당 상품의 결제 정보를 찾습니다.
+                    //    (findByProductId는 PaymentRepository에 이미 존재하는 메소드입니다.)
                     Payment payment = paymentRepository.findByProductId(product.getId())
                             .orElseThrow(() -> new IllegalStateException("판매 완료된 상품의 결제 정보를 찾을 수 없습니다: " + product.getId()));
-                    return SaleHistoryResponse.from(product, payment.getPaidAt());
+
+                    // Product 객체와 Payment 객체를 모두 전달합니다.
+                    return SaleHistoryResponse.from(product, payment);
                 })
                 .collect(Collectors.toList());
     }

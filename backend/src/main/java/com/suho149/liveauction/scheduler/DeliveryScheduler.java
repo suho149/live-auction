@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @Slf4j
 @Component
@@ -27,44 +26,44 @@ public class DeliveryScheduler {
     private final NotificationService notificationService;
     private final SettlementService settlementService;
 
-    /**
-     * 매일 평일 오후 4시에 실행되어, '배송 준비 중'인 모든 주문을 일괄 '발송 처리'합니다.
-     * (실제 택배사 연동 시뮬레이션)
-     */
-//    @Scheduled(cron = "0 0 16 * * MON-FRI") // 평일 오후 4시 정각
-    @Scheduled(cron = "0 * * * * *") // 1분마다 실행되도록 변경(테스트용)
-    @Transactional
-    public void processDailyShipments() {
-        log.info("일일 배송 일괄 처리 스케줄러 시작...");
-
-        // 1. '배송 준비 중(PENDING)' 상태인 모든 배송 건 조회
-        List<Delivery> deliveriesToShip = deliveryRepository.findByStatus(DeliveryStatus.PENDING);
-
-        if (deliveriesToShip.isEmpty()) {
-            log.info("발송할 배송 건이 없습니다.");
-            return;
-        }
-
-        log.info("총 {}건의 배송을 처리합니다.", deliveriesToShip.size());
-
-        for (Delivery delivery : deliveriesToShip) {
-            // 2. 가상의 운송장 번호 생성
-            String trackingNumber = "CJ" + UUID.randomUUID().toString().substring(0, 10).toUpperCase();
-
-            // 3. 발송 처리 (상태 변경 및 운송장 번호 저장)
-            delivery.ship(trackingNumber);
-
-            // 4. 구매자에게 알림 발송
-            String content = "'" + delivery.getPayment().getProduct().getName() + "' 상품이 발송되었습니다!";
-            notificationService.send(
-                    delivery.getPayment().getBuyer(),
-                    NotificationType.DELIVERY,
-                    content,
-                    "/mypage" // 나의 경매 페이지로 링크
-            );
-        }
-        log.info("일일 배송 일괄 처리 완료.");
-    }
+//    /**
+//     * 매일 평일 오후 4시에 실행되어, '배송 준비 중'인 모든 주문을 일괄 '발송 처리'합니다.
+//     * (실제 택배사 연동 시뮬레이션)
+//     */
+////    @Scheduled(cron = "0 0 16 * * MON-FRI") // 평일 오후 4시 정각
+//    @Scheduled(cron = "0 * * * * *") // 1분마다 실행되도록 변경(테스트용)
+//    @Transactional
+//    public void processDailyShipments() {
+//        log.info("일일 배송 일괄 처리 스케줄러 시작...");
+//
+//        // 1. '배송 준비 중(PENDING)' 상태인 모든 배송 건 조회
+//        List<Delivery> deliveriesToShip = deliveryRepository.findByStatus(DeliveryStatus.PENDING);
+//
+//        if (deliveriesToShip.isEmpty()) {
+//            log.info("발송할 배송 건이 없습니다.");
+//            return;
+//        }
+//
+//        log.info("총 {}건의 배송을 처리합니다.", deliveriesToShip.size());
+//
+//        for (Delivery delivery : deliveriesToShip) {
+//            // 2. 가상의 운송장 번호 생성
+//            String trackingNumber = "CJ" + UUID.randomUUID().toString().substring(0, 10).toUpperCase();
+//
+//            // 3. 발송 처리 (상태 변경 및 운송장 번호 저장)
+//            delivery.ship(trackingNumber);
+//
+//            // 4. 구매자에게 알림 발송
+//            String content = "'" + delivery.getPayment().getProduct().getName() + "' 상품이 발송되었습니다!";
+//            notificationService.send(
+//                    delivery.getPayment().getBuyer(),
+//                    NotificationType.DELIVERY,
+//                    content,
+//                    "/mypage" // 나의 경매 페이지로 링크
+//            );
+//        }
+//        log.info("일일 배송 일괄 처리 완료.");
+//    }
 
     @Scheduled(cron = "0 0 1 * * *") // 매일 새벽 1시에 실행
     @Transactional
@@ -98,13 +97,11 @@ public class DeliveryScheduler {
      * 1시간마다 실행되어, '배송 중'인 상품들의 상태를 확인하고 '배송 완료'로 변경합니다.
      * (외부 택배사 API 연동 시뮬레이션)
      */
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedRate = 60000) // 테스트 용도
 //    @Scheduled(fixedRate = 3600000) // 1시간 (3,600,000 밀리초) 마다 실행
     @Transactional
-    public void updateDeliveryStatusToCompleted() {
+    public void updateDeliveryStatusToCompleted() { // ★ 메소드 이름 원래대로
         log.info("배송 완료 상태 업데이트 스케줄러 시작...");
-
-        // 1. '배송 중(SHIPPING)' 상태인 모든 배송 건 조회
         List<Delivery> deliveriesInTransit = deliveryRepository.findByStatus(DeliveryStatus.SHIPPING);
 
         if (deliveriesInTransit.isEmpty()) {
@@ -114,23 +111,20 @@ public class DeliveryScheduler {
 
         for (Delivery delivery : deliveriesInTransit) {
             LocalDateTime shippedAt = delivery.getShippedAt();
-            if (shippedAt == null) continue; // 발송 시간이 없으면 건너뜀
+            if (shippedAt == null) continue;
 
-//            // 2. [시뮬레이션 로직] 발송된 지 14시간이 지났으면 '배송 완료'로 간주
-//            long hoursPassed = Duration.between(shippedAt, LocalDateTime.now()).toHours();
             // [시뮬레이션 로직] 발송된 지 5분이 지났으면 '배송 완료'로 간주
             long minutesPassed = Duration.between(shippedAt, LocalDateTime.now()).toMinutes();
             if (minutesPassed >= 5) {
-                delivery.completeDelivery(); // status를 COMPLETED로, completedAt을 현재시간으로 설정
-                log.info("배송 ID {} '배송 완료' 처리.", delivery.getId());
+                delivery.completeDelivery();
+                log.info("배송 ID {} '배송 완료' 처리 (시뮬레이션).", delivery.getId());
 
-                // 3. 구매자에게 '배송 완료' 알림 발송
                 String content = "'" + delivery.getPayment().getProduct().getName() + "' 상품의 배송이 완료되었습니다. 마이페이지에서 구매를 확정해주세요.";
                 notificationService.send(
                         delivery.getPayment().getBuyer(),
                         NotificationType.DELIVERY,
                         content,
-                        "/mypage?tab=purchase" // 마이페이지 구매내역 탭으로
+                        "/mypage?tab=purchase"
                 );
             }
         }

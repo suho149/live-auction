@@ -28,6 +28,9 @@ public class Delivery {
     @Column(nullable = false)
     private DeliveryStatus status;
 
+    private String carrierId; // 택배사 코드 (예: "04" for CJ대한통운)
+    private String carrierName; // 택배사 이름 (예: "CJ대한통운")
+
     private String trackingNumber; // 운송장 번호
     private LocalDateTime shippedAt; // 발송 일시
     private LocalDateTime completedAt; // 배송 완료 일시
@@ -45,7 +48,9 @@ public class Delivery {
     }
 
     // 발송 처리 메소드
-    public void ship(String trackingNumber) {
+    public void ship(String carrierId, String carrierName, String trackingNumber) {
+        this.carrierId = carrierId;
+        this.carrierName = carrierName;
         this.trackingNumber = trackingNumber;
         this.status = DeliveryStatus.SHIPPING;
         this.shippedAt = LocalDateTime.now();

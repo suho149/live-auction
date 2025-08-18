@@ -28,6 +28,7 @@ public class DeliveryController {
         return ResponseEntity.ok().build();
     }
 
+    // 예시: /deliveries/track?carrierId=04&trackingNumber=123456789
     @GetMapping("/deliveries/track/{trackingNumber}")
     public ResponseEntity<TrackingInfo> getTrackingInfo(@PathVariable String trackingNumber) {
         return ResponseEntity.ok(deliveryService.getTrackingInfo(trackingNumber));

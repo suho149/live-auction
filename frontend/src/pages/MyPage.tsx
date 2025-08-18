@@ -19,6 +19,7 @@ import TrackingModal from "../components/TrackingModal";
 import { confirmPurchase } from '../api/deliveryApi';
 import { DeliveryInfo as Address } from '../api/deliveryApi';
 import { updateDefaultAddress } from '../api/userApi';
+import ShippingModal from '../components/ShippingModal';
 
 // 구매 내역을 표시할 컴포넌트
 const PurchaseHistoryList = () => {
@@ -27,6 +28,8 @@ const PurchaseHistoryList = () => {
     const [reviewTarget, setReviewTarget] = useState<{productId: number, productName: string} | null>(null);
     const [deliveryTarget, setDeliveryTarget] = useState<number | null>(null);
     const [trackingTarget, setTrackingTarget] = useState<string | null>(null);
+
+    const [shippingTarget, setShippingTarget] = useState<{ deliveryId: number; productName: string; } | null>(null);
 
     const getHistory = useCallback(async () => {
         setLoading(true);
@@ -65,63 +68,79 @@ const PurchaseHistoryList = () => {
     if (history.length === 0) return <p className="text-center p-4">구매 내역이 없습니다.</p>;
 
     const renderActionButtons = (item: PurchaseHistory) => {
-        const actions: { [key in DeliveryStatus]?: React.ReactNode } = {
-            ADDRESS_PENDING: <button onClick={() => setDeliveryTarget(item.paymentId)} className="bg-orange-500 text-white text-sm font-semibold px-3 py-2 rounded-md hover:bg-orange-600">배송지 입력</button>,
-            PENDING: (
-                <span className="text-sm text-gray-500 font-medium px-3 py-2">
-                배송 준비 중
-                </span>
-            ),
-
-            SHIPPING: (
-                <button
-                    onClick={() => setTrackingTarget(item.trackingNumber)}
-                    className="bg-blue-500 text-white text-sm font-semibold px-3 py-2 rounded-md hover:bg-blue-600 w-full"
-                >
-                    배송 조회
-                </button>
-            ),
-            COMPLETED: <button onClick={() => handleConfirmPurchase(item.deliveryId)} className="bg-purple-500 text-white text-sm font-semibold px-3 py-2 rounded-md hover:bg-purple-600 w-full">구매 확정</button>,
-            CONFIRMED: <span className="text-sm text-green-600 font-medium px-3 py-2">거래 완료</span>,
-            CANCELED: <span className="text-sm text-red-500 font-medium px-3 py-2">주문 취소</span>,
-        };
-        return actions[item.deliveryStatus] || null;
+        switch (item.deliveryStatus) {
+            case 'ADDRESS_PENDING':
+                return <button onClick={() => setDeliveryTarget(item.paymentId)} className="w-full bg-orange-500 text-white text-sm font-semibold px-3 py-2 rounded-md hover:bg-orange-600">배송지 입력</button>;
+            case 'PENDING':
+                return <span className="w-full text-center text-sm text-gray-500 font-medium px-3 py-2">배송 준비 중</span>;
+            case 'SHIPPING':
+                return (
+                    <div className="flex flex-col items-center space-y-1">
+                        <button onClick={() => setTrackingTarget(item.trackingNumber!)} className="w-full bg-blue-500 text-white text-sm font-semibold px-3 py-2 rounded-md hover:bg-blue-600">배송 조회</button>
+                        <p className="text-xs text-gray-500">운송장 번호: {item.trackingNumber}</p>
+                    </div>
+                );
+            case 'COMPLETED':
+                return (
+                    <div className="flex flex-col items-center space-y-1">
+                        <button onClick={() => handleConfirmPurchase(item.deliveryId)} className="w-full bg-purple-500 text-white text-sm font-semibold px-3 py-2 rounded-md hover:bg-purple-600">구매 확정</button>
+                        <button onClick={() => setTrackingTarget(item.trackingNumber!)} className="text-xs text-gray-500 hover:text-blue-600">배송 조회</button>
+                    </div>
+                );
+            case 'CONFIRMED':
+                return (
+                    <div className="flex flex-col items-center space-y-1">
+                        {/* span을 div로 감싸고 text-center를 적용하여 버튼과 정렬을 맞춥니다. */}
+                        <div className="w-full text-center">
+                            <span className="text-sm text-green-600 font-medium px-3 py-2">거래 완료</span>
+                        </div>
+                        {/*/!* 운송장 번호 표시 로직은 유지합니다. *!/*/}
+                        {/*{item.trackingNumber && (*/}
+                        {/*    <p className="text-xs text-gray-500">운송장: {item.trackingNumber}</p>*/}
+                        {/*)}*/}
+                    </div>
+                );
+            case 'CANCELED':
+                return <span className="w-full text-center text-sm text-red-500 font-medium px-3 py-2">주문 취소</span>;
+            default:
+                return null;
+        }
     };
 
     return (
         <>
             <ul className="divide-y divide-gray-200">
                 {history.map(item => (
-                    <li key={item.paymentId} className="p-4">
-                        <div className="flex justify-between items-center">
-                            <Link to={`/products/${item.productId}`} className="flex items-center space-x-4 flex-grow">
-                                <img
-                                    src={item.productThumbnailUrl ? `${API_BASE_URL}${item.productThumbnailUrl}` : 'https://placehold.co/100x100?text=No+Image'}
-                                    alt={item.productName}
-                                    className="w-20 h-20 object-cover rounded-md flex-shrink-0 bg-gray-200"
-                                />
-                                <div className="flex-1">
-                                    <p className="text-sm text-gray-500">{new Date(item.purchasedAt).toLocaleDateString()}</p>
-                                    <p className="font-semibold text-lg text-gray-800">{item.productName}</p>
-                                    <p className="font-bold text-blue-600">{item.finalPrice.toLocaleString()}원</p>
-                                </div>
-                            </Link>
-
-                            <div className="ml-4 flex-shrink-0 flex flex-col items-end space-y-2 w-32">
-                                {/* 1. 배송 상태 표시 */}
-                                {renderActionButtons(item)}
-
-                                {/* 2. 리뷰 작성 버튼 (배송 완료 시에만 표시) */}
-                                {item.deliveryStatus === 'CONFIRMED' && (
-                                    item.reviewWritten ?
-                                        <button disabled className="bg-gray-300 text-white text-xs font-semibold px-2 py-1 rounded-md cursor-not-allowed w-full">리뷰 작성 완료</button> :
-                                        <button onClick={() => setReviewTarget({ productId: item.productId, productName: item.productName })} className="bg-gray-600 text-white text-xs font-semibold px-2 py-1 rounded-md hover:bg-gray-700 w-full">리뷰 쓰기</button>
-                                )}
+                    <li key={item.productId} className="p-4 flex justify-between items-center">
+                        <Link to={`/products/${item.productId}`} className="flex items-center space-x-4 flex-grow">
+                            <img
+                                src={item.productThumbnailUrl ? `${API_BASE_URL}${item.productThumbnailUrl}` : 'https://placehold.co/100x100?text=No+Image'}
+                                alt={item.productName}
+                                className="w-20 h-20 object-cover rounded-md flex-shrink-0 bg-gray-200"
+                            />
+                            <div className="flex-1">
+                                <p className="text-sm text-gray-500">{new Date(item.purchasedAt).toLocaleDateString()}</p>
+                                <p className="font-semibold text-lg text-gray-800">{item.productName}</p>
+                                <p className="font-bold text-blue-600">{item.finalPrice.toLocaleString()}원</p>
                             </div>
+                        </Link>
+
+                        <div className="ml-4 flex-shrink-0 flex flex-col items-end space-y-2 w-40">
+                            {/* 배송 상태에 따른 버튼/텍스트 */}
+                            <div className="w-full">
+                                {renderActionButtons(item)}
+                            </div>
+
+                            {/* 리뷰 작성 버튼 (거래 완료 시에만 표시) */}
+                            {item.deliveryStatus === 'CONFIRMED' && (
+                                item.reviewWritten ?
+                                    <button disabled className="bg-gray-300 text-white text-xs font-semibold px-2 py-1 rounded-md cursor-not-allowed w-full">리뷰 작성 완료</button> :
+                                    <button onClick={() => setReviewTarget({ productId: item.productId, productName: item.productName })} className="bg-gray-600 text-white text-xs font-semibold px-2 py-1 rounded-md hover:bg-gray-700 w-full">리뷰 쓰기</button>
+                            )}
                         </div>
-                        {item.trackingNumber && (
-                            <p className="text-right text-xs mt-1 text-gray-500">운송장 번호: {item.trackingNumber}</p>
-                        )}
+                        {/*{item.trackingNumber && (*/}
+                        {/*    <p className="text-right text-xs mt-1 text-gray-500">운송장 번호: {item.trackingNumber}</p>*/}
+                        {/*)}*/}
                     </li>
                 ))}
             </ul>
@@ -145,6 +164,13 @@ const PurchaseHistoryList = () => {
                 onClose={() => setTrackingTarget(null)}
                 trackingNumber={trackingTarget}
             />
+            <ShippingModal
+                isOpen={!!shippingTarget}
+                onClose={() => setShippingTarget(null)}
+                deliveryId={shippingTarget?.deliveryId!}
+                productName={shippingTarget?.productName!}
+                onSubmitSuccess={getHistory}
+            />
         </>
     );
 };
@@ -154,45 +180,86 @@ const SaleHistoryList = () => {
     const [history, setHistory] = useState<SaleHistory[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const getHistory = async () => {
-            try {
-                const data = await fetchSaleHistory();
-                setHistory(data);
-            } catch (error) {
-                console.error("판매 내역을 불러오는 데 실패했습니다.", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        getHistory();
+    const [shippingTarget, setShippingTarget] = useState<{ deliveryId: number; productName: string; } | null>(null);
+
+    const getHistory = useCallback(async () => {
+        setLoading(true);
+        try {
+            const data = await fetchSaleHistory();
+            setHistory(data);
+        } catch (error) {
+            console.error("판매 내역을 불러오는 데 실패했습니다.", error);
+        } finally {
+            setLoading(false);
+        }
     }, []);
+
+    useEffect(() => {
+        getHistory();
+    }, [getHistory]);
 
     if (loading) return <p className="text-center p-4">로딩 중...</p>;
     if (history.length === 0) return <p className="text-center p-4">판매 내역이 없습니다.</p>;
 
     return (
-        <ul className="divide-y divide-gray-200">
-            {history.map(item => (
-                <li key={item.productId} className="p-4 hover:bg-gray-50">
-                    <Link to={`/products/${item.productId}`} className="flex items-center space-x-4">
-                        <img
-                            src={item.productThumbnailUrl ? `${API_BASE_URL}${item.productThumbnailUrl}` : 'https://placehold.co/100x100?text=No+Image'}
-                            alt={item.productName}
-                            className="w-20 h-20 object-cover rounded-md flex-shrink-0 bg-gray-200"
-                        />
-                        <div className="flex-1">
-                            <p className="text-sm text-gray-500">{new Date(item.soldAt).toLocaleDateString()}</p>
-                            <p className="font-semibold text-lg text-gray-800">{item.productName}</p>
-                            <div className="flex justify-between items-center mt-1">
-                                <p className="font-bold text-blue-600">{item.finalPrice.toLocaleString()}원</p>
+        <>
+            <ul className="divide-y divide-gray-200">
+                {history.map(item => {
+                    // history 배열의 각 'item'이 실제로 어떤 데이터를 가지고 있는지 확인합니다.
+                    console.log("판매 내역 데이터:", item);
+
+                    return (
+                        <li key={item.productId} className="p-4 flex justify-between items-center hover:bg-gray-50">
+                            <Link to={`/products/${item.productId}`} className="flex items-center space-x-4 flex-grow">
+                                <img
+                                    src={item.productThumbnailUrl ? `${API_BASE_URL}${item.productThumbnailUrl}` : 'https://placehold.co/100x100?text=No+Image'}
+                                    alt={item.productName}
+                                    className="w-20 h-20 object-cover rounded-md flex-shrink-0 bg-gray-200"
+                                />
+                                <div className="flex-1">
+                                    <p className="text-sm text-gray-500">{new Date(item.soldAt).toLocaleDateString()}</p>
+                                    <p className="font-semibold text-lg text-gray-800">{item.productName}</p>
+                                    <div className="flex justify-between items-center mt-1">
+                                        <p className="font-bold text-blue-600">{item.finalPrice.toLocaleString()}원</p>
+                                        {/*<p className="text-sm text-gray-600">구매자: {item.buyerName}</p>*/}
+                                    </div>
+                                </div>
+                            </Link>
+
+                            {/* 배송 상태 및 액션 버튼 추가 */}
+                            <div className="ml-4 flex-shrink-0 flex flex-col items-end w-40 text-right space-y-1">
+                                {/* 배송 상태 및 액션 버튼 */}
+                                <div>
+                                    {item.deliveryStatus === 'PENDING' && (
+                                        <button
+                                            onClick={() => setShippingTarget({ deliveryId: item.deliveryId!, productName: item.productName })}
+                                            className="bg-green-500 text-white text-sm font-semibold px-3 py-2 rounded-md hover:bg-green-600"
+                                        >
+                                            발송 처리
+                                        </button>
+                                    )}
+                                    {item.deliveryStatus === 'SHIPPING' && <span className="text-sm text-blue-600 font-medium">배송 중</span>}
+                                    {item.deliveryStatus === 'COMPLETED' && <span className="text-sm text-purple-600 font-medium">배송 완료</span>}
+                                    {item.deliveryStatus === 'CONFIRMED' && <span className="text-sm text-gray-500 font-medium">거래 완료</span>}
+                                    {item.deliveryStatus === 'ADDRESS_PENDING' && <span className="text-sm text-orange-500 font-medium">배송지 입력 대기중</span>}
+                                </div>
+                                {/* 구매자 정보 */}
                                 <p className="text-sm text-gray-600">구매자: {item.buyerName}</p>
                             </div>
-                        </div>
-                    </Link>
-                </li>
-            ))}
-        </ul>
+                        </li>
+                    );
+                })}
+            </ul>
+
+            {/* 발송 처리 모달 렌더링 */}
+            <ShippingModal
+                isOpen={!!shippingTarget}
+                onClose={() => setShippingTarget(null)}
+                deliveryId={shippingTarget?.deliveryId!}
+                productName={shippingTarget?.productName!}
+                onSubmitSuccess={getHistory} // 성공 시 목록 새로고침
+            />
+        </>
     );
 };
 

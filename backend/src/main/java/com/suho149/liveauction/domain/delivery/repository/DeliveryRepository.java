@@ -2,7 +2,9 @@ package com.suho149.liveauction.domain.delivery.repository;
 
 import com.suho149.liveauction.domain.delivery.entity.Delivery;
 import com.suho149.liveauction.domain.delivery.entity.DeliveryStatus;
+import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,4 +28,12 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long> {
      * 특정 상태이고, 배송 완료 시간이 주어진 시간 이전인 배송 목록을 조회합니다.
      */
     List<Delivery> findByStatusAndCompletedAtBefore(DeliveryStatus status, LocalDateTime dateTime);
+
+    @Query("SELECT d FROM Delivery d " +
+            "JOIN FETCH d.payment p " +
+            "JOIN FETCH p.product prod " +
+            "JOIN FETCH prod.seller " +
+            "JOIN FETCH p.buyer " +
+            "WHERE d.trackingNumber = :trackingNumber")
+    Optional<Delivery> findWithDetailsByTrackingNumber(@Param("trackingNumber") String trackingNumber);
 }

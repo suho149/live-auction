@@ -51,6 +51,7 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       TOSS_SECRET_KEY: ${TOSS_SECRET_KEY}
+      # SWEET_TRACKER_API_KEY: ${SWEET_TRACKER_API_KEY}
     volumes:
       - /home/ubuntu/data/uploads:/app/uploads # 호스트 서버의 절대 경로로 변경
 

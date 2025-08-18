@@ -21,8 +21,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -69,8 +72,8 @@ public class DeliveryService {
         }
 
         // --- 3. 발송 처리 ---
-        // (운송장 번호와 상태를 업데이트하고 발송 시간을 기록)
-        delivery.ship(request.getTrackingNumber());
+        // (운송장 번호, 택배사 코드, 택배사 이름을 함께 저장)
+        delivery.ship(request.getCarrierId(), request.getCarrierName(), request.getTrackingNumber());
 
         // --- 4. 구매자에게 알림 발송 ---
         User buyer = delivery.getPayment().getBuyer();
@@ -83,53 +86,33 @@ public class DeliveryService {
     }
 
     @Transactional(readOnly = true)
-    public TrackingInfo getTrackingInfo(String trackingNumber) {
-        // 실제라면 DB에서 trackingNumber로 Delivery 정보를 찾겠지만, 포트폴리오용이므로
-        // trackingNumber 자체에 정보를 담거나, 간단히 조회하는 척만 합니다.
-        Delivery delivery = deliveryRepository.findByTrackingNumber(trackingNumber)
+    public TrackingInfo getTrackingInfo(String trackingNumber) { // ★ 파라미터를 trackingNumber 하나만 받도록 복원
+        // ★ JOIN FETCH를 사용한 DB 조회를 유지하여 성능 최적화
+        Delivery delivery = deliveryRepository.findWithDetailsByTrackingNumber(trackingNumber)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 운송장 번호입니다."));
 
         Product product = delivery.getPayment().getProduct();
         LocalDateTime shippedAt = delivery.getShippedAt();
-        LocalDateTime now = LocalDateTime.now();
 
-        // 발송 시간으로부터 현재까지의 시간을 분 단위로 계산
+        // shippedAt이 null이면 (아직 발송 처리 전이면) 빈 이력 반환
+        if (shippedAt == null) {
+            return new TrackingInfo(trackingNumber, delivery.getCarrierName(), product.getSeller().getName(), delivery.getAddress().getRecipientName(), product.getName(), new ArrayList<>());
+        }
+
+        LocalDateTime now = LocalDateTime.now();
         long minutesPassed = Duration.between(shippedAt, now).toMinutes();
 
         List<TrackingInfo.TrackingDetail> history = new ArrayList<>();
-
-        // 시나리오 기반 가상 이력 생성
-        // 1. 상품 인수 (발송 직후)
         history.add(new TrackingInfo.TrackingDetail(shippedAt, "판매자 위치", "상품인수", "판매자로부터 상품을 인수했습니다."));
-
-        // 2. 집화 처리 (발송 30분 후)
-        if (minutesPassed > 1) {
-            history.add(new TrackingInfo.TrackingDetail(shippedAt.plusMinutes(30), "서울 마포 허브", "집화처리", "터미널에 상품이 입고되었습니다."));
-        }
-
-        // 3. 간선 상차 (발송 2시간 후)
-        if (minutesPassed > 2) {
-            history.add(new TrackingInfo.TrackingDetail(shippedAt.plusHours(2), "서울 마포 허브", "간선상차", "부산으로 가는 트럭에 상품을 실었습니다."));
-        }
-
-        // 4. 간선 하차 (발송 10시간 후)
-        if (minutesPassed > 3) {
-            history.add(new TrackingInfo.TrackingDetail(shippedAt.plusHours(10), "부산 사상 허브", "간선하차", "목적지 터미널에 상품이 도착했습니다."));
-        }
-
-        // 5. 배달 출발 (발송 12시간 후)
-        if (minutesPassed > 4) {
-            history.add(new TrackingInfo.TrackingDetail(shippedAt.plusHours(12), "구매자 주소 근처", "배달출발", "배송 기사님이 배달을 시작했습니다."));
-        }
-
-        // 6. 배달 완료 (발송 14시간 후)
-        if (minutesPassed > 5) {
-            history.add(new TrackingInfo.TrackingDetail(shippedAt.plusHours(14), "구매자 주소", "배달완료", "배송이 완료되었습니다."));
-            // 실제라면 이때 Delivery 상태를 COMPLETED로 변경하는 로직이 필요
-        }
+        if (minutesPassed > 1) history.add(new TrackingInfo.TrackingDetail(shippedAt.plusMinutes(30), "수도권 허브", "집화처리", "터미널에 상품이 입고되었습니다."));
+        if (minutesPassed > 2) history.add(new TrackingInfo.TrackingDetail(shippedAt.plusHours(2), "수도권 허브", "간선상차", "목적지로 가는 트럭에 실었습니다."));
+        if (minutesPassed > 3) history.add(new TrackingInfo.TrackingDetail(shippedAt.plusHours(10), "배송 지역 허브", "간선하차", "목적지 터미널에 상품이 도착했습니다."));
+        if (minutesPassed > 4) history.add(new TrackingInfo.TrackingDetail(shippedAt.plusHours(12), "배송 지역 대리점", "배달출발", "배송 기사님이 배달을 시작했습니다."));
+        if (minutesPassed > 5) history.add(new TrackingInfo.TrackingDetail(shippedAt.plusHours(14), "구매자 주소", "배달완료", "배송이 완료되었습니다."));
 
         return new TrackingInfo(
                 trackingNumber,
+                delivery.getCarrierName(), // 택배사 이름 추가
                 product.getSeller().getName(),
                 delivery.getAddress().getRecipientName(),
                 product.getName(),

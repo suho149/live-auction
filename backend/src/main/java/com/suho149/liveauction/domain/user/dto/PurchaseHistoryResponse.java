@@ -20,6 +20,7 @@ public class PurchaseHistoryResponse {
     private final Long paymentId;
     private final DeliveryStatus deliveryStatus;
     private final String trackingNumber;
+    private String carrierId;
     private final Long deliveryId;
 
     public static PurchaseHistoryResponse from(Payment payment, boolean reviewWritten) {
@@ -36,6 +37,7 @@ public class PurchaseHistoryResponse {
                 .paymentId(payment.getId())
                 .deliveryStatus(delivery != null ? delivery.getStatus() : null)
                 .trackingNumber(delivery != null ? delivery.getTrackingNumber() : null)
+                .carrierId(delivery != null ? delivery.getCarrierId() : null)
                 .reviewWritten(reviewWritten)
                 .deliveryId(delivery != null ? delivery.getId() : null)
                 .build();
