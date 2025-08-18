@@ -68,7 +68,7 @@ jobs:
             cd /home/ubuntu/liveauction-project # 3단계에서 클론한 경로
 
             # 2. 최신 설정 파일(docker-compose.yml 등)을 가져오기 위해 git pull
-            git pull origin dev
+            git pull origin main
 
             # 3. .env 파일 생성
             echo "${{ secrets.PROD_ENV_FILE }}" > .env
@@ -77,10 +77,12 @@ jobs:
             export TAG=${{ env.IMAGE_TAG }}
             
             # 5. 최신 이미지를 Docker Hub에서 pull
-            docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull
+            #    --file 옵션을 사용하여 override 파일을 무시하도록 명시
+            docker-compose --file docker-compose.yml --file docker-compose.prod.yml pull
 
-            # 6. 컨테이너 재시작 (build 없이)
-            docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+            # 6. 컨테이너 재시작
+            #    --file 옵션을 사용하여 override 파일을 무시하도록 명시
+            docker-compose --file docker-compose.yml --file docker-compose.prod.yml up -d
 
             # 7. 오래된 Docker 이미지 정리
             docker image prune -f
