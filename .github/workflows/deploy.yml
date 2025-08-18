@@ -35,6 +35,7 @@ jobs:
           context: ./backend
           push: true
           tags: ${{ env.DOCKER_HUB_ID }}/${{ env.BACKEND_IMAGE_NAME }}:${{ env.IMAGE_TAG }}, ${{ env.DOCKER_HUB_ID }}/${{ env.BACKEND_IMAGE_NAME }}:latest
+        timeout-minutes: 15 # 빌드 잡 전체의 타임아웃을 15분으로 설정
 
       - name: Build and push Frontend image
         uses: docker/build-push-action@v4
@@ -42,6 +43,7 @@ jobs:
           context: ./frontend
           push: true
           tags: ${{ env.DOCKER_HUB_ID }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ env.IMAGE_TAG }}, ${{ env.DOCKER_HUB_ID }}/${{ env.FRONTEND_IMAGE_NAME }}:latest
+        timeout-minutes: 15
 
   # -------------------- 2. OCI 서버에 배포 잡 --------------------
   deploy:
