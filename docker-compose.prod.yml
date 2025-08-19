@@ -2,7 +2,7 @@
 
 services:
   backend:
-    image: suho149/upbid-backend:${TAG:-latest}
+    image: suho1/upbid-backend:${TAG:-latest}
     restart: unless-stopped
     ports: []
     environment:
@@ -15,7 +15,7 @@ services:
       APP_OAUTH2_REDIRECT_URI: ${APP_OAUTH2_REDIRECT_URI}
 
   frontend:
-    image: suho149/upbid-frontend:${TAG:-latest}
+    image: suho1/upbid-frontend:${TAG:-latest}
     restart: unless-stopped
     ports:
       - "80:80"
