@@ -153,7 +153,7 @@ const MainPage = () => {
                 {/* 배너 및 검색창 */}
                 <div className="bg-blue-600 text-white p-8 md:p-12 rounded-lg mb-12 text-center shadow-lg">
                     <h1 className="text-4xl md:text-5xl font-bold mb-4">세상의 모든 것을 경매하다</h1>
-                    <p className="text-lg md:text-xl mb-8">지금 바로 참여하여 특별한 상품을 획득하세요!</p>
+                    <p className="text-lg md:text-xl mb-8">지금 바로 참여하여 원하는 제품을 획득하세요!</p>
 
                     {/* ★ 검색 폼으로 변경 */}
                     <form onSubmit={handleSearch} className="max-w-xl mx-auto relative">
