@@ -914,7 +914,7 @@ const ProductDetailPage = () => {
                                             if (!isLoggedIn) {
                                                 return (
                                                     <div className="text-center p-3 bg-gray-200 rounded-md">
-                                                        <p>입찰에 참여하려면 <a href={'http://localhost:8080/oauth2/authorization/google'} className="text-blue-600 font-bold hover:underline">로그인</a>이 필요합니다.</p>
+                                                        <p>입찰에 참여하려면 <a href={`${API_BASE_URL}/oauth2/authorization/google`} className="text-blue-600 font-bold hover:underline">로그인</a>이 필요합니다.</p>
                                                     </div>
                                                 );
                                             }
