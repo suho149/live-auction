@@ -24,5 +24,13 @@ services:
   # 운영 환경에서는 DB/Redis 포트를 외부에 노출하지 않음
   mariadb:
     ports: []
+    volumes:
+      - db_data:/var/lib/mysql
   redis:
     ports: []
+    volumes:
+      - redis_data:/data
+
+volumes:
+  db_data:
+  redis_data:

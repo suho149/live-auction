@@ -12,8 +12,8 @@ services:
       MARIADB_DATABASE: ${DB_DATABASE}
       MARIADB_USER: ${DB_USER}
       MARIADB_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - ./db-data:/var/lib/mysql
+#    volumes:
+#      - ./db-data:/var/lib/mysql
 
   redis:
     image: redis:6.2-alpine
@@ -23,8 +23,8 @@ services:
       - "6379:6379"
     environment:
       TZ: Asia/Seoul
-    volumes:
-      - ./redis-data:/data
+#    volumes:
+#      - ./redis-data:/data
 
   backend:
     build: ./backend

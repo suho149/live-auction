@@ -43,7 +43,7 @@ jobs:
           context: ./frontend
           push: true
           tags: ${{ env.DOCKER_HUB_ID }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ env.IMAGE_TAG }}, ${{ env.DOCKER_HUB_ID }}/${{ env.FRONTEND_IMAGE_NAME }}:latest
-          no-cache: true
+#          no-cache: true
         timeout-minutes: 15
 
   # -------------------- 2. OCI 서버에 배포 잡 --------------------
