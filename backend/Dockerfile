@@ -37,4 +37,4 @@ EXPOSE 8080
 
 # 컨테이너가 시작될 때 실행할 명령어
 # 운영 환경에서는 profile을 'prod' 등으로 변경할 수 있습니다.
-ENTRYPOINT ["java", "-Dspring.profiles.active=local", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
