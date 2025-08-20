@@ -26,8 +26,8 @@ FROM nginx:1.23-alpine
 COPY --from=builder /app/build /usr/share/nginx/html
 
 # React Router가 제대로 동작하도록 커스텀 Nginx 설정을 덮어쓰기
-# (아래에서 만들 nginx.conf 파일을 복사)
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# (아래에서 만들 default.conf.template 파일을 복사)
+COPY nginx/default.conf.template /etc/nginx/conf.d/default.conf
 
 # Nginx 기본 포트인 80번 포트 노출
 EXPOSE 80

@@ -29,3 +29,5 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    environment: # environment 섹션 추가
+      DOMAIN_NAME: ${DOMAIN_NAME}
