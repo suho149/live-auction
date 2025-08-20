@@ -16,7 +16,7 @@ spring:
   # JPA: 로컬에서는 앱 실행 시 테이블을 자동으로 생성 (데이터는 유지)
   jpa:
     hibernate:
-      ddl-auto: create-drop # create-drop 대신 update 사용 권장
+      ddl-auto: update # create-drop 대신 update 사용 권장
 
 # 프론트엔드 URL 로컬 설정
 cors:
