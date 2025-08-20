@@ -2,6 +2,20 @@
 # 운영(prod) 프로필 전용 설정
 # ===================================================================
 spring:
+  # 운영 환경의 데이터소스 설정
+  # 값은 docker-compose.prod.yml에서 주입된 환경 변수를 사용합니다.
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.mariadb.jdbc.Driver
+
+  # 운영 환경의 Redis 설정
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST}
+      port: 6379
+
   # JPA: 운영에서는 절대로 스키마를 건드리지 않음
   jpa:
     hibernate:
@@ -10,11 +24,6 @@ spring:
     properties:
       hibernate.format_sql: false
       hibernate.use_sql_comments: false
-
-  data:
-    redis:
-      host: ${SPRING_DATA_REDIS_HOST}
-      port: 6379 # Redis의 기본 포트는 보통 고정값이므로 직접 적어줘도 괜찮습니다.
 
 # 로깅 레벨: 운영에서는 우리 코드도 INFO 레벨만 출력
 logging:
