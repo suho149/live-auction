@@ -1,30 +1,21 @@
-
 services:
   mariadb:
     image: mariadb:10.5
     container_name: live-auction-db
     restart: always
-    ports:
-      - "3306:3306"
     environment:
       TZ: Asia/Seoul
       MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MARIADB_DATABASE: ${DB_DATABASE}
       MARIADB_USER: ${DB_USER}
       MARIADB_PASSWORD: ${DB_PASSWORD}
-#    volumes:
-#      - ./db-data:/var/lib/mysql
 
   redis:
     image: redis:6.2-alpine
     container_name: live-auction-redis
     restart: always
-    ports:
-      - "6379:6379"
     environment:
       TZ: Asia/Seoul
-#    volumes:
-#      - ./redis-data:/data
 
   backend:
     build: ./backend
@@ -33,12 +24,8 @@ services:
     depends_on:
       - mariadb
       - redis
-    ports:
-      - "8080:8080"
-    # 환경 변수는 각 override 파일에서 정의하도록 비워둡니다
     environment:
       TZ: Asia/Seoul
-      # .env 파일에서 읽어올 공통 변수들
       DB_DATABASE: ${DB_DATABASE}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
@@ -46,8 +33,6 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       TOSS_SECRET_KEY: ${TOSS_SECRET_KEY}
-    volumes:
-      - /home/ubuntu/data/uploads:/app/uploads
 
   frontend:
     build: ./frontend
@@ -55,7 +40,9 @@ services:
     restart: always
     depends_on:
       - backend
-    ports:
-      - "3000:80"
     environment:
       TZ: Asia/Seoul
+
+volumes:
+  db_data:
+  redis_data:

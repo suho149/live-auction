@@ -1,18 +1,27 @@
-# 운영 환경 전용 docker-compose 설정
-
+# 운영 환경 전용 설정
 services:
+  mariadb:
+    # ports: [] # 포트 노출 안 함 (기본값)
+    volumes:
+      - db_data:/var/lib/mysql # 명명된 볼륨 사용
+
+  redis:
+    # ports: []
+    volumes:
+      - redis_data:/data # 명명된 볼륨 사용
+
   backend:
     image: suho1/upbid-backend:${TAG:-latest}
     restart: unless-stopped
-    ports: []
+    # ports: []
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      # 운영 Docker 네트워크에서 통신하기 위한 DB/Redis 주소
       SPRING_DATASOURCE_URL: jdbc:mariadb://mariadb:3306/${DB_DATABASE}
       SPRING_DATA_REDIS_HOST: redis
-      # GitHub Secret에서 주입될 운영용 프론트엔드 URL
       CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN}
       APP_OAUTH2_REDIRECT_URI: ${APP_OAUTH2_REDIRECT_URI}
+    volumes:
+      - /home/ubuntu/data/uploads:/app/uploads
 
   frontend:
     image: suho1/upbid-frontend:${TAG:-latest}
@@ -20,17 +29,3 @@ services:
     ports:
       - "80:80"
       - "443:443"
-
-  # 운영 환경에서는 DB/Redis 포트를 외부에 노출하지 않음
-  mariadb:
-    ports: []
-    volumes:
-      - db_data:/var/lib/mysql
-  redis:
-    ports: []
-    volumes:
-      - redis_data:/data
-
-volumes:
-  db_data:
-  redis_data:
