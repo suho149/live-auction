@@ -11,6 +11,11 @@ spring:
       hibernate.format_sql: false
       hibernate.use_sql_comments: false
 
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST}
+      port: 6379 # Redis의 기본 포트는 보통 고정값이므로 직접 적어줘도 괜찮습니다.
+
 # 로깅 레벨: 운영에서는 우리 코드도 INFO 레벨만 출력
 logging:
   level:
