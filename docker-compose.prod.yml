@@ -31,3 +31,6 @@ services:
       - "443:443"
     environment: # environment 섹션 추가
       DOMAIN_NAME: ${DOMAIN_NAME}
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
