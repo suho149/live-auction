@@ -1,0 +1,26 @@
+# docker-compose-init.yml (인증서 발급 전용)
+services:
+  certbot:
+    image: certbot/certbot
+    container_name: init_certbot
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    command: certonly --webroot -w /var/www/certbot --email ${LETSENCRYPT_EMAIL} --agree-tos --no-eff-email -d ${DOMAIN_NAME} --non-interactive
+
+  nginx_init:
+    image: nginx:1.23-alpine
+    container_name: init_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend/nginx/init-letsencrypt.conf:/etc/nginx/conf.d/default.conf
+      - certbot_www:/var/www/certbot
+    environment:
+      DOMAIN_NAME: ${DOMAIN_NAME}
+    depends_on:
+      - certbot
+
+volumes:
+  certbot_conf:
+  certbot_www:
