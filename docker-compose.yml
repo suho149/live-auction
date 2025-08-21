@@ -58,7 +58,7 @@ services:
     # 인증서 발급/갱신을 위한 명령어
     # --email: 복구용 이메일
     # --domain: 인증서를 발급받을 도메인
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    command: renew --webroot -w /var/www/certbot --quiet && sleep 12h
 
 # 명명된 볼륨 선언 (db, redis, certbot 용)
 volumes:
