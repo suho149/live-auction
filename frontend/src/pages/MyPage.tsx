@@ -546,7 +546,7 @@ const DefaultAddressManager = () => {
             await updateDefaultAddress(address);
             alert("기본 배송지가 저장되었습니다.");
 
-            // ★ await를 사용하여 스토어 업데이트가 완료될 때까지 기다림
+            //  await를 사용하여 스토어 업데이트가 완료될 때까지 기다림
             await fetchUserInfo();
         } catch (error) {
             alert("저장에 실패했습니다.");

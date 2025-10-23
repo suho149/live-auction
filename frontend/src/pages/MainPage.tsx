@@ -43,7 +43,7 @@ const MainPage = () => {
     // statuses는 배열이므로 URL에서 파싱하고 다시 문자열 배열로 변환
     const [statuses, setStatuses] = useState<string[]>(searchParams.getAll('statuses') || []);
 
-    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false); // ★ 필터 모달 열림/닫힘 상태
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false); //  필터 모달 열림/닫힘 상태
 
     // API 호출 함수 ( useCallback으로 감싸서 최적화 )
     const fetchProducts = useCallback(async () => {
@@ -155,7 +155,7 @@ const MainPage = () => {
                     <h1 className="text-4xl md:text-5xl font-bold mb-4">세상의 모든 것을 경매하다</h1>
                     <p className="text-lg md:text-xl mb-8">지금 바로 참여하여 원하는 제품을 획득하세요!</p>
 
-                    {/* ★ 검색 폼으로 변경 */}
+                    {/*  검색 폼으로 변경 */}
                     <form onSubmit={handleSearch} className="max-w-xl mx-auto relative">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
@@ -170,7 +170,7 @@ const MainPage = () => {
                     </form>
                 </div>
 
-                {/* ★★★ 카테고리 및 정렬 필터 영역 (수정됨) ★★★ */}
+                {/*  카테고리 및 정렬 필터 영역 (수정됨)  */}
                 <div className="bg-white p-4 rounded-lg shadow-sm mb-8">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                         {/* 카테고리 버튼 그룹 */}

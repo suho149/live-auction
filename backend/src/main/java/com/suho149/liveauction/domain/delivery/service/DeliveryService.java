@@ -60,22 +60,22 @@ public class DeliveryService {
 
     @Transactional
     public void shipProduct(Long deliveryId, ShipRequest request, UserPrincipal userPrincipal) {
-        // --- 1. 배송 정보 조회 ---
+        // 1. 배송 정보 조회
         Delivery delivery = deliveryRepository.findById(deliveryId)
                 .orElseThrow(() -> new IllegalArgumentException("발송 처리할 배송 정보를 찾을 수 없습니다. ID: " + deliveryId));
 
-        // --- 2. 권한 확인 (판매자 본인만 가능) ---
+        // 2. 권한 확인 (판매자 본인만 가능)
         // 연관관계를 통해 판매자 정보를 가져옴
         User seller = delivery.getPayment().getProduct().getSeller();
         if (!seller.getId().equals(userPrincipal.getId())) {
             throw new IllegalStateException("상품을 발송 처리할 권한이 없습니다.");
         }
 
-        // --- 3. 발송 처리 ---
+        // 3. 발송 처리
         // (운송장 번호, 택배사 코드, 택배사 이름을 함께 저장)
         delivery.ship(request.getCarrierId(), request.getCarrierName(), request.getTrackingNumber());
 
-        // --- 4. 구매자에게 알림 발송 ---
+        // 4. 구매자에게 알림 발송
         User buyer = delivery.getPayment().getBuyer();
         String productName = delivery.getPayment().getProduct().getName();
         String url = "/mypage"; // 구매 내역 페이지로 이동시키면 좋음
@@ -86,8 +86,8 @@ public class DeliveryService {
     }
 
     @Transactional(readOnly = true)
-    public TrackingInfo getTrackingInfo(String trackingNumber) { // ★ 파라미터를 trackingNumber 하나만 받도록 복원
-        // ★ JOIN FETCH를 사용한 DB 조회를 유지하여 성능 최적화
+    public TrackingInfo getTrackingInfo(String trackingNumber) { // 파라미터를 trackingNumber 하나만 받도록 복원
+        // JOIN FETCH를 사용한 DB 조회를 유지하여 성능 최적화
         Delivery delivery = deliveryRepository.findWithDetailsByTrackingNumber(trackingNumber)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 운송장 번호입니다."));
 
@@ -122,21 +122,21 @@ public class DeliveryService {
 
     @Transactional
     public void confirmPurchase(Long deliveryId, UserPrincipal userPrincipal) {
-        // --- 1. orElseThrow 완성 ---
+        // 1. orElseThrow 완성
         Delivery delivery = deliveryRepository.findById(deliveryId)
                 .orElseThrow(() -> new IllegalArgumentException("구매 확정할 배송 정보를 찾을 수 없습니다. ID: " + deliveryId));
 
-        // --- 2. 구매자 본인 확인 ---
+        // 2. 구매자 본인 확인
         if (!delivery.getPayment().getBuyer().getId().equals(userPrincipal.getId())) {
             throw new IllegalStateException("구매 확정 권한이 없습니다.");
         }
 
-        // --- 3. 배송 완료 상태인지 확인 ---
+        // 3. 배송 완료 상태인지 확인
         if (delivery.getStatus() != DeliveryStatus.COMPLETED) {
             throw new IllegalStateException("배송이 완료된 상품만 구매 확정할 수 있습니다.");
         }
 
-        // --- 4. 상태 변경 ---
+        // 4. 상태 변경
         delivery.confirmPurchase();
 
         Product product = delivery.getPayment().getProduct();

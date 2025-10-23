@@ -1,11 +1,11 @@
 import axios from 'axios';
 import useAuthStore from '../hooks/useAuthStore'; // zustand 스토어 import
 
-// ★★★★★★★★★★★★★★★★★★★ 로그 추가 1 ★★★★★★★★★★★★★★★★★★★
+// 로그 추가 1
 // React 빌드 프로세스가 .env 파일에서 읽어온 '날 것 그대로'의 값을 확인합니다.
 console.log('[axiosInstance.ts] Loading Environment Variable...');
 console.log('[axiosInstance.ts] process.env.REACT_APP_API_BASE_URL:', process.env.REACT_APP_API_BASE_URL);
-// ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+//
 
 export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '';
 
@@ -15,10 +15,10 @@ const axiosInstance = axios.create({
     withCredentials: true,
 });
 
-// ★★★★★★★★★★★★★★★★★★★ 로그 추가 2 ★★★★★★★★★★★★★★★★★★★
+// 로그 추가 2
 // 위 로직을 거쳐 최종적으로 확정된 API_BASE_URL 값을 확인합니다.
 console.log('[axiosInstance.ts] Final API_BASE_URL:', API_BASE_URL);
-// ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+//
 
 // 1. 요청 인터셉터: 모든 요청에 Access Token을 담아 보냄
 axiosInstance.interceptors.request.use(
@@ -33,7 +33,7 @@ axiosInstance.interceptors.request.use(
 );
 
 
-// ★★★ 2. 응답 인터셉터: 토큰 만료 시 자동 재발급 로직 ★★★
+// 2. 응답 인터셉터: 토큰 만료 시 자동 재발급 로직
 axiosInstance.interceptors.response.use(
     // 성공적인 응답은 그대로 반환
     (response) => response,

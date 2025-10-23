@@ -82,7 +82,7 @@ public class UserController {
     @GetMapping("/{userId}/profile")
     public ResponseEntity<UserProfileResponse> getUserProfile(
             @PathVariable Long userId,
-            // ★ @PageableDefault로 기본 페이징 값 설정 (한 페이지에 6개씩, id 내림차순)
+            // @PageableDefault로 기본 페이징 값 설정 (한 페이지에 6개씩, id 내림차순)
             @PageableDefault(size = 6, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         UserProfileResponse userProfile = userService.getUserProfile(userId, pageable);

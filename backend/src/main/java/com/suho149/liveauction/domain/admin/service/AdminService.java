@@ -214,15 +214,15 @@ public class AdminService {
 
         if (isAccepted) {
             report.accept();
-            // ★ 2. Hard Delete 대신 Soft Delete 호출
+            // Hard Delete 대신 Soft Delete 호출
             softDeleteProduct(reportedProduct.getId());
 
             String reporterContent = "요청하신 '" + productName + "' 상품에 대한 신고가 처리되었습니다.";
-            // ★ 3. 이벤트 발행 방식으로 변경 및 NotificationType 수정
+            // 이벤트 발행 방식으로 변경 및 NotificationType 수정
             eventPublisher.publishEvent(new NotificationEvent(reporter.getId(), NotificationType.SYSTEM, reporterContent, url));
 
             String sellerContent = "회원님의 상품 '" + productName + "'이(가) 신고 접수로 인해 삭제 처리되었습니다.";
-            // ★ 3. 이벤트 발행 방식으로 변경 및 NotificationType 수정
+            // 이벤트 발행 방식으로 변경 및 NotificationType 수정
             eventPublisher.publishEvent(new NotificationEvent(seller.getId(), NotificationType.SYSTEM, sellerContent, url));
 
             log.info("신고 ID {} 승인 처리 완료. 상품 ID {} 논리적 삭제됨.", reportId, reportedProduct.getId());
@@ -230,7 +230,7 @@ public class AdminService {
             report.reject();
 
             String reporterContent = "요청하신 '" + productName + "' 상품에 대한 신고가 검토 후 기각되었습니다.";
-            // ★ 3. 이벤트 발행 방식으로 변경 및 NotificationType 수정
+            // 이벤트 발행 방식으로 변경 및 NotificationType 수정
             eventPublisher.publishEvent(new NotificationEvent(reporter.getId(), NotificationType.SYSTEM, reporterContent, url));
 
             log.info("신고 ID {} 기각 처리 완료.", reportId);

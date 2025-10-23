@@ -194,7 +194,7 @@ public class PaymentService {
             LocalDateTime expirationTime = pending.getCreatedAt().plusMinutes(PENDING_EXPIRATION_MINUTES);
             boolean isExpired = LocalDateTime.now().isAfter(expirationTime);
 
-            // ★★★ 1. 기존 PENDING 결제 정보 로그 ★★★
+            // 1. 기존 PENDING 결제 정보 로그
             log.info(">>>>> 기존 PENDING 결제 발견. 생성 시간: {}, 만료 시간: {}, 현재 시간: {}, 만료 여부: {}",
                     pending.getCreatedAt(), expirationTime, LocalDateTime.now(), isExpired);
 

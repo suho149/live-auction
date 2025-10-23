@@ -319,7 +319,7 @@ const ProductDetailPage = () => {
         fetchProduct();
     }, [productId]);
 
-    // ★ 3. 타이머 통합 관리 useEffect (ref 사용으로 수정)
+    //  3. 타이머 통합 관리 useEffect (ref 사용으로 수정)
     useEffect(() => {
         const timer = setInterval(() => {
             const currentProduct = productRef.current;
@@ -360,7 +360,7 @@ const ProductDetailPage = () => {
         return () => clearInterval(timer);
     }, []); // 의존성 배열을 비워서 최초 1회만 실행
 
-    // ★ 4. 웹소켓 연결 useEffect (의존성 수정)
+    //  4. 웹소켓 연결 useEffect (의존성 수정)
     useEffect(() => {
         if (!isLoggedIn || !productId || !product || product.status !== 'ON_SALE') {
             if (stompClient.current?.active) stompClient.current.deactivate();
@@ -686,7 +686,7 @@ const ProductDetailPage = () => {
                         <div>
                             <h2 className="text-2xl font-bold text-red-500">오류</h2>
                             <p className="mt-2 text-gray-600">{error}</p>
-                            {/* ★ 잘못된 닫는 태그를 올바르게 수정 */}
+                            {/*  잘못된 닫는 태그를 올바르게 수정 */}
                             <Link to="/" className="mt-6 inline-block bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600">
                                 메인으로 돌아가기
                             </Link>
@@ -773,7 +773,7 @@ const ProductDetailPage = () => {
                                                 <span className="font-semibold text-lg">{product.likeCount}</span>
                                             </button>
 
-                                            {/* ★★★ 2. 신고하기 버튼 (여기에 추가) ★★★ */}
+                                            {/*  2. 신고하기 버튼 (여기에 추가)  */}
                                             {isLoggedIn && !isCurrentUserTheSeller && (
                                                 <button
                                                     onClick={() => setIsReportModalOpen(true)}

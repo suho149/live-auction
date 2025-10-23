@@ -20,7 +20,7 @@ const AdminLayout = () => {
                     <h2 className="text-xl font-bold mb-6 text-gray-300">관리 메뉴</h2>
                     <nav>
                         <ul className="space-y-2">
-                            {/* ★★★ 대시보드 NavLink 추가 ★★★ */}
+                            {/*  대시보드 NavLink 추가  */}
                             <li>
                                 <NavLink to="/admin/dashboard" className={linkClasses}>
                                     대시보드

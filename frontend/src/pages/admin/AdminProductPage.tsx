@@ -30,7 +30,7 @@ const AdminProductPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [searchParams]); // ★ 의존성에 searchParams를 추가합니다.
+    }, [searchParams]); //  의존성에 searchParams를 추가합니다.
 
     // useEffect는 이제 loadProducts만 의존
     useEffect(() => {
@@ -63,7 +63,7 @@ const AdminProductPage = () => {
                 await forceDeleteProduct(productId);
                 alert("상품이 삭제되었습니다.");
 
-                // ★★★ 이 부분을 수정합니다 ★★★
+                //  이 부분을 수정합니다
                 // loadProducts는 이제 인자 없이 호출합니다.
                 // searchParams가 이미 최신 상태이므로, loadProducts는 그 값을 사용하여 API를 호출합니다.
                 loadProducts();

@@ -100,7 +100,7 @@ public class DeliveryScheduler {
     @Scheduled(fixedRate = 60000) // 테스트 용도
 //    @Scheduled(fixedRate = 3600000) // 1시간 (3,600,000 밀리초) 마다 실행
     @Transactional
-    public void updateDeliveryStatusToCompleted() { // ★ 메소드 이름 원래대로
+    public void updateDeliveryStatusToCompleted() {
         log.info("배송 완료 상태 업데이트 스케줄러 시작...");
         List<Delivery> deliveriesInTransit = deliveryRepository.findByStatus(DeliveryStatus.SHIPPING);
 

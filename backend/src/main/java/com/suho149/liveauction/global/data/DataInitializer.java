@@ -25,7 +25,7 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) throws Exception {
         log.info("===== 데이터 초기화 작업 시작 (local profile) =====");
 
-        // ★★★ 'Find or Create' 로직으로 수정 ★★★
+        // 'Find or Create' 로직으로 수정
         userRepository.findByEmail(ADMIN_EMAIL).ifPresentOrElse(
                 // 1. 이메일에 해당하는 사용자가 이미 존재할 경우
                 user -> {

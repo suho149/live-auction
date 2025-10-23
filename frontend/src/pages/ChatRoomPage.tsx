@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axiosInstance, { API_BASE_URL } from '../api/axiosInstance';
-import useAuthStore from '../hooks/useAuthStore'; // ★ zustand 스토어 import
+import useAuthStore from '../hooks/useAuthStore'; // zustand 스토어 import
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import Header from '../components/Header';
@@ -21,7 +21,7 @@ const ChatRoomPage = () => {
     const { roomId } = useParams<{ roomId: string }>();
     const navigate = useNavigate();
 
-    // ★ 스토어에서 필요한 상태와 액션을 가져옵니다.
+    //  스토어에서 필요한 상태와 액션을 가져옵니다.
     const { userInfo, accessToken, isLoggedIn, fetchUserInfo } = useAuthStore();
 
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -37,7 +37,7 @@ const ChatRoomPage = () => {
 
     useEffect(scrollToBottom, [messages]);
 
-    // ★ 사용자 정보 로딩을 위한 useEffect
+    //  사용자 정보 로딩을 위한 useEffect
     useEffect(() => {
         // 로그인 상태이지만, 아직 userInfo가 없다면 가져옵니다.
         if (isLoggedIn && !userInfo) {
@@ -45,7 +45,7 @@ const ChatRoomPage = () => {
         }
     }, [isLoggedIn, userInfo, fetchUserInfo]);
 
-    // ★ 채팅방 연결 및 메시지 로딩을 위한 useEffect
+    //  채팅방 연결 및 메시지 로딩을 위한 useEffect
     useEffect(() => {
         // 필수 정보(roomId, accessToken)가 없으면 연결을 시도하지 않습니다.
         if (!roomId || !accessToken) {
@@ -72,7 +72,7 @@ const ChatRoomPage = () => {
             connectHeaders: { Authorization: `Bearer ${accessToken}` },
             onConnect: () => {
                 console.log('Chat STOMP Connected!');
-                setIsConnected(true); // ★ 연결 성공
+                setIsConnected(true); //  연결 성공
                 client.subscribe(`/sub/chat/rooms/${roomId}`, (message) => {
                     const receivedMessage = JSON.parse(message.body);
                     setMessages(prevMessages => [...prevMessages, receivedMessage]);
@@ -80,11 +80,11 @@ const ChatRoomPage = () => {
             },
             onDisconnect: () => {
                 console.log('Chat STOMP Disconnected!');
-                setIsConnected(false); // ★ 연결 종료
+                setIsConnected(false); //  연결 종료
             },
             onStompError: (frame) => {
                 console.error('Broker reported error: ' + frame.headers['message']);
-                setIsConnected(false); // ★ 에러 발생
+                setIsConnected(false); //  에러 발생
             },
         });
 
@@ -155,13 +155,13 @@ const ChatRoomPage = () => {
                     value={newMessage}
                     onChange={e => setNewMessage(e.target.value)}
                     placeholder={isConnected ? "메시지를 입력하세요..." : "서버에 연결 중입니다..."}
-                    // ★ 연결되기 전에는 입력창 비활성화
+                    //  연결되기 전에는 입력창 비활성화
                     disabled={!isConnected}
                     className="flex-1 border p-3 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                 />
                 <button
                     type="submit"
-                    // ★ 연결되기 전에는 버튼 비활성화
+                    //  연결되기 전에는 버튼 비활성화
                     disabled={!isConnected}
                     className="bg-blue-500 text-white p-3 rounded-r-md hover:bg-blue-600 transition-colors disabled:bg-gray-400"
                 >

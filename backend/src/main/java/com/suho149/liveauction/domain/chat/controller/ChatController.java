@@ -50,7 +50,7 @@ public class ChatController {
     public void sendMessage(
             @DestinationVariable Long roomId,
             @Payload ChatMessageRequest request,
-            @Header("Authorization") final String token // ★ 헤더에서 Authorization 값을 직접 받음
+            @Header("Authorization") final String token // 헤더에서 Authorization 값을 직접 받음
     ) {
         log.info("Received message for room {}: {}", roomId, request.getMessage());
 

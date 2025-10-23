@@ -101,7 +101,7 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({ isOpen, onClose, paymentI
                         <label htmlFor="recipientPhone" className="block text-sm font-medium text-gray-700">연락처</label>
                         <input type="text" id="recipientPhone" name="recipientPhone" value={formData.recipientPhone} onChange={handleChange} placeholder="'-' 없이 숫자만 입력" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"/>
                     </div>
-                    {/* ★ 우편번호 검색 기능이 포함된 UI */}
+                    {/*  우편번호 검색 기능이 포함된 UI */}
                     <div>
                         <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700">우편번호</label>
                         <div className="mt-1 flex rounded-md shadow-sm">

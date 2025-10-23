@@ -18,7 +18,7 @@ export interface Page<T> {
     number: number;         // 현재 페이지 번호 (0부터 시작)
     size: number;           // 페이지 크기
     first: boolean;         // 첫 페이지 여부
-    last: boolean;          // ★ 마지막 페이지 여부 (이 속성 추가)
+    last: boolean;          // 마지막 페이지 여부 (이 속성 추가)
     empty: boolean;         // 현재 페이지가 비어있는지 여부
 }
 

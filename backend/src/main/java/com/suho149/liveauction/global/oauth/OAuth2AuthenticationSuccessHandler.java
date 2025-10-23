@@ -39,6 +39,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .queryParam("refreshToken", tokenDTO.getRefreshToken())
                 .build().toUriString();
 
+        // 생성된 URL로 클라이언트(브라우저)를 리디렉션
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 }

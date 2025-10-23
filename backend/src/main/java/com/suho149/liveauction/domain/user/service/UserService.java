@@ -135,7 +135,7 @@ public class UserService {
         Page<ProductResponse> sellingProductsPage = productRepository.findBySellerIdAndStatusInOrderByIdDesc(
                         userId,
                         List.of(ProductStatus.ON_SALE),
-                        pageable // ★ Pageable 객체 전달
+                        pageable // Pageable 객체 전달
                 )
                 .map(ProductResponse::from);
 

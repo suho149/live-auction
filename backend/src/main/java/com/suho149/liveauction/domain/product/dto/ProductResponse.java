@@ -13,7 +13,7 @@ public class ProductResponse {
     private Long id;
     private String name;
     private Long currentPrice;
-    private String thumbnailUrl; // ★ 대표 이미지(첫 번째 이미지)
+    private String thumbnailUrl; // 대표 이미지(첫 번째 이미지)
     private LocalDateTime auctionEndTime;
     private String sellerName;
     private ProductStatus status;

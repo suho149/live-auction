@@ -27,6 +27,6 @@ public class NotificationResponse {
         this.isRead = notification.isRead();
         this.createdAt = notification.getCreatedAt();
         this.type = notification.getType();
-        this.unreadCount = notification.getUnreadCount(); // ★ unreadCount 값 매핑
+        this.unreadCount = notification.getUnreadCount(); // unreadCount 값 매핑
     }
 }

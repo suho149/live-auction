@@ -19,10 +19,10 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 @Configuration
 @EnableWebSocketMessageBroker
-@RequiredArgsConstructor // ★ final 필드 주입을 위해 추가
+@RequiredArgsConstructor // final 필드 주입을 위해 추가
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    private final JwtTokenProvider jwtTokenProvider; // ★ JwtTokenProvider 주입
+    private final JwtTokenProvider jwtTokenProvider; // JwtTokenProvider 주입
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
@@ -36,7 +36,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.setUserDestinationPrefix("/user"); // 사용자 목적지 prefix 설정
     }
 
-    // ★ 클라이언트의 요청을 가로채는 인터셉터 설정
+    // 클라이언트의 요청을 가로채는 인터셉터 설정
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
         registration.interceptors(new ChannelInterceptor() {

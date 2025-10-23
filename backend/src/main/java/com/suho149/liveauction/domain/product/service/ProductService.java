@@ -67,6 +67,7 @@ public class ProductService {
                 .collect(Collectors.toList());
         images.forEach(product::addImage);
 
+        // Product에 설정된 CascadeType.ALL 덕분에 ProductImage 엔티티들도 함께 저장됨.
         Product savedProduct = productRepository.save(product);
 
         // 키워드 알림 로직 수정
@@ -211,7 +212,7 @@ public class ProductService {
 
         // 2. 각 관리자에게 알림을 보냄
         String content = "새로운 상품 신고가 접수되었습니다: '" + product.getName() + "'";
-        String url = "/admin/reports"; // 관리자 신고 관리 페이지 경로 (가정)
+        String url = "/admin/reports"; // 관리자 신고 관리 페이지 경로
 
         admins.forEach(admin -> {
             eventPublisher.publishEvent(new NotificationEvent(admin.getId(), NotificationType.SYSTEM, content, url));
