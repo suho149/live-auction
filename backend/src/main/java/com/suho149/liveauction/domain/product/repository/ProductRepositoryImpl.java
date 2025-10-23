@@ -75,7 +75,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         return new PageImpl<>(content, pageable, totalCount);
     }
 
-    // --- 동적 where절을 위한 private 메소드들 ---
+    // 동적 where절을 위한 private 메소드들
     private BooleanExpression keywordContains(String keyword) {
         if (!hasText(keyword)) {
             return null;

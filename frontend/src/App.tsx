@@ -25,7 +25,7 @@ import AdminProductPage from "./pages/admin/AdminProductPage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminReportPage from "./pages/admin/AdminReportPage";
 
-// ★★★★★★★★★★★★★★★★★★★ 로그 추적용 컴포넌트 ★★★★★★★★★★★★★★★★★★★
+// 로그 추적용 컴포넌트
 const LocationLogger = () => {
     const location = useLocation();
     useEffect(() => {
@@ -34,7 +34,7 @@ const LocationLogger = () => {
     }, [location]);
     return null; // 화면에는 아무것도 그리지 않습니다.
 };
-// ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+//
 
 function App() {
 
@@ -52,7 +52,7 @@ function App() {
     return (
         <Router>
             <Toaster position="top-right" reverseOrder={false} />
-            {/* ★ SSE 핸들러를 Router 안에 배치하여 항상 활성화되도록 함 */}
+            {/* SSE 핸들러를 Router 안에 배치하여 항상 활성화되도록 함 */}
             <GlobalNotificationHandler />
             <Routes>
                 <Route path="/" element={<MainPage />} />

@@ -26,7 +26,7 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    @Value("${cors.allowed-origin}") // ★ 환경변수 주입
+    @Value("${cors.allowed-origin}") // 환경변수 주입
     private String allowedOrigin;
 
     private final CustomOAuth2UserService customOAuth2UserService;
@@ -41,17 +41,17 @@ public class SecurityConfig {
                 .formLogin(formLogin -> formLogin.disable())
                 .httpBasic(httpBasic -> httpBasic.disable())
 
-                // ★★★ CORS 설정 추가 ★★★
+                // CORS 설정 추가
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
                 // 세션을 사용하지 않으므로 STATELESS로 설정
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(unauthorizedEntryPoint()) // ★ 인증 실패 시 처리 로직 변경
+                        .authenticationEntryPoint(unauthorizedEntryPoint()) // 인증 실패 시 처리 로직 변경
                 )
 
-                // === URL 별 권한 관리 ===
+                // URL 별 권한 관리
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
@@ -87,7 +87,6 @@ public class SecurityConfig {
                                 "/api/v1/deliveries/**" // 배송 관련 API
                         ).hasAnyRole("USER", "ADMIN")
 
-                        // ★★★ 이 부분을 수정합니다 ★★★
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/v1/products",                      // 상품 등록
@@ -116,7 +115,7 @@ public class SecurityConfig {
                         .successHandler(oAuth2AuthenticationSuccessHandler)
                 )
 
-                // === 우리가 만든 필터를 security filter chain 에 추가 ===
+                // 우리가 만든 필터를 security filter chain 에 추가
                 // UsernamePasswordAuthenticationFilter 이전에 JwtAuthenticationFilter 를 실행
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

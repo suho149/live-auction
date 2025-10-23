@@ -22,7 +22,10 @@ public class AuthService {
         }
 
         // 2. Access Token 에서 User ID 가져오기
-        Authentication authentication = jwtTokenProvider.getAuthentication(requestDTO.getAccessToken());
+//        Authentication authentication = jwtTokenProvider.getAuthentication(requestDTO.getAccessToken());
+
+        // 2. 만료된 Access Token에서도 정보를 가져오도록 수정
+        Authentication authentication = jwtTokenProvider.getAuthenticationFromExpiredToken(requestDTO.getAccessToken());
 
         // 3. Redis 에서 User ID 를 기반으로 저장된 Refresh Token 값을 가져옴
         String refreshToken = (String) redisTemplate.opsForValue().get("RT:" + authentication.getName());

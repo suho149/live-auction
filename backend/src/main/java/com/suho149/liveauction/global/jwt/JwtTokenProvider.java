@@ -116,6 +116,19 @@ public class JwtTokenProvider {
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
     }
 
+    // 토큰 재발급을 위해, 만료된 토큰에서도 Claims를 추출하는 메소드
+    public Authentication getAuthenticationFromExpiredToken(String token) {
+        try {
+            // 유효기간 검증을 통과하는 일반적인 경우
+            return getAuthentication(token);
+        } catch (ExpiredJwtException e) {
+            // 토큰이 만료된 경우, 유효성 검증을 건너뛰고 Claims만 추출
+            Claims claims = e.getClaims();
+            UserDetails userDetails = userDetailsService.loadUserByUsername(claims.getSubject());
+            return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
+        }
+    }
+
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);

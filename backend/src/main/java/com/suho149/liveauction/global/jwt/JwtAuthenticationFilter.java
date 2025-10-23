@@ -53,7 +53,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 
-    // ★ Request Query Parameter 에서 토큰 정보를 꺼내오기
+    // Request Query Parameter 에서 토큰 정보를 꺼내오기
     private String resolveTokenFromQueryParam(HttpServletRequest request) {
         return request.getParameter(TOKEN_QUERY_PARAM);
     }

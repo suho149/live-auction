@@ -44,12 +44,12 @@ const AdminUserPage = () => {
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        // ★ 3. 검색 시 URL 쿼리 파라미터 업데이트 (페이지는 0으로 초기화)
+        //  3. 검색 시 URL 쿼리 파라미터 업데이트 (페이지는 0으로 초기화)
         setSearchParams({ page: '0', ...searchTerm });
     };
 
     const handlePageChange = (page: number) => {
-        // ★ 4. 페이징 시 기존 검색어 유지
+        //  4. 페이징 시 기존 검색어 유지
         const currentParams = Object.fromEntries(searchParams.entries());
         setSearchParams({ ...currentParams, page: String(page) });
     };

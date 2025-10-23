@@ -30,7 +30,7 @@ public class Settlement {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_id", nullable = false, unique = true)
-    private Payment payment; // ★ 어떤 결제 건에 대한 정산인지 연결
+    private Payment payment; // 어떤 결제 건에 대한 정산인지 연결
 
     private LocalDateTime requestedAt; // 요청 일시
 

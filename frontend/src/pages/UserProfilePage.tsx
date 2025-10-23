@@ -30,7 +30,7 @@ const UserProfilePage = () => {
         }
     }, [userId]);
 
-    // ★ '더보기' 버튼 클릭 핸들러
+    //  '더보기' 버튼 클릭 핸들러
     const handleLoadMore = async () => {
         if (!userId || !hasNextPage) return;
 

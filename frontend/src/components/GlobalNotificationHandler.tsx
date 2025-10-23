@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../hooks/useAuthStore';
 import useNotificationStore, { Notification } from '../hooks/useNotificationStore';
 import { API_BASE_URL } from '../api/axiosInstance';
-import toast from 'react-hot-toast'; // ★ toast 함수 import
+import toast from 'react-hot-toast'; //  toast 함수 import
 
-// ★ 커스텀 토스트 UI 컴포넌트
+//  커스텀 토스트 UI 컴포넌트
 const NotificationToast = ({ notification, t }: { notification: Notification, t: any }) => {
     const navigate = useNavigate();
 
@@ -60,7 +60,7 @@ const GlobalNotificationHandler = () => {
                     const newNotification: Notification = JSON.parse(event.data);
                     addNotification(newNotification);
                     toast.custom((t) => <NotificationToast notification={newNotification} t={t} />, {
-                        id: String(newNotification.id), // ★ 알림 ID를 토스트 ID로 사용
+                        id: String(newNotification.id), //  알림 ID를 토스트 ID로 사용
                         duration: 5000
                     });
                 } catch (e) {
@@ -71,9 +71,9 @@ const GlobalNotificationHandler = () => {
             const handleUpdateNotification = (event: MessageEvent) => {
                 const updatedNotification: Notification = JSON.parse(event.data);
                 updateNotification(updatedNotification);
-                // ★ 동일한 ID로 토스트를 띄워 기존 팝업을 업데이트
+                //  동일한 ID로 토스트를 띄워 기존 팝업을 업데이트
                 toast.custom((t) => <NotificationToast notification={updatedNotification} t={t} />, {
-                    id: String(updatedNotification.id), // ★ 알림 ID를 토스트 ID로 사용
+                    id: String(updatedNotification.id), //  알림 ID를 토스트 ID로 사용
                     duration: 5000
                 });
             };

@@ -19,10 +19,10 @@ const Header = () => {
     const googleLoginUrl = `${API_BASE_URL}/oauth2/authorization/google`;
 
     const handleLoginClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-        // ★★★★★★★★★★★★★★★★★★★ 로그 추가 ★★★★★★★★★★★★★★★★★★★
+        //  로그 추가
         console.log('[Header.tsx] Login link clicked!');
         console.log('[Header.tsx] Target URL:', event.currentTarget.href);
-        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
 
         // event.preventDefault(); // 만약 이 코드가 있다면 주석 처리하거나 삭제해야 합니다.
     };

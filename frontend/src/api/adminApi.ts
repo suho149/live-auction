@@ -123,7 +123,7 @@ export interface Report {
     reason: ReportReason;
     detail: string;
     createdAt: string;
-    status: 'PENDING' | 'ACCEPTED' | 'REJECTED'; // ★ status 필드 추가
+    status: 'PENDING' | 'ACCEPTED' | 'REJECTED'; //  status 필드 추가
 }
 
 /** 처리 대기 중인 신고 목록 조회 */
