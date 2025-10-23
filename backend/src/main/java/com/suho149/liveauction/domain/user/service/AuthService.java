@@ -21,7 +21,7 @@ public class AuthService {
             throw new RuntimeException("Invalid Refresh Token.");
         }
 
-        // 2. Access Token 에서 User ID 가져오기
+//        // 2. Access Token 에서 User ID 가져오기
 //        Authentication authentication = jwtTokenProvider.getAuthentication(requestDTO.getAccessToken());
 
         // 2. 만료된 Access Token에서도 정보를 가져오도록 수정
