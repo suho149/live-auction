@@ -20,9 +20,10 @@
 ### 1. 구글 로그인
 ![Image](https://github.com/user-attachments/assets/e9b9a85d-8311-4327-8178-40d9e2b782be)
 
-- 인증 (Authentication): 사용자가 누구인지 확인하는 과정은 OAuth 2.0 프로토콜을 이용한 소셜 로그인(Google)으로 처리합니다.
-- 인가 (Authorization): 인증된 사용자가 특정 API에 접근할 권한이 있는지 확인하는 과정은 JWT(JSON Web Token)를 사용합니다.
+- 인증 (Authentication): 사용자가 누구인지 확인하는 과정은 OAuth 2.0 프로토콜을 이용한 소셜 로그인(Google)으로 처리.
+- 인가 (Authorization): 인증된 사용자가 특정 API에 접근할 권한이 있는지 확인하는 과정은 JWT(JSON Web Token)를 사용.
 
+<br>
 #### 핵심 흐름
 <img width="2846" height="3840" alt="Image" src="https://github.com/user-attachments/assets/8ca285a1-6782-4245-8a5e-361bebee68d7" />
 
@@ -31,91 +32,94 @@
 ### 2. 상품 상세 페이지 & 판매자와 채팅
 ![Image](https://github.com/user-attachments/assets/ccb3ceff-be7b-4847-ba42-e9a061a7ddb9)
 
-<br>
+- N+1 문제를 방지하기 위해 fetch join.
+- Websocket, Spring STOMP로 채팅 구현.
+
+<br><br>
 
 ### 3. 상품 문의
 ![Image](https://github.com/user-attachments/assets/a4beb3ac-48e6-417b-a1e2-6510c13d2fea)
 
-<br>
+<br><br>
 
 ### 4. 상품 문의(비밀글)
 ![Image](https://github.com/user-attachments/assets/3476d41a-8833-44e1-82c8-3c48f4cb03ba)
 
 ![Image](https://github.com/user-attachments/assets/d4d38e2d-6406-4709-a30e-4b6a461b54fc)
 
-<br>
+<br><br>
 
 ### 5. 상품 키워드 등록
 ![Image](https://github.com/user-attachments/assets/ea388be5-5088-4ca3-8767-2e0e94f7bc47)
 
-<br>
+<br><br>
 
 ### 6. 상품 등록 & 키워드 알림
 ![Image](https://github.com/user-attachments/assets/6d982a71-4bc1-402b-a039-092648b06f27)
 
-<br>
+<br><br>
 
 ### 7. 상품 경매
 ![Image](https://github.com/user-attachments/assets/0c6fa2ff-0a74-4961-ace3-a5db6ead54b4)
 
-<br>
+<br><br>
 
 ### 8. 경매 자동 입찰
 ![Image](https://github.com/user-attachments/assets/b054f7a4-523a-4d83-b0db-a1ce30bcd2cc)
 
 ![Image](https://github.com/user-attachments/assets/7c688dbd-7e4e-4ec4-9075-d8ee348d18bb)
 
-<br>
+<br><br>
 
-### 9. 상품 즉시 구매
+### 9. 상품 즉시 구매(상품 결제)
 ![Image](https://github.com/user-attachments/assets/3ed28dc4-5a1b-4075-82e0-b87219550523)
 
-<br>
+<br><br>
 
 ### 10. 배송지 입력
 ![Image](https://github.com/user-attachments/assets/a813b0c1-6114-43a9-a7c8-41c37c797647)
 
-<br>
+<br><br>
 
 ### 11. 판매자 상품 발송 처리
 ![Image](https://github.com/user-attachments/assets/8d052eaf-e20c-4690-8bc4-4b90b613956c)
 
-<br>
+<br><br>
 
 ### 12. 배송 완료 후 구매 확정
 ![Image](https://github.com/user-attachments/assets/c332f3e1-2013-4422-9b6a-3730adc85c82)
 
-<br>
+<br><br>
 
 ### 13. 리뷰 작성
 ![Image](https://github.com/user-attachments/assets/55eada3f-7d49-46d0-aec1-9ef6e370b6d4)
 
-<br>
+<br><br>
 
 ### 14. 판매자 정산 요청 & 관리자 정산 승인
 ![Image](https://github.com/user-attachments/assets/9d5b8970-bf94-4a24-a515-638d6337e51b)
 
-<br>
+<br><br>
 
 ### 15. 상품 신고 & 관리자 승인
 ![Image](https://github.com/user-attachments/assets/1f6d4b13-2538-4a2c-8375-182b609ed3ee)
 
-<br>
+<br><br>
 
 ### 16. 관리자 페이지 & 상품 강제 삭제
 ![Image](https://github.com/user-attachments/assets/88863d80-689b-4388-bccb-7f3a2df2a199)
 
-<br>
+<br><br>
 
 ### 17. 상품 검색 & 필터링
 ![Image](https://github.com/user-attachments/assets/3a2cd59b-78b2-4721-a392-e8c3d23d438d)
 
-<br>
+<br><br>
 
 ### 18. 마이페이지
 ![Image](https://github.com/user-attachments/assets/f8698765-439d-4dfb-9b89-b2ceafbd2fb1)
 
-<br>
+<br><br>
 
 ## ✨ 주요 기능 상세 설명 (Detailed Features)
 
