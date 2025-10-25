@@ -3,7 +3,7 @@
 <br>
 
 <p align="center">
-  <img src="https" width="800" alt="Project Banner">
+  <img width="2535" height="1318" alt="Image" src="https://github.com/user-attachments/assets/177b259e-507f-45a6-a07a-dd4e4954c683" />
   <!-- TODO: 프로젝트를 잘 나타내는 배너 이미지나 GIF를 추가하세요. -->
 </p>
 
