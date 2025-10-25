@@ -24,10 +24,11 @@
 - 인가 (Authorization): 인증된 사용자가 특정 API에 접근할 권한이 있는지 확인하는 과정은 JWT(JSON Web Token)를 사용.
 
 <br>
+
 #### 핵심 흐름
 <img width="2846" height="3840" alt="Image" src="https://github.com/user-attachments/assets/8ca285a1-6782-4245-8a5e-361bebee68d7" />
 
-<br>
+<br><br>
 
 ### 2. 상품 상세 페이지 & 판매자와 채팅
 ![Image](https://github.com/user-attachments/assets/ccb3ceff-be7b-4847-ba42-e9a061a7ddb9)
