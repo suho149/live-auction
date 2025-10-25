@@ -20,6 +20,9 @@
 ### 1. 구글 로그인
 ![Image](https://github.com/user-attachments/assets/e9b9a85d-8311-4327-8178-40d9e2b782be)
 
+- 인증 (Authentication): 사용자가 누구인지 확인하는 과정은 OAuth 2.0 프로토콜을 이용한 소셜 로그인(Google)으로 처리합니다.
+- 인가 (Authorization): 인증된 사용자가 특정 API에 접근할 권한이 있는지 확인하는 과정은 JWT(JSON Web Token)를 사용합니다.
+
 ### 2. 상품 상세 페이지 & 판매자와 채팅
 ![Image](https://github.com/user-attachments/assets/ccb3ceff-be7b-4847-ba42-e9a061a7ddb9)
 
