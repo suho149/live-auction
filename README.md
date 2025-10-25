@@ -15,6 +15,14 @@
 
 <br>
 
+## 🎥 프로젝트 시연 영상 (Introduction)
+
+### 1. 구글 로그인
+![Image](https://github.com/user-attachments/assets/e9b9a85d-8311-4327-8178-40d9e2b782be)
+
+
+<br>
+
 ## ✨ 주요 기능 상세 설명 (Detailed Features)
 
 ### 1. 실시간 경매 시스템
