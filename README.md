@@ -240,37 +240,37 @@
 ### 1. 사용자 인증 및 인가
 <br>
 <img width="2846" height="3840" alt="Image" src="https://github.com/user-attachments/assets/8ca285a1-6782-4245-8a5e-361bebee68d7" />
-<br>
+<br><br>
 
 ### 2. 상품 등록 및 관리
 <br>
 <img width="2048" height="1390" alt="Image" src="https://github.com/user-attachments/assets/81c88a15-c01f-4c91-8036-85d2c7ae858c" />
-<br>
+<br><br>
 
 ### 3. 상품 검색 및 조회
 <br>
 <img width="2048" height="2276" alt="Image" src="https://github.com/user-attachments/assets/c42f2139-b398-462f-aa38-348c00999b02" />
-<br>
+<br><br>
 
 ### 4. 실시간 경매(입찰 및 채팅)
 <br>
 <img width="2048" height="2315" alt="Image" src="https://github.com/user-attachments/assets/30c803bb-b818-4300-a502-607d49adc7a2" />
-<br>
+<br><br>
 
 ### 5. 결제(Payment)
 <br>
 <img width="2048" height="2794" alt="Image" src="https://github.com/user-attachments/assets/c223d732-3228-4e3b-8b02-ec852ad253db" />
-<br>
+<br><br>
 
 ### 6. 배송(Delivery)
 <br>
 <img width="2048" height="2486" alt="Image" src="https://github.com/user-attachments/assets/d6b79af0-5f65-4654-a9e9-e6fad98a65e9" />
-<br>
+<br><br>
 
 ### 7. 알림(Notification)
 <br>
 <img width="2048" height="1516" alt="Image" src="https://github.com/user-attachments/assets/184178d3-0290-4442-9e1a-136ee9e44c6c" />
-<br>
+<br><br>
 
 ### 8. 관리자(Admin)
 <br>
