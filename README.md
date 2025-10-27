@@ -235,6 +235,14 @@
 
 <br>
 
+## 🌊 핵심 흐름
+
+### 1. 사용자 인증 및 인가
+<br>
+<img width="2846" height="3840" alt="Image" src="https://github.com/user-attachments/assets/8ca285a1-6782-4245-8a5e-361bebee68d7" />
+
+<br>
+
 ## 🛠️ 기술 스택 (Tech Stack)
 
 ### Backend
