@@ -15,6 +15,155 @@
 
 <br>
 
+## 🎥 프로젝트 시연 영상 (Introduction)
+
+### 1. 구글 로그인
+![Image](https://github.com/user-attachments/assets/e9b9a85d-8311-4327-8178-40d9e2b782be)
+
+- Spring Security, OAuth 2.0, JWT (JSON Web Token)
+- 사용자가 구글 로그인 시, Spring Security의 OAuth 2.0 클라이언트가 인증 과정을 처리합니다. 인증 성공 후 백엔드는 서버에서 자체적으로 Access Token과 Refresh Token을 발급하여 클라이언트에 전달합니다. 이후의 모든 API 요청은 이 JWT를 통해 인가(Authorization) 처리됩니다.
+
+<br><br>
+
+### 2. 상품 상세 페이지 & 판매자와 채팅
+![Image](https://github.com/user-attachments/assets/ccb3ceff-be7b-4847-ba42-e9a061a7ddb9)
+
+- Spring Data JPA (Fetch Join), WebSocket, STOMP
+- 상품 상세 정보 조회 시 발생할 수 있는 N+1 문제를 해결하기 위해 JPQL의 Fetch Join을 사용하여 연관된 엔티티(판매자, 이미지 등)를 한 번의 쿼리로 가져옵니다. 채팅 기능은 WebSocket과 STOMP 프로토콜을 사용하여 구현하였으며, 사용자가 채팅방에 입장하면 특정 채널을 구독하여 실시간으로 메시지를 주고받습니다.
+
+<br><br>
+
+### 3. 상품 문의
+![Image](https://github.com/user-attachments/assets/a4beb3ac-48e6-417b-a1e2-6510c13d2fea)
+
+- JPA, Spring Events, SSE (Server-Sent Events)
+- 사용자가 질문을 등록하면 REST API를 통해 Question 엔티티가 DB에 저장됩니다. 동시에 NotificationEvent를 발행하여, 트랜잭션이 성공적으로 커밋된 후에만 판매자에게 SSE를 통해 실시간으로 "새로운 문의 도착" 알림이 전송됩니다.
+
+<br><br>
+
+### 4. 상품 문의(비밀글)
+![Image](https://github.com/user-attachments/assets/3476d41a-8833-44e1-82c8-3c48f4cb03ba)
+
+![Image](https://github.com/user-attachments/assets/d4d38e2d-6406-4709-a30e-4b6a461b54fc)
+
+- 질문 등록 시 '비밀글' 여부를 boolean 값으로 함께 저장합니다. Q&A 목록 조회 API에서는 현재 로그인한 사용자가 질문 작성자 본인이거나 상품 판매자일 경우에만 해당 질문의 내용을 볼 수 있도록 백엔드 서비스 로직에서 접근 권한을 검증합니다.
+
+<br><br>
+
+### 5. 상품 키워드 등록
+![Image](https://github.com/user-attachments/assets/ea388be5-5088-4ca3-8767-2e0e94f7bc47)
+
+- JPA
+- 사용자가 등록한 관심 키워드는 Keyword 테이블에 사용자 ID와 함께 저장됩니다. 이 데이터는 추후 상품 등록 시 알림을 보낼 대상자를 필터링하는 데 사용됩니다.
+
+<br><br>
+
+### 6. 상품 등록 & 키워드 알림
+![Image](https://github.com/user-attachments/assets/6d982a71-4bc1-402b-a039-092648b06f27)
+
+- JPQL (LIKE 연산), Spring Events, SSE
+- 상품이 등록되면, ProductService는 저장된 상품의 이름과 설명을 기반으로 KeywordRepository의 JPQL 쿼리(LIKE '%keyword%')를 실행합니다. 이 쿼리는 해당 키워드를 등록한 모든 사용자를 찾아내고, 각 사용자에게 SSE를 통해 "관심 키워드 상품 등록" 알림을 실시간으로 보냅니다.
+
+<br><br>
+
+### 7. 상품 경매
+![Image](https://github.com/user-attachments/assets/0c6fa2ff-0a74-4961-ace3-a5db6ead54b4)
+
+- WebSocket, STOMP, Pessimistic Lock (비관적 락)
+- 여러 사용자가 동시에 입찰할 때 발생할 수 있는 데이터 경합(Race Condition)을 방지하기 위해, AuctionService는 입찰 처리 시 JPA의 @Lock(LockModeType.PESSIMISTIC_WRITE)을 사용하여 Product row에 DB 레벨의 락을 겁니다. 입찰 처리 후, 갱신된 가격은 WebSocket을 통해 해당 상품 채널을 구독 중인 모든 클라이언트에게 실시간으로 브로드캐스팅됩니다.
+
+<br><br>
+
+### 8. 경매 자동 입찰
+![Image](https://github.com/user-attachments/assets/b054f7a4-523a-4d83-b0db-a1ce30bcd2cc)
+
+![Image](https://github.com/user-attachments/assets/7c688dbd-7e4e-4ec4-9075-d8ee348d18bb)
+
+- JPA, Transactional 비즈니스 로직
+- 새로운 입찰이 발생할 때마다, AuctionService의 processAutoBids 메서드가 실행됩니다. 이 메서드는 해당 상품의 모든 AutoBid 설정을 조회하여, 현재 최고 입찰자와 경쟁적으로 자동 입찰을 진행하는 복잡한 비즈니스 로직을 트랜잭션 내에서 처리합니다.
+
+<br><br>
+
+### 9. 상품 즉시 구매(상품 결제)
+![Image](https://github.com/user-attachments/assets/3ed28dc4-5a1b-4075-82e0-b87219550523)
+
+- Toss Payments API, REST API
+- 사용자가 '즉시 구매'를 요청하면, PaymentService는 PENDING 상태의 결제 정보를 생성하고 토스페이먼츠에 필요한 주문 정보를 프론트엔드에 전달합니다. 결제 위젯에서 인증이 완료되면, 백엔드는 토스페이먼츠 서버와 최종 통신하여 결제를 승인하고 Product의 상태를 SOLD_OUT으로 변경합니다.
+
+<br><br>
+
+### 10. 배송지 입력
+![Image](https://github.com/user-attachments/assets/a813b0c1-6114-43a9-a7c8-41c37c797647)
+
+- JPA (Embedded Type), REST API
+- 사용자의 주소 정보는 @Embedded 타입인 Address 객체로 관리됩니다. 배송지 입력 API를 통해 Delivery 엔티티에 배송지 정보가 업데이트되고, 배송 상태가 '배송 준비 중'으로 변경됩니다.
+
+<br><br>
+
+### 11. 판매자 상품 발송 처리
+![Image](https://github.com/user-attachments/assets/8d052eaf-e20c-4690-8bc4-4b90b613956c)
+
+- Spring Scheduler, Transactional
+- DeliveryScheduler가 주기적으로 실행되어 '배송 준비 중' 상태인 모든 주문을 찾아 가상의 운송장 번호를 부여하고 '배송 중' 상태로 일괄 변경합니다. 이 과정은 실제 물류 시스템과의 연동을 시뮬레이션하며, 상태 변경 시 구매자에게 SSE 알림이 전송됩니다.
+
+<br><br>
+
+### 12. 배송 완료 후 구매 확정
+![Image](https://github.com/user-attachments/assets/c332f3e1-2013-4422-9b6a-3730adc85c82)
+
+- Spring Events, JPA
+- 구매자가 '구매 확정' API를 호출하면, Delivery 상태가 CONFIRMED로 변경됩니다. 동시에 SettlementEvent를 발행하여, 트랜잭션 커밋 후에 판매자를 위한 '정산 가능'(AVAILABLE) 상태의 Settlement 데이터가 생성되도록 합니다.
+
+<br><br>
+
+### 13. 리뷰 작성
+![Image](https://github.com/user-attachments/assets/55eada3f-7d49-46d0-aec1-9ef6e370b6d4)
+
+- JPA (Unique Constraint)
+- 거래가 완료된 상품에 대해 구매자는 리뷰를 작성할 수 있습니다. Review 테이블에는 (reviewer_id, reviewee_id, product_id)에 대한 Unique Constraint를 설정하여, 한 거래에 대해 동일한 리뷰가 중복 작성되는 것을 DB 레벨에서 방지합니다.
+
+<br><br>
+
+### 14. 판매자 정산 요청 & 관리자 정산 승인
+![Image](https://github.com/user-attachments/assets/9d5b8970-bf94-4a24-a515-638d6337e51b)
+
+- REST API (for User & Admin), JPA
+- 판매자가 '정산 요청' API를 호출하면, AVAILABLE 상태의 모든 Settlement 건들이 REQUESTED 상태로 변경됩니다. 관리자는 관리자 페이지에서 REQUESTED 상태의 정산 목록을 조회하고, '승인' API를 통해 해당 건을 COMPLETED 상태로 변경하며 판매자에게 SSE 알림을 보냅니다.
+
+<br><br>
+
+### 15. 상품 신고 & 관리자 승인
+![Image](https://github.com/user-attachments/assets/1f6d4b13-2538-4a2c-8375-182b609ed3ee)
+
+- Soft Delete, Spring Events, SSE
+- 사용자가 상품을 신고하면 Report 데이터가 PENDING 상태로 생성되고, 관리자에게 SSE 알림이 갑니다. 관리자가 신고를 '승인'하면, Product 엔티티는 물리적으로 삭제되지 않고 status가 DELETED로 변경되는 Soft Delete 방식이 적용됩니다. 처리 결과는 신고자와 판매자 모두에게 SSE 알림으로 전송됩니다.
+
+<br><br>
+
+### 16. 관리자 페이지 & 상품 강제 삭제
+![Image](https://github.com/user-attachments/assets/88863d80-689b-4388-bccb-7f3a2df2a199)
+
+- Spring Security (Role-based Access Control), QueryDSL
+- /api/v1/admin/** 경로에 대한 접근은 SecurityConfig에서 hasRole("ADMIN")으로 설정하여 관리자만 접근 가능하도록 보호합니다. 관리자는 QueryDSL을 통해 구현된 사용자/상품 검색 기능을 사용하여 데이터를 관리하고, 문제가 있는 상품을 Soft Delete 처리할 수 있습니다.
+
+<br><br>
+
+### 17. 상품 검색 & 필터링
+![Image](https://github.com/user-attachments/assets/3a2cd59b-78b2-4721-a392-e8c3d23d438d)
+
+- QueryDSL, BooleanExpression
+- ProductRepositoryImpl에서 QueryDSL을 사용하여, 사용자가 입력한 여러 검색 조건(키워드, 카테고리, 가격 범위 등)을 BooleanExpression으로 조합합니다. 값이 있는 조건만 where 절에 동적으로 추가되므로, 복잡한 검색 요구사항을 효율적인 단일 메소드로 처리합니다.
+
+<br><br>
+
+### 18. 마이페이지
+![Image](https://github.com/user-attachments/assets/f8698765-439d-4dfb-9b89-b2ceafbd2fb1)
+
+- REST API, JPA (Query Method)
+- 구매/판매/입찰/정산/리뷰 등 각 탭에 해당하는 데이터를 UserRepository, PaymentRepository 등에 정의된 다양한 JPA 쿼리 메소드를 통해 조회합니다. 각 API는 현재 인증된 사용자(@AuthenticationPrincipal)의 ID를 기준으로 데이터를 필터링하여 반환합니다.
+
+<br><br>
+
 ## ✨ 주요 기능 상세 설명 (Detailed Features)
 
 ### 1. 실시간 경매 시스템
@@ -83,6 +232,42 @@
 - **구현**:  
   - `ProductRepositoryImpl`에서 QueryDSL을 사용하여 `ProductSearchCondition` DTO에 담겨온 여러 검색 조건(키워드, 카테고리, 가격, 상태 등)을 `BooleanExpression`으로 조합합니다.  
   - 값이 있는 조건만 where 절에 동적으로 추가되므로, 다양한 검색 시나리오에 대응하는 단일 메소드로 효율적인 검색 기능을 구현했습니다.
+
+<br>
+
+## 🌊 핵심 흐름
+
+### 1. 사용자 인증 및 인가
+<img width="2846" height="3840" alt="Image" src="https://github.com/user-attachments/assets/8ca285a1-6782-4245-8a5e-361bebee68d7" />
+<br><br>
+
+### 2. 상품 등록 및 관리
+<img width="2048" height="1390" alt="Image" src="https://github.com/user-attachments/assets/81c88a15-c01f-4c91-8036-85d2c7ae858c" />
+<br><br>
+
+### 3. 상품 검색 및 조회
+<img width="2048" height="2276" alt="Image" src="https://github.com/user-attachments/assets/c42f2139-b398-462f-aa38-348c00999b02" />
+<br><br>
+
+### 4. 실시간 경매(입찰 및 채팅)
+<img width="2048" height="2315" alt="Image" src="https://github.com/user-attachments/assets/30c803bb-b818-4300-a502-607d49adc7a2" />
+<br><br>
+
+### 5. 결제(Payment)
+<img width="2048" height="2794" alt="Image" src="https://github.com/user-attachments/assets/c223d732-3228-4e3b-8b02-ec852ad253db" />
+<br><br>
+
+### 6. 배송(Delivery)
+<img width="2048" height="2486" alt="Image" src="https://github.com/user-attachments/assets/d6b79af0-5f65-4654-a9e9-e6fad98a65e9" />
+<br><br>
+
+### 7. 알림(Notification)
+<img width="2048" height="1516" alt="Image" src="https://github.com/user-attachments/assets/184178d3-0290-4442-9e1a-136ee9e44c6c" />
+<br><br>
+
+### 8. 관리자(Admin)
+<img width="2048" height="1422" alt="Image" src="https://github.com/user-attachments/assets/0fd2de71-8447-49ad-9e0e-4df9e37813a8" />
+<br>
 
 <br>
 
